@@ -12,14 +12,14 @@ namespace WpfGui {
 
 		bool m_useSizeOfFirstPic = true;
 		int m_pageSizeType = 2;
-		int m_totalCnt = 0;
+		int m_totalCnt = 1;
 		int m_finishCnt = 0;
+		int m_singleCnt = 1;
 
 		public MainWindow() {
 			InitializeComponent();
 			ChkBoxUseSizeOfFirstPic.IsChecked = true;
 			RadioBtnFixedWidth.IsChecked = true;
-			ProgBarSingle.Value = 10.0;
 			PicMergeToPdf.Process.SingleUpdate += UpdateSingleBar;
 		}
 
@@ -72,7 +72,6 @@ namespace WpfGui {
 			else {
 				m_useSizeOfFirstPic = false;
 			}
-			ProgBarSingle.Value += 10.0;
 		}
 
 		private void Window_DragEnter(object sender, DragEventArgs e) {
@@ -81,10 +80,15 @@ namespace WpfGui {
 			}
 		}
 
-		private void UpdateSingleBar(double val) {
-			ProgBarSingle.Value = val;
-			PorgBarTotal.Value = 1.0 * val / m_totalCnt + m_finishCnt / m_totalCnt * 100.0;
+		private void UpdateSingleBar(int cnt) {
+			ProgBarSingle.Value = 100.0 * cnt / m_singleCnt;
+			PorgBarTotal.Value = 100.0 * (1.0 * cnt / m_singleCnt + m_finishCnt) / m_totalCnt;
+			LabelSingle.Content = $"{cnt} / {m_singleCnt}";
+			LabelTotal.Content = $"{m_finishCnt} / {m_totalCnt}";
 		}
+
+		[System.Runtime.InteropServices.DllImport("Shlwapi.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+		private static extern int StrCmpLogicalW(string psz1, string psz2);
 
 		private async void Window_Drop(object sender, DragEventArgs e) {
 			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
@@ -126,42 +130,50 @@ namespace WpfGui {
 				m_totalCnt = directories.Count;
 				if (files.Count > 0) {
 					m_totalCnt++;
+					m_singleCnt = files.Count;
 					outputPath = EnumFileName(Path.GetDirectoryName(files[0]) ?? "", Path.GetFileNameWithoutExtension(files[0]), ".pdf");
+					files.Sort(StrCmpLogicalW);
 					List<string> failed;
 					try {
 						failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
 					}
-					finally {
-						;
+					catch (Exception ex) {
+						failed = ["处理过程出现异常", ex.Message];
 					}
 					if (failed.Count > 0)
 						tasks.Add(Task.Run(() => {
 							string msg = $"以下文件无法加入 \"{outputPath}\"：";
-							foreach (var f in failed) {
+							for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
 								msg += "\r\n";
-								msg += f;
+								msg += failed[i];
+								msg += ": ";
+								msg += failed[i + 1];
 							}
 							MessageBox.Show(msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
 						}));
 					m_finishCnt++;
 				}
+				directories.Sort(StrCmpLogicalW);
 				foreach (string dir in directories) {
 					List<string> filelist = Directory.EnumerateFiles(dir).ToList();
-					filelist.Sort();
+					filelist.Sort(StrCmpLogicalW);
+					m_singleCnt = filelist.Count;
 					outputPath = EnumFileName(Path.GetDirectoryName(dir) ?? dir, Path.GetFileName(dir), ".pdf");
-					List<string> failed = [];
+					List<string> failed;
 					try {
 						failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey);
 					}
-					catch (Exception) {
-						MessageBox.Show($"FUCK! {m_pageSizeType} {dir} {filelist.Count}");
+					catch (Exception ex) {
+						failed = ["处理过程出现异常", ex.Message];
 					}
 					if (failed.Count > 0)
 						tasks.Add(Task.Run(() => {
 							string msg = $"以下文件无法加入 \"{outputPath}\"：";
-							foreach (var f in failed) {
+							for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
 								msg += "\r\n";
-								msg += f;
+								msg += failed[i];
+								msg += ": ";
+								msg += failed[i + 1];
 							}
 							MessageBox.Show(msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
 						}));
@@ -170,25 +182,32 @@ namespace WpfGui {
 			}
 			else if (files.Count > 0) {
 				m_totalCnt = 1;
+				m_singleCnt = files.Count;
 				outputPath = EnumFileName(Path.GetDirectoryName(files[0]) ?? "", Path.GetFileNameWithoutExtension(files[0]), ".pdf");
+				files.Sort(StrCmpLogicalW);
 				List<string> failed;
 				try {
 					failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
 				}
-				finally {
-					;
+				catch (Exception ex) {
+					failed = ["处理过程出现异常", ex.Message];
 				}
 				if (failed.Count > 0)
 					tasks.Add(Task.Run(() => {
 						string msg = $"以下文件无法加入 \"{outputPath}\"：";
-						foreach (var f in failed) {
+						for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
 							msg += "\r\n";
-							msg += f;
+							msg += failed[i];
+							msg += ": ";
+							msg += failed[i + 1];
 						}
 						MessageBox.Show(msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
 					}));
 				m_finishCnt++;
 			}
+			UpdateSingleBar(m_singleCnt);
+			LabelSingle.Content = "就绪";
+			LabelTotal.Content = "就绪";
 
 			if (unknown.Count > 0) {
 				string msg = "以下内容无法处理：";

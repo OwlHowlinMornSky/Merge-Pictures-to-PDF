@@ -3,22 +3,23 @@ using iText.Kernel.Geom;
 using iText.Kernel.Pdf.Canvas;
 using iText.Kernel.Pdf;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using Org.BouncyCastle.Utilities;
 
 namespace PicMergeToPdf {
 	public static class Process {
 
-		public static Action<double> SingleUpdate = x => { };
+		public static Action<int> SingleUpdate = x => { };
 
-		public static async Task<List<string>> ProcessAsync(string outputfilepath, List<string> files, int pageSizeType, int pagesizex, int pagesizey) {
+		public static async Task<List<string>> ProcessAsync(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey) {
 			List<string> failed = [];
 			using FileStream stream = new(outputfilepath, FileMode.CreateNew, FileAccess.Write);
-			//using FileStream stream = new("test.pdf", FileMode.Create, FileAccess.Write);
 			WriterProperties writerProperties = new();
 			writerProperties.SetFullCompressionMode(true);
 			writerProperties.SetCompressionLevel(CompressionConstants.BEST_COMPRESSION);
 
+			SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder encoder = new() {
+				SkipMetadata = true,
+				Quality = 80
+			};
 
 			using (PdfWriter writer = new(stream, writerProperties)) {
 				using PdfDocument pdfDocument = new(writer);
@@ -26,50 +27,48 @@ namespace PicMergeToPdf {
 				foreach (string file in files) {
 					try {
 						ImageData imageData;
-						using (Image image = await Image.LoadAsync(file)) {
+						//try { // 尝试直接加载
+						//	imageData = ImageDataFactory.Create(file);
+						//}
+						//catch (Exception) { // 若不支持则转码
+						//	using Image image = await Image.LoadAsync(file);
+						//	using MemoryStream tmpImg = new();
+						//	await image.SaveAsJpegAsync(tmpImg);
+						//	imageData = ImageDataFactory.Create(tmpImg.ToArray());
+						//}
+						using (Image image = await Image.LoadAsync(file)) { // 压缩所有图像
 							using MemoryStream tmpImg = new();
-							image.SaveAsPng(tmpImg);
-							imageData = ImageDataFactory.CreatePng(tmpImg.ToArray());
+							await image.SaveAsJpegAsync(tmpImg, encoder);
+							imageData = ImageDataFactory.Create(tmpImg.ToArray());
 						}
-						/*
-						using Image image = await Image.LoadAsync(file);
-						var imgRgb24 = image.CloneAs<Rgb24>();
-						int length = imgRgb24.Size.Width * imgRgb24.Size.Height * 3;
-						byte[] bytes = new byte[length];
-						imgRgb24.CopyPixelDataTo(bytes);
-						ImageData imageData = ImageDataFactory.CreateRawImage(bytes);
-						imageData.SetWidth(imgRgb24.Size.Width);
-						imageData.SetHeight(imgRgb24.Size.Height);
-						imageData.SetColorEncodingComponentsNumber(3);
-						imageData.SetBpc(8);
-						*/
-
 						PageSize pageSize;
 						PageSize imageSize;
+						float width = imageData.GetWidth();
+						float height = imageData.GetHeight();
 						switch (pageSizeType) {
 						default:
 						case 1:
-							imageSize = new(imgRgb24.Size.Width, imgRgb24.Size.Height);
+							imageSize = new(width, height);
 							pageSize = imageSize;
 							break;
 						case 2:
 							if (pagesizex == 0) {
-								pagesizex = imgRgb24.Size.Width;
+								pagesizex = width;
 							}
-							imageSize = new(pagesizex, 1.0f * pagesizex / imgRgb24.Size.Width * imgRgb24.Size.Height);
+							imageSize = new(pagesizex, pagesizex / width * height);
 							pageSize = imageSize;
 							break;
 						case 3:
 							if (pagesizex == 0 || pagesizey == 0) {
-								pagesizex = imgRgb24.Size.Width;
-								pagesizey = imgRgb24.Size.Height;
+								pagesizex = width;
+								pagesizey = height;
 							}
 							pageSize = new(pagesizex, pagesizey);
 							float r = float.Min(
-								1.0f * pagesizex / imgRgb24.Size.Width,
-								1.0f * pagesizey / imgRgb24.Size.Height
+								1.0f * pagesizex / width,
+								1.0f * pagesizey / height
 							);
-							imageSize = new(imgRgb24.Size.Width * r, imgRgb24.Size.Height * r);
+							imageSize = new(width * r, height * r);
 							imageSize.SetX((pageSize.GetWidth() - imageSize.GetWidth()) / 2.0f);
 							imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
 							break;
@@ -78,16 +77,15 @@ namespace PicMergeToPdf {
 						PdfCanvas canvas = new(page, true);
 						canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);
 					}
-					catch (Exception) {
+					catch (Exception e) {
 						failed.Add(file);
+						failed.Add(e.Message);
 					}
 					cnt++;
-					SingleUpdate(90.0 * cnt / files.Count);
+					SingleUpdate(cnt);
 				}
 			}
-			SingleUpdate(90);
 			stream.Close();
-			SingleUpdate(100);
 			return failed;
 		}
 	}
