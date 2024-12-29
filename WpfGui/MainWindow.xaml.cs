@@ -114,11 +114,17 @@ namespace WpfGui {
 			bool recursion = ChkBoxRecursion.IsChecked != false;
 			bool keepStruct = ChkBoxKeepStructure.IsChecked != false;
 			bool stayNoMove = ChkBoxStayNoMove.IsChecked == true;
-			m_lastTask = Task.Run(() => { Process(paths, recursion, keepStruct, stayNoMove); });
+			int pagesizex = 0;
+			int pagesizey = 0;
+			if (!m_useSizeOfFirstPic) {
+				pagesizex = int.Parse(TextWidth.Text);
+				pagesizey = int.Parse(TextHeight.Text);
+			}
+			m_lastTask = Task.Run(() => { Process(paths, recursion, keepStruct, stayNoMove, m_pageSizeType, pagesizex, pagesizey); });
 			return;
 		}
 
-		private void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove) {
+		private void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove, int pageSizeType, int pagesizex, int pagesizey) {
 			string destFolder = "";
 			if (!stayNoMove) {
 				bool? result = false;
@@ -141,12 +147,6 @@ namespace WpfGui {
 				if (result != true)
 					return;
 				EnsureFolderExisting(destFolder);
-			}
-			int pagesizex = 0;
-			int pagesizey = 0;
-			if (!m_useSizeOfFirstPic) {
-				pagesizex = int.Parse(TextWidth.Text);
-				pagesizey = int.Parse(TextHeight.Text);
 			}
 
 			List<string> files = [];       // 文件列表。
@@ -188,6 +188,7 @@ namespace WpfGui {
 					)
 				);
 			}
+			m_totalCnt = directories.Count;
 			if (files.Count > 0) { // 拖入的列表中存在文件。
 				m_totalCnt++;
 				string outputPath = EnumFileName(
@@ -201,7 +202,7 @@ namespace WpfGui {
 							ProcessSingleFiles(
 								files,
 								outputPath,
-								pagesizex, pagesizey,
+								pageSizeType, pagesizex, pagesizey,
 								Path.GetDirectoryName(files[0]) ?? "",
 								tips
 							);
@@ -234,8 +235,8 @@ namespace WpfGui {
 								ProcessOneFolder(
 									Path.Combine(pair.Item1, pair.Item2),
 									outputPath,
-									pagesizex, pagesizey,
-									pair.Item2,
+									pageSizeType, pagesizex, pagesizey,
+									string.IsNullOrEmpty(pair.Item2) ? Path.GetFileName(pair.Item1) : pair.Item2,
 									tips
 								);
 							}
@@ -252,7 +253,7 @@ namespace WpfGui {
 			Task.WaitAll([.. tips]);
 		}
 
-		private void ProcessOneFolder(string sourceDir, string outputPath, int pagesizex, int pagesizey, string Title, List<Task> tips) {
+		private void ProcessOneFolder(string sourceDir, string outputPath, int pageSizeType, int pagesizex, int pagesizey, string Title, List<Task> tips) {
 			var fileList = Directory.EnumerateFiles(sourceDir);
 			if (!fileList.Any()) { // 跳过空文件夹
 				m_finishCnt++;
@@ -263,7 +264,7 @@ namespace WpfGui {
 
 			List<string> failed;
 			try {
-				failed = PicMergeToPdf.Process.Normal(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey, Title);
+				failed = PicMergeToPdf.Process.Normal(outputPath, filelist, pageSizeType, pagesizex, pagesizey, Title);
 			}
 			catch (Exception ex) {
 				failed = ["处理过程出现异常", ex.Message];
@@ -287,11 +288,11 @@ namespace WpfGui {
 			UpdateSingleBar();
 		}
 
-		private void ProcessSingleFiles(List<string> files, string outputPath, int pagesizex, int pagesizey, string Title, List<Task> tips) {
+		private void ProcessSingleFiles(List<string> files, string outputPath, int pageSizeType, int pagesizex, int pagesizey, string Title, List<Task> tips) {
 			files.Sort(StrCmpLogicalW);
 			List<string> failed;
 			try {
-				failed = PicMergeToPdf.Process.Normal(outputPath, files, m_pageSizeType, pagesizex, pagesizey, Title);
+				failed = PicMergeToPdf.Process.Normal(outputPath, files, pageSizeType, pagesizex, pagesizey, Title);
 			}
 			catch (Exception ex) {
 				failed = ["处理过程出现异常", ex.Message];
