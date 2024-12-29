@@ -3,13 +3,14 @@ using iText.Kernel.Geom;
 using iText.Kernel.Pdf.Canvas;
 using iText.Kernel.Pdf;
 using SixLabors.ImageSharp;
+using IOP = System.IO.Path;
 
 namespace PicMergeToPdf {
 	public static class Process {
 
 		public static Action<int> SingleUpdate = x => { };
 
-		public static async Task<List<string>> ProcessAsync(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
+		public static List<string> ProcessFunc(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
 			List<string> failed = [];
 			using FileStream stream = new(outputfilepath, FileMode.CreateNew, FileAccess.Write);
 			WriterProperties writerProperties = new();
@@ -18,12 +19,12 @@ namespace PicMergeToPdf {
 
 			SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder encoder = new() {
 				SkipMetadata = true,
-				Quality = 80
+				Quality = 80,
+				ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.Rgb,
+				Interleaved = false
 			};
 
 			using (PdfWriter writer = new(stream, writerProperties)) {
-				DocumentProperties documentProperties = new DocumentProperties();
-				
 				using PdfDocument pdfDocument = new(writer);
 				pdfDocument.GetDocumentInfo().SetKeywords(Title);
 
@@ -31,19 +32,15 @@ namespace PicMergeToPdf {
 				foreach (string file in files) {
 					try {
 						ImageData imageData;
-						//try { // 尝试直接加载
-						//	imageData = ImageDataFactory.Create(file);
-						//}
-						//catch (Exception) { // 若不支持则转码
-						//	using Image image = await Image.LoadAsync(file);
-						//	using MemoryStream tmpImg = new();
-						//	await image.SaveAsJpegAsync(tmpImg);
-						//	imageData = ImageDataFactory.Create(tmpImg.ToArray());
-						//}
-						using (Image image = await Image.LoadAsync(file)) { // 压缩所有图像
+						try { // 尝试直接加载
+							imageData = ImageDataFactory.Create(file);
+						}
+						catch (Exception) { // 若不支持则转码
+							using Image image = Image.Load(file);  // 压缩所有图像
 							using MemoryStream tmpImg = new();
-							await image.SaveAsJpegAsync(tmpImg, encoder);
+							image.SaveAsJpeg(tmpImg, encoder);
 							imageData = ImageDataFactory.Create(tmpImg.ToArray());
+							tmpImg.Close();
 						}
 						PageSize pageSize;
 						PageSize imageSize;
@@ -77,6 +74,8 @@ namespace PicMergeToPdf {
 							imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
 							break;
 						}
+						pageSize.SetWidth(pageSize.GetWidth() + 5.0f);
+						pageSize.SetHeight(pageSize.GetHeight() + 5.0f);
 						PdfPage page = pdfDocument.AddNewPage(pageSize);
 						PdfCanvas canvas = new(page, true);
 						canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);

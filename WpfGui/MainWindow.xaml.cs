@@ -179,7 +179,7 @@ namespace WpfGui {
 					files.Sort(StrCmpLogicalW);
 					List<string> failed;
 					try {
-						failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
+						failed = PicMergeToPdf.Process.ProcessFunc(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
 					}
 					catch (Exception ex) {
 						failed = ["处理过程出现异常", ex.Message];
@@ -229,7 +229,7 @@ namespace WpfGui {
 
 					List<string> failed;
 					try {
-						failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey, pair.Item2);
+						failed = PicMergeToPdf.Process.ProcessFunc(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey, pair.Item2);
 					}
 					catch (Exception ex) {
 						failed = ["处理过程出现异常", ex.Message];
@@ -261,7 +261,7 @@ namespace WpfGui {
 				);
 				List<string> failed;
 				try {
-					failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
+					failed = PicMergeToPdf.Process.ProcessFunc(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
 				}
 				catch (Exception ex) {
 					failed = ["处理过程出现异常", ex.Message];
