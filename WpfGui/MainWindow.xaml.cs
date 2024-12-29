@@ -82,10 +82,12 @@ namespace WpfGui {
 		}
 
 		private void UpdateSingleBar(int cnt) {
-			ProgBarSingle.Value = 100.0 * cnt / m_singleCnt;
-			PorgBarTotal.Value = 100.0 * (1.0 * cnt / m_singleCnt + m_finishCnt) / m_totalCnt;
-			LabelSingle.Content = $"{cnt} / {m_singleCnt}";
-			LabelTotal.Content = $"{m_finishCnt} / {m_totalCnt}";
+			App.Current.Dispatcher.Invoke(() => {
+				ProgBarSingle.Value = 100.0 * cnt / m_singleCnt;
+				PorgBarTotal.Value = 100.0 * (1.0 * cnt / m_singleCnt + m_finishCnt) / m_totalCnt;
+				LabelSingle.Content = $"{cnt} / {m_singleCnt}";
+				LabelTotal.Content = $"{m_finishCnt} / {m_totalCnt}";
+			});
 		}
 
 		[System.Runtime.InteropServices.DllImport("Shlwapi.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
@@ -280,8 +282,10 @@ namespace WpfGui {
 				m_finishCnt++;
 			}
 			UpdateSingleBar(m_singleCnt);
-			LabelSingle.Content = "就绪";
-			LabelTotal.Content = "就绪";
+			App.Current.Dispatcher.Invoke(() => {
+				LabelSingle.Content = "就绪";
+				LabelTotal.Content = "就绪";
+			});
 
 			if (unknown.Count > 0) {
 				string msg = "以下内容无法处理：";
