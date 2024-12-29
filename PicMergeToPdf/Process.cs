@@ -9,7 +9,7 @@ namespace PicMergeToPdf {
 
 		public static Action<int> SingleUpdate = x => { };
 
-		public static async Task<List<string>> ProcessAsync(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey) {
+		public static async Task<List<string>> ProcessAsync(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
 			List<string> failed = [];
 			using FileStream stream = new(outputfilepath, FileMode.CreateNew, FileAccess.Write);
 			WriterProperties writerProperties = new();
@@ -22,7 +22,11 @@ namespace PicMergeToPdf {
 			};
 
 			using (PdfWriter writer = new(stream, writerProperties)) {
+				DocumentProperties documentProperties = new DocumentProperties();
+				
 				using PdfDocument pdfDocument = new(writer);
+				pdfDocument.GetDocumentInfo().SetTitle(Title);
+
 				int cnt = 0;
 				foreach (string file in files) {
 					try {

@@ -5,13 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
         mc:Ignorable="d"
-        Title="PicMergeToPdf" Height="275" Width="345" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter">
+        Title="PicMergeToPdf" Height="283" Width="376" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter">
     <Grid x:Name="GridMain" AllowDrop="True">
         <Label x:Name="LabelSingle" Content="就绪" HorizontalAlignment="Left" Margin="10,0,0,104" Height="25" VerticalAlignment="Bottom"/>
         <ProgressBar x:Name="ProgBarSingle" Margin="10,0,10,72" Height="27" VerticalAlignment="Bottom"/>
         <ProgressBar x:Name="PorgBarTotal" Margin="10,0,10,10" Height="27" VerticalAlignment="Bottom"/>
         <Label x:Name="LabelTotal" Content="就绪" Margin="10,0,0,42" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Left"/>
-        <GroupBox x:Name="GpBoxSet" Header="页面尺寸" Margin="10,10,10,0" Height="96" VerticalAlignment="Top">
+        <GroupBox x:Name="GpBoxSet" Header="页面尺寸" Margin="10,10,10,0" Height="99" VerticalAlignment="Top">
             <Grid x:Name="GridPageSize">
                 <RadioButton x:Name="RadioBtnAutoSize" Content="与每张图片一致" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Unchecked="BtnPageSize_Changed" Checked="BtnPageSize_Changed"/>
                 <RadioButton x:Name="RadioBtnFixedWidth" Content="固定宽度" HorizontalAlignment="Left" Margin="10,30,0,0" VerticalAlignment="Top" IsChecked="False" Unchecked="BtnPageSize_Changed" Checked="BtnPageSize_Changed"/>
@@ -23,6 +23,7 @@
                 <CheckBox x:Name="ChkBoxUseSizeOfFirstPic" Content="使用第一张图片的尺寸数据" HorizontalAlignment="Left" Margin="141,9,0,0" VerticalAlignment="Top" IsChecked="False" Checked="BtnPageSize_Changed" Unchecked="BtnPageSize_Changed"/>
             </Grid>
         </GroupBox>
-
+        <CheckBox x:Name="ChkBoxStayNoMove" Content="输出到原位文件夹" Margin="0,114,11,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="116"/>
+        <CheckBox x:Name="ChkBoxRecursion" Content="递归文件夹" Margin="0,114,142,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="80" IsChecked="True"/>
     </Grid>
 </Window>

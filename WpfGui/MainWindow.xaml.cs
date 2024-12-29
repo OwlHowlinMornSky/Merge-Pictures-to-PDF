@@ -1,7 +1,7 @@
-﻿using iText.Layout.Element;
+﻿using iText.Commons.Utils;
+using iText.Layout.Element;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace WpfGui {
@@ -12,7 +12,7 @@ namespace WpfGui {
 
 		bool m_useSizeOfFirstPic = true;
 		int m_pageSizeType = 2;
-		int m_totalCnt = 1;
+		int m_totalCnt = 1; // 此次处理将生成多少目标文件。
 		int m_finishCnt = 0;
 		int m_singleCnt = 1;
 
@@ -95,10 +95,36 @@ namespace WpfGui {
 				return;
 			}
 			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths) {
+				MessageBox.Show(this, "拖入的数据不合规。", $"{this.Title}: Error");
 				return;
 			}
 			if (paths.Length <= 0) {
 				return;
+			}
+
+			bool stayNoMove = ChkBoxStayNoMove.IsChecked ?? false;
+			string destFolder = "";
+			if (!stayNoMove) {
+				// Configure open folder dialog box
+				Microsoft.Win32.OpenFolderDialog dialog = new();
+
+				dialog.Multiselect = false;
+				dialog.Title = "选择输出地点";
+
+				Reselect:
+
+				// Show open folder dialog box
+				bool? result = dialog.ShowDialog();
+
+				// Process open folder dialog box results
+				if (result == true) {
+					// Get the selected folder
+					destFolder = dialog.FolderName;
+				}
+				else {
+					goto Reselect;
+				}
+				EnsureFolderExisting(destFolder);
 			}
 
 			int pagesizex = 0;
@@ -108,30 +134,36 @@ namespace WpfGui {
 				pagesizey = int.Parse(TextHeight.Text);
 			}
 
-			List<string> files = [];
-			List<string> directories = [];
-			List<string> unknown = [];
-			foreach (var path in paths) {
-				if (File.Exists(path)) {
+			List<string> files = [];       // 文件列表。
+			List<Tuple<string, string>> directories = []; // 文件夹列表，第一个是基准文件夹的绝对路径，第二个是相对路径。
+			List<string> unknown = [];     // 无法处理的文件的列表。
+			foreach (var path in paths) {  // 遍历拖入的路径。
+				if (File.Exists(path)) {   // 是否是文件。
 					files.Add(path);
 				}
-				else if (Directory.Exists(path)) {
-					directories.Add(path);
+				else if (Directory.Exists(path)) { // 是否是文件夹。
+					directories.Add(Tuple.Create(path, ""));
+					if (ChkBoxRecursion.IsChecked == true)
+						RecursionAllDirectories(path, path, directories);
 				}
 				else {
-					unknown.Add(path);
+					unknown.Add(path); // 加入无法处理的列表。
 				}
 			}
 
 			List<Task> tasks = [];
 			m_finishCnt = 0;
 			string outputPath;
-			if (directories.Count > 0) {
+			if (directories.Count > 0) { // 拖入的列表中存在目录。
 				m_totalCnt = directories.Count;
-				if (files.Count > 0) {
+				if (files.Count > 0) {   // 同时也存在文件。
 					m_totalCnt++;
 					m_singleCnt = files.Count;
-					outputPath = EnumFileName(Path.GetDirectoryName(files[0]) ?? "", Path.GetFileNameWithoutExtension(files[0]), ".pdf");
+					outputPath = EnumFileName(
+						stayNoMove ? (Path.GetDirectoryName(files[0]) ?? "") : destFolder,
+						Path.GetFileNameWithoutExtension(files[0]),
+						".pdf"
+					);
 					files.Sort(StrCmpLogicalW);
 					List<string> failed;
 					try {
@@ -153,15 +185,19 @@ namespace WpfGui {
 						}));
 					m_finishCnt++;
 				}
-				directories.Sort(StrCmpLogicalW);
-				foreach (string dir in directories) {
+				//directories.Sort(StrCmpLogicalW);
+				foreach (Tuple<string, string> pair in directories) {
+					string dir = Path.Combine(pair.Item1, pair.Item2);
 					List<string> filelist = Directory.EnumerateFiles(dir).ToList();
 					filelist.Sort(StrCmpLogicalW);
 					m_singleCnt = filelist.Count;
-					outputPath = EnumFileName(Path.GetDirectoryName(dir) ?? dir, Path.GetFileName(dir), ".pdf");
+					string dp = stayNoMove ? (Path.GetDirectoryName(dir) ?? dir) : destFolder;
+					EnsureFolderExisting(dp);
+					MessageBox.Show(dir, dp);
+					outputPath = EnumFileName(dp, Path.GetFileName(dir), ".pdf");
 					List<string> failed;
 					try {
-						failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey);
+						failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey, pair.Item2);
 					}
 					catch (Exception ex) {
 						failed = ["处理过程出现异常", ex.Message];
@@ -180,11 +216,15 @@ namespace WpfGui {
 					m_finishCnt++;
 				}
 			}
-			else if (files.Count > 0) {
+			else if (files.Count > 0) { // 拖入的列表只有文件。
 				m_totalCnt = 1;
 				m_singleCnt = files.Count;
-				outputPath = EnumFileName(Path.GetDirectoryName(files[0]) ?? "", Path.GetFileNameWithoutExtension(files[0]), ".pdf");
 				files.Sort(StrCmpLogicalW);
+				outputPath = EnumFileName(
+					stayNoMove ? (Path.GetDirectoryName(files[0]) ?? "") : destFolder,
+					Path.GetFileNameWithoutExtension(files[0]),
+					".pdf"
+				);
 				List<string> failed;
 				try {
 					failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
@@ -229,6 +269,24 @@ namespace WpfGui {
 				res = Path.Combine(dir, $"{stem} ({i}){exname}");
 			}
 			return res;
+		}
+
+		private static void RecursionAllDirectories(string dir, string basedir, List<Tuple<string, string>> list) {
+			foreach (string d in Directory.GetDirectories(dir)) {
+				list.Add(Tuple.Create(basedir, Path.GetRelativePath(basedir, d)));
+				RecursionAllDirectories(d, basedir, list);
+			}
+			return;
+		}
+
+		private static void EnsureFolderExisting(string path) {
+			if (Directory.Exists(path))
+				return;
+			string parent = Path.GetDirectoryName(path) ??
+				throw new DirectoryNotFoundException($"Parent of \"{path}\" is not exist!");
+			EnsureFolderExisting(parent);
+			Directory.CreateDirectory(path);
+			return;
 		}
 
 	}
