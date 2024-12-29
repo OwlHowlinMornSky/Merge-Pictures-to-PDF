@@ -114,14 +114,12 @@ namespace WpfGui {
 				dialog.Multiselect = false;
 				dialog.Title = "选择输出地点";
 				if (Directory.Exists(paths[0]))
-					dialog.FolderName = paths[0];
+					dialog.DefaultDirectory = paths[0];
 				else 
-					dialog.FolderName = Path.GetDirectoryName(paths[0]) ?? "";
-
-				Reselect:
+					dialog.DefaultDirectory = Path.GetDirectoryName(paths[0]) ?? "";
 
 				// Show open folder dialog box
-				bool? result = dialog.ShowDialog();
+				bool? result = dialog.ShowDialog(this);
 
 				// Process open folder dialog box results
 				if (result == true) {
@@ -129,11 +127,10 @@ namespace WpfGui {
 					destFolder = dialog.FolderName;
 				}
 				else {
-					goto Reselect;
+					return;
 				}
 				EnsureFolderExisting(destFolder);
 			}
-
 			int pagesizex = 0;
 			int pagesizey = 0;
 			if (!m_useSizeOfFirstPic) {
@@ -284,6 +281,7 @@ namespace WpfGui {
 			}
 
 			Task.WaitAll([.. tasks]);
+			return;
 		}
 
 		private static string EnumFileName(string dir, string stem, string exname) {

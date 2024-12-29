@@ -7,10 +7,10 @@
         mc:Ignorable="d"
         Title="PicMergeToPdf" Height="335" Width="401" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter">
     <Grid x:Name="GridMain" AllowDrop="True">
-        <Label x:Name="LabelSingle" Content="就绪" HorizontalAlignment="Center" Margin="0,195,0,0" Height="25" VerticalAlignment="Top" Width="381"/>
+        <Label x:Name="LabelSingle" Content="就绪" HorizontalAlignment="Left" Margin="20,0,0,99" Width="381" Height="25" VerticalAlignment="Bottom"/>
         <ProgressBar x:Name="ProgBarSingle" Margin="10,0,10,72" Height="27" VerticalAlignment="Bottom" Grid.ColumnSpan="2"/>
         <ProgressBar x:Name="PorgBarTotal" Margin="10,0,10,10" Height="27" VerticalAlignment="Bottom" Grid.ColumnSpan="2"/>
-        <Label x:Name="LabelTotal" Content="就绪" Margin="0,257,0,0" Height="25" VerticalAlignment="Top" HorizontalAlignment="Center" Width="381"/>
+        <Label x:Name="LabelTotal" Content="就绪" Margin="20,0,0,37" HorizontalAlignment="Left" Width="381" Height="25" VerticalAlignment="Bottom"/>
         <GroupBox x:Name="GpBoxPageSize" Header="页面尺寸" Margin="10,10,10,0" Height="90" VerticalAlignment="Top" Grid.ColumnSpan="2">
             <Grid x:Name="GridPageSize">
                 <RadioButton x:Name="RadioBtnAutoSize" Content="与每张图片一致" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Unchecked="BtnPageSize_Changed" Checked="BtnPageSize_Changed"/>
