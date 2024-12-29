@@ -102,7 +102,10 @@ namespace WpfGui {
 				return;
 			}
 
-			bool stayNoMove = ChkBoxStayNoMove.IsChecked ?? false;
+			bool recursion = ChkBoxRecursion.IsChecked != false;
+			bool keepStruct = ChkBoxKeepStructure.IsChecked != false;
+			bool stayNoMove = ChkBoxStayNoMove.IsChecked == true;
+
 			string destFolder = "";
 			if (!stayNoMove) {
 				// Configure open folder dialog box
@@ -110,6 +113,10 @@ namespace WpfGui {
 
 				dialog.Multiselect = false;
 				dialog.Title = "选择输出地点";
+				if (Directory.Exists(paths[0]))
+					dialog.FolderName = paths[0];
+				else 
+					dialog.FolderName = Path.GetDirectoryName(paths[0]) ?? "";
 
 				Reselect:
 
@@ -143,7 +150,7 @@ namespace WpfGui {
 				}
 				else if (Directory.Exists(path)) { // 是否是文件夹。
 					directories.Add(Tuple.Create(path, ""));
-					if (ChkBoxRecursion.IsChecked == true)
+					if (recursion)
 						RecursionAllDirectories(path, path, directories);
 				}
 				else {
@@ -196,9 +203,23 @@ namespace WpfGui {
 					List<string> filelist = fileList.ToList();
 					filelist.Sort(StrCmpLogicalW);
 					m_singleCnt = filelist.Count;
-					string dp = stayNoMove ? (Path.GetDirectoryName(dir) ?? dir) : destFolder;
-					EnsureFolderExisting(dp);
+
+					string dp;
+					if (stayNoMove) {
+						dp = Path.GetDirectoryName(dir) ?? dir;
+					}
+					else if (keepStruct) {
+						dp = Path.Combine(destFolder, pair.Item2);
+						if (!string.IsNullOrEmpty(pair.Item2))
+							dp = Path.GetDirectoryName(dp) ?? dp;
+						EnsureFolderExisting(dp);
+					}
+					else {
+						dp = destFolder;
+					}
+
 					outputPath = EnumFileName(dp, Path.GetFileName(dir), ".pdf");
+
 					List<string> failed;
 					try {
 						failed = await PicMergeToPdf.Process.ProcessAsync(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey, pair.Item2);
