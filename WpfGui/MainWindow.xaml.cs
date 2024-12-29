@@ -188,12 +188,16 @@ namespace WpfGui {
 				//directories.Sort(StrCmpLogicalW);
 				foreach (Tuple<string, string> pair in directories) {
 					string dir = Path.Combine(pair.Item1, pair.Item2);
-					List<string> filelist = Directory.EnumerateFiles(dir).ToList();
+					var fileList = Directory.EnumerateFiles(dir);
+					if (!fileList.Any()) { // 跳过空文件夹
+						m_finishCnt++;
+						continue;
+					}
+					List<string> filelist = fileList.ToList();
 					filelist.Sort(StrCmpLogicalW);
 					m_singleCnt = filelist.Count;
 					string dp = stayNoMove ? (Path.GetDirectoryName(dir) ?? dir) : destFolder;
 					EnsureFolderExisting(dp);
-					MessageBox.Show(dir, dp);
 					outputPath = EnumFileName(dp, Path.GetFileName(dir), ".pdf");
 					List<string> failed;
 					try {
