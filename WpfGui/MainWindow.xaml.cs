@@ -15,6 +15,7 @@ namespace WpfGui {
 		int m_totalCnt = 1; // 此次处理将生成多少目标文件。
 		int m_finishCnt = 0;
 		int m_singleCnt = 1;
+		Task? m_lastTask;
 
 		public MainWindow() {
 			InitializeComponent();
@@ -90,7 +91,7 @@ namespace WpfGui {
 		[System.Runtime.InteropServices.DllImport("Shlwapi.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
 		private static extern int StrCmpLogicalW(string psz1, string psz2);
 
-		private async void Window_Drop(object sender, DragEventArgs e) {
+		private void Window_Drop(object sender, DragEventArgs e) {
 			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
 				return;
 			}
@@ -98,37 +99,42 @@ namespace WpfGui {
 				MessageBox.Show(this, "拖入的数据不合规。", $"{this.Title}: Error");
 				return;
 			}
+			if (m_lastTask != null && !m_lastTask.IsCompleted) {
+				MessageBox.Show(this, "请等待当前任务完成。", $"{Title}: Error");
+				return;
+			}
 			if (paths.Length <= 0) {
 				return;
 			}
-
 			bool recursion = ChkBoxRecursion.IsChecked != false;
 			bool keepStruct = ChkBoxKeepStructure.IsChecked != false;
 			bool stayNoMove = ChkBoxStayNoMove.IsChecked == true;
+			m_lastTask = Task.Run(() => { Process(paths, recursion, keepStruct, stayNoMove); });
+			return;
+		}
 
+		private async void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove) {
 			string destFolder = "";
 			if (!stayNoMove) {
-				// Configure open folder dialog box
-				Microsoft.Win32.OpenFolderDialog dialog = new();
+				bool? result = false;
+				App.Current.Dispatcher.Invoke(() => {
+					// Configure open folder dialog box
+					Microsoft.Win32.OpenFolderDialog dialog = new() {
+						Multiselect = false,
+						Title = "选择输出地点",
+						DefaultDirectory = Directory.Exists(paths[0]) ? paths[0] : (Path.GetDirectoryName(paths[0]) ?? "")
+					};
 
-				dialog.Multiselect = false;
-				dialog.Title = "选择输出地点";
-				if (Directory.Exists(paths[0]))
-					dialog.DefaultDirectory = paths[0];
-				else 
-					dialog.DefaultDirectory = Path.GetDirectoryName(paths[0]) ?? "";
+					// Show open folder dialog box
+					result = dialog.ShowDialog(this);
 
-				// Show open folder dialog box
-				bool? result = dialog.ShowDialog(this);
-
-				// Process open folder dialog box results
-				if (result == true) {
 					// Get the selected folder
 					destFolder = dialog.FolderName;
-				}
-				else {
+				});
+
+				// Process open folder dialog box results
+				if (result != true)
 					return;
-				}
 				EnsureFolderExisting(destFolder);
 			}
 			int pagesizex = 0;
@@ -185,7 +191,9 @@ namespace WpfGui {
 								msg += ": ";
 								msg += failed[i + 1];
 							}
-							MessageBox.Show(msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+							App.Current.Dispatcher.Invoke(() => {
+								MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+							});
 						}));
 					m_finishCnt++;
 				}
@@ -233,7 +241,9 @@ namespace WpfGui {
 								msg += ": ";
 								msg += failed[i + 1];
 							}
-							MessageBox.Show(msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+							App.Current.Dispatcher.Invoke(() => {
+								MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+							});
 						}));
 					m_finishCnt++;
 				}
@@ -263,7 +273,9 @@ namespace WpfGui {
 							msg += ": ";
 							msg += failed[i + 1];
 						}
-						MessageBox.Show(msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+						App.Current.Dispatcher.Invoke(() => {
+							MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+						});
 					}));
 				m_finishCnt++;
 			}
@@ -277,11 +289,12 @@ namespace WpfGui {
 					msg += "\r\n";
 					msg += str;
 				}
-				MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+				App.Current.Dispatcher.Invoke(() => {
+					MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+				});
 			}
 
 			Task.WaitAll([.. tasks]);
-			return;
 		}
 
 		private static string EnumFileName(string dir, string stem, string exname) {

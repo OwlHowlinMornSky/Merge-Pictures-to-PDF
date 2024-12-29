@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
         mc:Ignorable="d"
-        Title="PicMergeToPdf" Height="335" Width="401" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter">
+        Title="Pictures to PDF" Height="335" Width="401" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter">
     <Grid x:Name="GridMain" AllowDrop="True">
         <Label x:Name="LabelSingle" Content="就绪" HorizontalAlignment="Left" Margin="20,0,0,99" Width="381" Height="25" VerticalAlignment="Bottom"/>
         <ProgressBar x:Name="ProgBarSingle" Margin="10,0,10,72" Height="27" VerticalAlignment="Bottom" Grid.ColumnSpan="2"/>
