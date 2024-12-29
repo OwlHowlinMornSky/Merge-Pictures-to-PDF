@@ -25,7 +25,7 @@ namespace PicMergeToPdf {
 				DocumentProperties documentProperties = new DocumentProperties();
 				
 				using PdfDocument pdfDocument = new(writer);
-				pdfDocument.GetDocumentInfo().SetTitle(Title);
+				pdfDocument.GetDocumentInfo().SetKeywords(Title);
 
 				int cnt = 0;
 				foreach (string file in files) {
