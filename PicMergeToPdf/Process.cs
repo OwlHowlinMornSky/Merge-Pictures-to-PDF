@@ -8,8 +8,6 @@ using IOP = System.IO.Path;
 namespace PicMergeToPdf {
 	public static class Process {
 
-		public static Action<int> SingleUpdate = x => { };
-
 		public static List<string> Normal(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
 			List<string> failed = [];
 
@@ -32,7 +30,6 @@ namespace PicMergeToPdf {
 				using PdfDocument pdfDocument = new(writer);
 				pdfDocument.GetDocumentInfo().SetKeywords(Title);
 
-				int cnt = 0;
 				foreach (string file in files) {
 					try {
 						ImageData imageData;
@@ -96,8 +93,6 @@ namespace PicMergeToPdf {
 						failed.Add(file);
 						failed.Add(e.Message);
 					}
-					cnt++;
-					SingleUpdate(cnt);
 				}
 			}
 			if (imgCnt == 0) {

@@ -1,5 +1,7 @@
-﻿using iText.Commons.Utils;
-using iText.Layout.Element;
+﻿//using iText.Commons.Utils;
+//using iText.Kernel.Geom;
+//using iText.Layout.Element;
+using iText.Commons.Utils;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -14,14 +16,13 @@ namespace WpfGui {
 		int m_pageSizeType = 2;
 		int m_totalCnt = 1; // 此次处理将生成多少目标文件。
 		int m_finishCnt = 0;
-		int m_singleCnt = 1;
+		object m_finishCntMutex = new object();
 		Task? m_lastTask;
 
 		public MainWindow() {
 			InitializeComponent();
 			ChkBoxUseSizeOfFirstPic.IsChecked = true;
 			RadioBtnFixedWidth.IsChecked = true;
-			PicMergeToPdf.Process.SingleUpdate += UpdateSingleBar;
 		}
 
 		private void TextNum_PreviewKeyDown(object sender, KeyEventArgs e) {
@@ -81,12 +82,14 @@ namespace WpfGui {
 			}
 		}
 
-		private void UpdateSingleBar(int cnt) {
+		private void UpdateSingleBar() {
+			int cnt;
+			lock (m_finishCntMutex) {
+				cnt = m_finishCnt;
+			}
 			App.Current.Dispatcher.Invoke(() => {
-				ProgBarSingle.Value = 100.0 * cnt / m_singleCnt;
-				PorgBarTotal.Value = 100.0 * (1.0 * cnt / m_singleCnt + m_finishCnt) / m_totalCnt;
-				LabelSingle.Content = $"{cnt} / {m_singleCnt}";
-				LabelTotal.Content = $"{m_finishCnt} / {m_totalCnt}";
+				PorgBarTotal.Value = 100.0 * cnt / m_totalCnt;
+				LabelTotal.Content = $"{cnt} / {m_totalCnt}";
 			});
 		}
 
@@ -163,142 +166,153 @@ namespace WpfGui {
 				}
 			}
 
-			List<Task> tasks = [];
 			m_finishCnt = 0;
-			string outputPath;
-			if (directories.Count > 0) { // 拖入的列表中存在目录。
-				m_totalCnt = directories.Count;
-				if (files.Count > 0) {   // 同时也存在文件。
-					m_totalCnt++;
-					m_singleCnt = files.Count;
-					outputPath = EnumFileName(
-						stayNoMove ? (Path.GetDirectoryName(files[0]) ?? "") : destFolder,
-						Path.GetFileNameWithoutExtension(files[0]),
-						".pdf"
-					);
-					files.Sort(StrCmpLogicalW);
-					List<string> failed;
-					try {
-						failed = PicMergeToPdf.Process.Normal(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
-					}
-					catch (Exception ex) {
-						failed = ["处理过程出现异常", ex.Message];
-					}
-					if (failed.Count > 0)
-						tasks.Add(Task.Run(() => {
-							string msg = $"以下文件无法加入 \"零散文件\" ：";
-							for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
+			m_totalCnt = 0;
+
+			List<Task> tasks = [];
+			List<Task> tips = [];
+
+			if (unknown.Count > 0) {
+				tips.Add(
+					Task.Run(
+						() => {
+							string msg = "以下内容无法处理：";
+							foreach (string str in unknown) {
 								msg += "\r\n";
-								msg += failed[i];
-								msg += ": ";
-								msg += failed[i + 1];
+								msg += str;
 							}
 							App.Current.Dispatcher.Invoke(() => {
 								MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
 							});
-						}));
-					m_finishCnt++;
-				}
-				//directories.Sort(StrCmpLogicalW);
-				foreach (Tuple<string, string> pair in directories) {
-					string dir = Path.Combine(pair.Item1, pair.Item2);
-					var fileList = Directory.EnumerateFiles(dir);
-					if (!fileList.Any()) { // 跳过空文件夹
-						m_finishCnt++;
-						continue;
-					}
-					List<string> filelist = fileList.ToList();
-					filelist.Sort(StrCmpLogicalW);
-					m_singleCnt = filelist.Count;
-
-					string dp;
-					if (stayNoMove) {
-						dp = Path.GetDirectoryName(dir) ?? dir;
-					}
-					else if (keepStruct) {
-						dp = Path.Combine(destFolder, pair.Item2);
-						if (!string.IsNullOrEmpty(pair.Item2))
-							dp = Path.GetDirectoryName(dp) ?? dp;
-						EnsureFolderExisting(dp);
-					}
-					else {
-						dp = destFolder;
-					}
-
-					outputPath = EnumFileName(dp, Path.GetFileName(dir), ".pdf");
-
-					List<string> failed;
-					try {
-						failed = PicMergeToPdf.Process.Normal(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey, pair.Item2);
-					}
-					catch (Exception ex) {
-						failed = ["处理过程出现异常", ex.Message];
-					}
-					if (failed.Count > 0)
-						tasks.Add(Task.Run(() => {
-							string msg = $"以下文件无法加入《{pair.Item2}》：";
-							for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
-								msg += "\r\n";
-								msg += failed[i];
-								msg += ": ";
-								msg += failed[i + 1];
-							}
-							App.Current.Dispatcher.Invoke(() => {
-								MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-							});
-						}));
-					m_finishCnt++;
-				}
+						}
+					)
+				);
 			}
-			else if (files.Count > 0) { // 拖入的列表只有文件。
-				m_totalCnt = 1;
-				m_singleCnt = files.Count;
-				files.Sort(StrCmpLogicalW);
-				outputPath = EnumFileName(
+			if (files.Count > 0) { // 拖入的列表中存在文件。
+				m_totalCnt++;
+				string outputPath = EnumFileName(
 					stayNoMove ? (Path.GetDirectoryName(files[0]) ?? "") : destFolder,
 					Path.GetFileNameWithoutExtension(files[0]),
 					".pdf"
 				);
-				List<string> failed;
-				try {
-					failed = PicMergeToPdf.Process.Normal(outputPath, files, m_pageSizeType, pagesizex, pagesizey);
-				}
-				catch (Exception ex) {
-					failed = ["处理过程出现异常", ex.Message];
-				}
-				if (failed.Count > 0)
-					tasks.Add(Task.Run(() => {
-						string msg = $"以下文件无法加入 \"零散文件\" ：";
-						for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
-							msg += "\r\n";
-							msg += failed[i];
-							msg += ": ";
-							msg += failed[i + 1];
+				tasks.Add(
+					Task.Run(
+						() => {
+							ProcessSingleFiles(
+								files,
+								outputPath,
+								pagesizex, pagesizey,
+								Path.GetDirectoryName(files[0]) ?? "",
+								tips
+							);
 						}
-						App.Current.Dispatcher.Invoke(() => {
-							MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-						});
-					}));
-				m_finishCnt++;
+					)
+				);
 			}
-			UpdateSingleBar(m_singleCnt);
+			if (directories.Count > 0) { // 拖入的列表中存在目录。
+				m_totalCnt += directories.Count;
+				foreach (Tuple<string, string> pair in directories) {
+					string sourceDir = Path.Combine(pair.Item1, pair.Item2);
+					string destDir;
+					if (stayNoMove) {
+						destDir = Path.GetDirectoryName(sourceDir) ?? sourceDir;
+					}
+					else if (keepStruct) {
+						destDir = Path.Combine(destFolder, pair.Item2);
+						if (!string.IsNullOrEmpty(pair.Item2))
+							destDir = Path.GetDirectoryName(destDir) ?? destDir;
+						EnsureFolderExisting(destDir);
+					}
+					else {
+						destDir = destFolder;
+					}
+					string outputPath = EnumFileName(destDir, Path.GetFileName(sourceDir), ".pdf");
+
+					tasks.Add(
+						Task.Run(
+							() => {
+								ProcessOneFolder(
+									Path.Combine(pair.Item1, pair.Item2),
+									outputPath,
+									pagesizex, pagesizey,
+									pair.Item2,
+									tips
+								);
+							}
+						)
+					);
+				}
+			}
+			Task.WaitAll([.. tasks]);
+
 			App.Current.Dispatcher.Invoke(() => {
-				LabelSingle.Content = "就绪";
 				LabelTotal.Content = "就绪";
 			});
 
-			if (unknown.Count > 0) {
-				string msg = "以下内容无法处理：";
-				foreach (string str in unknown) {
-					msg += "\r\n";
-					msg += str;
-				}
-				App.Current.Dispatcher.Invoke(() => {
-					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-				});
-			}
+			Task.WaitAll([.. tips]);
+		}
 
-			Task.WaitAll([.. tasks]);
+		private void ProcessOneFolder(string sourceDir, string outputPath, int pagesizex, int pagesizey, string Title, List<Task> tips) {
+			var fileList = Directory.EnumerateFiles(sourceDir);
+			if (!fileList.Any()) { // 跳过空文件夹
+				m_finishCnt++;
+				return;
+			}
+			List<string> filelist = fileList.ToList();
+			filelist.Sort(StrCmpLogicalW);
+
+			List<string> failed;
+			try {
+				failed = PicMergeToPdf.Process.Normal(outputPath, filelist, m_pageSizeType, pagesizex, pagesizey, Title);
+			}
+			catch (Exception ex) {
+				failed = ["处理过程出现异常", ex.Message];
+			}
+			if (failed.Count > 0)
+				tips.Add(Task.Run(() => {
+					string msg = $"以下文件无法加入《{Title}》：";
+					for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
+						msg += "\r\n";
+						msg += failed[i];
+						msg += ": ";
+						msg += failed[i + 1];
+					}
+					App.Current.Dispatcher.Invoke(() => {
+						MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+					});
+				}));
+			lock (m_finishCntMutex) {
+				m_finishCnt++;
+			}
+			UpdateSingleBar();
+		}
+
+		private void ProcessSingleFiles(List<string> files, string outputPath, int pagesizex, int pagesizey, string Title, List<Task> tips) {
+			files.Sort(StrCmpLogicalW);
+			List<string> failed;
+			try {
+				failed = PicMergeToPdf.Process.Normal(outputPath, files, m_pageSizeType, pagesizex, pagesizey, Title);
+			}
+			catch (Exception ex) {
+				failed = ["处理过程出现异常", ex.Message];
+			}
+			if (failed.Count > 0)
+				tips.Add(Task.Run(() => {
+					string msg = $"以下文件无法加入 \"零散文件\" ：";
+					for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
+						msg += "\r\n";
+						msg += failed[i];
+						msg += ": ";
+						msg += failed[i + 1];
+					}
+					App.Current.Dispatcher.Invoke(() => {
+						MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+					});
+				}));
+			lock (m_finishCntMutex) {
+				m_finishCnt++;
+			}
+			UpdateSingleBar();
 		}
 
 		private static string EnumFileName(string dir, string stem, string exname) {
