@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
         mc:Ignorable="d"
-        Title="Pictures to PDF" Height="282" Width="384" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter">
+        Title="Pictures to PDF" Height="282" Width="384" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter" Closing="Window_Closing">
     <Grid x:Name="GridMain" AllowDrop="True">
         <ProgressBar x:Name="PorgBarTotal" Margin="10,0,10,10" Height="27" VerticalAlignment="Bottom" Grid.ColumnSpan="2"/>
         <Label x:Name="LabelTotal" Content="就绪" Margin="20,0,0,37" HorizontalAlignment="Left" Width="381" Height="25" VerticalAlignment="Bottom"/>

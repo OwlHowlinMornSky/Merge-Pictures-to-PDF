@@ -343,5 +343,11 @@ namespace WpfGui {
 			return;
 		}
 
+		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+			if (m_lastTask != null && !m_lastTask.IsCompleted) {
+				MessageBox.Show(this, "请等待任务完成。", $"{Title}");
+				e.Cancel = true;
+			}
+		}
 	}
 }
