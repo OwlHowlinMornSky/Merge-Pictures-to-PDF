@@ -115,7 +115,7 @@ namespace WpfGui {
 			return;
 		}
 
-		private async void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove) {
+		private void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove) {
 			string destFolder = "";
 			if (!stayNoMove) {
 				bool? result = false;
@@ -186,7 +186,7 @@ namespace WpfGui {
 					}
 					if (failed.Count > 0)
 						tasks.Add(Task.Run(() => {
-							string msg = $"以下文件无法加入 \"{outputPath}\"：";
+							string msg = $"以下文件无法加入 \"零散文件\" ：";
 							for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
 								msg += "\r\n";
 								msg += failed[i];
@@ -194,7 +194,7 @@ namespace WpfGui {
 								msg += failed[i + 1];
 							}
 							App.Current.Dispatcher.Invoke(() => {
-								MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+								MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
 							});
 						}));
 					m_finishCnt++;
@@ -236,7 +236,7 @@ namespace WpfGui {
 					}
 					if (failed.Count > 0)
 						tasks.Add(Task.Run(() => {
-							string msg = $"以下文件无法加入 \"{outputPath}\"：";
+							string msg = $"以下文件无法加入《{pair.Item2}》：";
 							for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
 								msg += "\r\n";
 								msg += failed[i];
@@ -244,7 +244,7 @@ namespace WpfGui {
 								msg += failed[i + 1];
 							}
 							App.Current.Dispatcher.Invoke(() => {
-								MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+								MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
 							});
 						}));
 					m_finishCnt++;
@@ -268,7 +268,7 @@ namespace WpfGui {
 				}
 				if (failed.Count > 0)
 					tasks.Add(Task.Run(() => {
-						string msg = $"以下文件无法加入 \"{outputPath}\"：";
+						string msg = $"以下文件无法加入 \"零散文件\" ：";
 						for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
 							msg += "\r\n";
 							msg += failed[i];
@@ -276,7 +276,7 @@ namespace WpfGui {
 							msg += failed[i + 1];
 						}
 						App.Current.Dispatcher.Invoke(() => {
-							MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+							MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
 						});
 					}));
 				m_finishCnt++;
@@ -294,7 +294,7 @@ namespace WpfGui {
 					msg += str;
 				}
 				App.Current.Dispatcher.Invoke(() => {
-					MessageBox.Show(this, msg, "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
 				});
 			}
 
