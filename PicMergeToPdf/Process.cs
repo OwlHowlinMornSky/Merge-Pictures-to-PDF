@@ -10,22 +10,23 @@ namespace PicMergeToPdf {
 
 		public static Action<int> SingleUpdate = x => { };
 
-		public static List<string> ProcessFunc(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
+		public static List<string> Normal(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
 			List<string> failed = [];
-			using MemoryStream stream = new();
-			WriterProperties writerProperties = new();
-			writerProperties.SetFullCompressionMode(true);
-			writerProperties.SetCompressionLevel(CompressionConstants.BEST_COMPRESSION);
+
+			using FileStream stream = new(outputfilepath, FileMode.CreateNew, FileAccess.Write);
+			uint imgCnt = 0;
+			bool warningedFormat = false;
 
 			SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder encoder = new() {
 				SkipMetadata = true,
-				Quality = 80,
+				Quality = 90,
 				ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.Rgb,
 				Interleaved = false
 			};
 
-			int imgCnt = 0;
-			bool warningedFormat = false;
+			WriterProperties writerProperties = new();
+			writerProperties.SetFullCompressionMode(true);
+			writerProperties.SetCompressionLevel(CompressionConstants.BEST_COMPRESSION);
 
 			using (PdfWriter writer = new(stream, writerProperties)) {
 				using PdfDocument pdfDocument = new(writer);
@@ -39,11 +40,10 @@ namespace PicMergeToPdf {
 							imageData = ImageDataFactory.Create(file);
 						}
 						catch (Exception) { // 若不支持则转码
-							using Image image = Image.Load(file);  // 压缩所有图像
-							using MemoryStream tmpImg = new();
-							image.SaveAsJpeg(tmpImg, encoder);
-							imageData = ImageDataFactory.Create(tmpImg.ToArray());
-							tmpImg.Close();
+							using Image image = Image.Load(file);
+							using MemoryStream imgSt = new();
+							image.SaveAsJpeg(imgSt, encoder);
+							imageData = ImageDataFactory.Create(imgSt.ToArray());
 						}
 						PageSize pageSize;
 						PageSize imageSize;
@@ -100,12 +100,9 @@ namespace PicMergeToPdf {
 					SingleUpdate(cnt);
 				}
 			}
-			if (imgCnt > 0) {
-				using FileStream fstream = new(outputfilepath, FileMode.CreateNew, FileAccess.Write);
-				stream.CopyTo(fstream);
-				fstream.Close();
+			if (imgCnt == 0) {
+				File.Delete(outputfilepath);
 			}
-			stream.Close();
 			return failed;
 		}
 	}
