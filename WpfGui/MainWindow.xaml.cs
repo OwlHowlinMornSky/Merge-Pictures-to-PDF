@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 
 namespace WpfGui {
 	/// <summary>
@@ -246,6 +247,7 @@ namespace WpfGui {
 			foreach (var path in paths) {  // 遍历拖入的路径。
 				if (File.Exists(path)) {   // 是否是文件。
 					files.Add(path);
+					cnt++;
 				}
 				else if (Directory.Exists(path)) { // 是否是文件夹。
 					int dirfilecnt = Directory.EnumerateFiles(path).Count();
@@ -254,10 +256,11 @@ namespace WpfGui {
 						cnt += dirfilecnt;
 					}
 					if (recursion)
-						cnt += RecursionAllDirectories(path, path, directories);
+						cnt += RecursionAllDirectories(path, path, ref directories);
 				}
 				else {
 					unknown.Add(path); // 加入无法处理的列表。
+					cnt++;
 				}
 			}
 			return cnt;
@@ -346,7 +349,7 @@ namespace WpfGui {
 			return res;
 		}
 
-		private static int RecursionAllDirectories(string dir, string basedir, List<Tuple<string, string>> list) {
+		private static int RecursionAllDirectories(string dir, string basedir, ref List<Tuple<string, string>> list) {
 			int cnt = 0;
 			foreach (string d in Directory.EnumerateDirectories(dir)) {
 				int dirfilecnt = Directory.EnumerateFiles(d).Count();
@@ -354,7 +357,7 @@ namespace WpfGui {
 					list.Add(Tuple.Create(basedir, Path.GetRelativePath(basedir, d)));
 					cnt += dirfilecnt;
 				}
-				RecursionAllDirectories(d, basedir, list);
+				cnt += RecursionAllDirectories(d, basedir, ref list);
 			}
 			return cnt;
 		}
