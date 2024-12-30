@@ -18,11 +18,22 @@ namespace PicMergeToPdf {
 
 			bool warningedFormat = false;
 
-			SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder encoder = new() {
+			/*SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder encoder = new() {
 				SkipMetadata = true,
 				Quality = 90,
 				ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.Rgb,
 				Interleaved = false
+			};
+			*/
+
+			/*SixLabors.ImageSharp.Formats.Png.PngEncoder encoder = new() {
+				ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.Rgb,
+				SkipMetadata = true,
+				BitDepth = SixLabors.ImageSharp.Formats.Png.PngBitDepth.Bit8
+			};*/
+
+			SixLabors.ImageSharp.Formats.Gif.GifEncoder gifEncoder = new() {
+				SkipMetadata = true
 			};
 
 			int i = 0;
@@ -37,8 +48,13 @@ namespace PicMergeToPdf {
 					catch (Exception) { // 若不支持则转码
 						using Image image = Image.Load(file);
 						using MemoryStream imgSt = new();
-						image.SaveAsJpeg(imgSt, encoder);
+						//image.SaveAsJpeg(imgSt, encoder);
+						//image.SaveAsPng(imgSt, encoder);
+						//image.SaveAsTiff(imgSt);
+						//image.SaveAsBmp(imgSt);
+						image.SaveAsGif(imgSt, gifEncoder);
 						imageData = ImageDataFactory.Create(imgSt.ToArray());
+						imgSt.Close();
 					}
 					break;
 				}
@@ -64,42 +80,50 @@ namespace PicMergeToPdf {
 			writerProperties.SetFullCompressionMode(true);
 			writerProperties.SetCompressionLevel(CompressionConstants.BEST_COMPRESSION);
 
-			using PdfWriter writer = new(stream, writerProperties);
-			using PdfDocument pdfDocument = new(writer);
-			pdfDocument.GetDocumentInfo().SetKeywords(Title);
+			using (PdfWriter writer = new(stream, writerProperties)) {
+				using PdfDocument pdfDocument = new(writer);
+				pdfDocument.GetDocumentInfo().SetKeywords(Title);
 
-			if (imageData != null)
-				AddImage(imageData, pdfDocument, pageSizeType, pagesizex, pagesizey);
-			for (i++; i < files.Count; ++i) {
-				SingleUpdate(id, i, files.Count);
-				string file = files[i];
-				try {
-					try { // 尝试直接加载
-						imageData = ImageDataFactory.Create(file);
-					}
-					catch (Exception) { // 若不支持则转码
-						using Image image = Image.Load(file);
-						using MemoryStream imgSt = new();
-						image.SaveAsJpeg(imgSt, encoder);
-						imageData = ImageDataFactory.Create(imgSt.ToArray());
-					}
+				if (imageData != null)
 					AddImage(imageData, pdfDocument, pageSizeType, pagesizex, pagesizey);
-				}
-				catch (UnknownImageFormatException) {
-					if (!warningedFormat) {
-						failed.Add(IOP.GetDirectoryName(file) ?? file);
-						failed.Add("Invalid format around.");
-						warningedFormat = true;
+				for (i++; i < files.Count; ++i) {
+					SingleUpdate(id, i, files.Count);
+					string file = files[i];
+					try {
+						try { // 尝试直接加载
+							imageData = ImageDataFactory.Create(file);
+						}
+						catch (Exception) { // 若不支持则转码
+							using Image image = Image.Load(file);
+							using MemoryStream imgSt = new();
+							//image.SaveAsJpeg(imgSt, encoder);
+							//image.SaveAsPng(imgSt, encoder);
+							//image.SaveAsTiff(imgSt);
+							//image.SaveAsBmp(imgSt);
+							image.SaveAsGif(imgSt, gifEncoder);
+							imageData = ImageDataFactory.Create(imgSt.ToArray());
+							imgSt.Close();
+						}
+						AddImage(imageData, pdfDocument, pageSizeType, pagesizex, pagesizey);
 					}
-				}
-				catch (Exception e) {
-					//failed.Add(e.GetType().FullName ?? "");
-					failed.Add(file);
-					failed.Add(e.Message);
+					catch (UnknownImageFormatException) {
+						if (!warningedFormat) {
+							failed.Add(IOP.GetDirectoryName(file) ?? file);
+							failed.Add("Invalid format around.");
+							warningedFormat = true;
+						}
+					}
+					catch (Exception e) {
+						//failed.Add(e.GetType().FullName ?? "");
+						failed.Add(file);
+						failed.Add(e.Message);
+					}
 				}
 			}
 
 			SingleUpdate(id, files.Count, files.Count);
+
+			stream.Close();
 
 			return failed;
 		}
@@ -137,8 +161,8 @@ namespace PicMergeToPdf {
 				imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
 				break;
 			}
-			pageSize.SetWidth(pageSize.GetWidth() + 5.0f);
-			pageSize.SetHeight(pageSize.GetHeight() + 5.0f);
+			pageSize.SetWidth(pageSize.GetWidth());
+			pageSize.SetHeight(pageSize.GetHeight());
 			PdfPage page = pdfDocument.AddNewPage(pageSize);
 			PdfCanvas canvas = new(page, true);
 			canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);
