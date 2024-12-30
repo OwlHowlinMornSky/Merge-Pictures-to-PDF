@@ -13,17 +13,24 @@ namespace WpfGui {
 	/// </summary>
 	public partial class MainWindow : Window {
 
-		bool m_useSizeOfFirstPic = true;
-		int m_pageSizeType = 2;
-		int m_totalCnt = 1; // 此次处理将生成多少目标文件。
-		int m_finishCnt = 0;
+		private bool m_useSizeOfFirstPic = true;
+		private int m_pageSizeType = 2;
+
+		private Task? m_lastTask;
+
+		private int m_totalCnt = 1; // 此次处理将生成多少目标文件。
 		private readonly object m_finishCntMutex = new();
-		Task? m_lastTask;
+
+		private readonly List<Tuple<int, int>> m_singleCnt = [];
+		private readonly object m_singleCntMutex = new();
 
 		public MainWindow() {
 			InitializeComponent();
 			ChkBoxUseSizeOfFirstPic.IsChecked = true;
 			RadioBtnFixedWidth.IsChecked = true;
+
+			PicMergeToPdf.Process.BeginSingle = UpdateSingleBegin;
+			PicMergeToPdf.Process.SingleUpdate += UpdateSingle;
 		}
 
 		private void TextNum_PreviewKeyDown(object sender, KeyEventArgs e) {
@@ -83,14 +90,35 @@ namespace WpfGui {
 			}
 		}
 
-		private void UpdateSingleBar() {
-			int cnt;
-			lock (m_finishCntMutex) {
-				cnt = m_finishCnt;
+		private int UpdateSingleBegin() {
+			int resid;
+			lock (m_singleCntMutex) {
+				m_singleCnt.Add(Tuple.Create(0, 1));
+				resid = m_singleCnt.Count - 1;
+			}
+			return resid;
+		}
+		private void UpdateSingle(int id, int cnt, int n) {
+			lock (m_singleCntMutex) {
+				m_singleCnt[id] = Tuple.Create(cnt, n);
+			}
+			UpdateBar();
+		}
+
+		private void UpdateBar() {
+			List<Tuple<int, int>> singles;
+			lock (m_singleCntMutex) {
+				lock (m_finishCntMutex) {
+					singles = new List<Tuple<int, int>>(m_singleCnt);
+				}
+			}
+			double sr = 0.0;
+			foreach (var p in singles) {
+				sr += 1.0 * p.Item1 / p.Item2;
 			}
 			App.Current.Dispatcher.Invoke(() => {
-				PorgBarTotal.Value = 100.0 * cnt / m_totalCnt;
-				LabelTotal.Content = $"{cnt} / {m_totalCnt}";
+				PorgBarTotal.Value = 100.0 * sr / m_totalCnt;
+				LabelTotal.Content = $"{PorgBarTotal.Value:F1}%";
 			});
 		}
 
@@ -168,31 +196,18 @@ namespace WpfGui {
 				}
 			}
 
-			m_finishCnt = 0;
 			m_totalCnt = 0;
+			lock (m_singleCntMutex) {
+				m_singleCnt.Clear();
+			}
 
 			List<Task> tasks = [];
-			List<Task> tips = [];
 
-			if (unknown.Count > 0) {
-				tips.Add(
-					Task.Run(
-						() => {
-							string msg = "以下内容无法处理：";
-							foreach (string str in unknown) {
-								msg += "\r\n";
-								msg += str;
-							}
-							App.Current.Dispatcher.Invoke(() => {
-								MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-							});
-						}
-					)
-				);
-			}
 			m_totalCnt = directories.Count;
-			if (files.Count > 0) { // 拖入的列表中存在文件。
+			if (files.Count > 0)
 				m_totalCnt++;
+			UpdateBar();
+			if (files.Count > 0) { // 拖入的列表中存在文件。
 				string outputPath = EnumFileName(
 					stayNoMove ? (Path.GetDirectoryName(files[0]) ?? "") : destFolder,
 					Path.GetFileNameWithoutExtension(files[0]),
@@ -205,8 +220,7 @@ namespace WpfGui {
 								files,
 								outputPath,
 								pageSizeType, pagesizex, pagesizey,
-								Path.GetDirectoryName(files[0]) ?? "",
-								tips
+								Path.GetDirectoryName(files[0]) ?? ""
 							);
 						}
 					)
@@ -237,27 +251,39 @@ namespace WpfGui {
 									Path.Combine(pair.Item1, pair.Item2),
 									outputPath,
 									pageSizeType, pagesizex, pagesizey,
-									string.IsNullOrEmpty(pair.Item2) ? Path.GetFileName(pair.Item1) : pair.Item2,
-									tips
+									string.IsNullOrEmpty(pair.Item2) ? Path.GetFileName(pair.Item1) : pair.Item2
 								);
 							}
 						)
 					);
 				}
 			}
+			if (unknown.Count > 0) {
+				string msg = "以下内容无法处理：";
+				foreach (string str in unknown) {
+					msg += "\r\n";
+					msg += str;
+				}
+				App.Current.Dispatcher.Invoke(() => {
+					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+				});
+			}
 			Task.WaitAll([.. tasks]);
+
+			lock (m_singleCntMutex) {
+				m_singleCnt.Clear();
+			}
 
 			App.Current.Dispatcher.Invoke(() => {
 				LabelTotal.Content = "就绪";
 			});
-
-			Task.WaitAll([.. tips]);
 		}
 
-		private void ProcessOneFolder(string sourceDir, string outputPath, int pageSizeType, int pagesizex, int pagesizey, string Title, List<Task> tips) {
+		private void ProcessOneFolder(string sourceDir, string outputPath, int pageSizeType, int pagesizex, int pagesizey, string Title) {
 			var fileList = Directory.EnumerateFiles(sourceDir);
 			if (!fileList.Any()) { // 跳过空文件夹
-				m_finishCnt++;
+				int id = UpdateSingleBegin();
+				UpdateSingle(id, 1, 1);
 				return;
 			}
 			List<string> filelist = fileList.ToList();
@@ -270,26 +296,21 @@ namespace WpfGui {
 			catch (Exception ex) {
 				failed = ["处理过程出现异常", ex.Message];
 			}
-			if (failed.Count > 0)
-				tips.Add(Task.Run(() => {
-					string msg = $"以下文件无法加入《{Title}》：";
-					for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
-						msg += "\r\n";
-						msg += failed[i];
-						msg += ": ";
-						msg += failed[i + 1];
-					}
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-					});
-				}));
-			lock (m_finishCntMutex) {
-				m_finishCnt++;
+			if (failed.Count > 0) {
+				string msg = $"以下文件无法加入《{Title}》：";
+				for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
+					msg += "\r\n";
+					msg += failed[i];
+					msg += ": ";
+					msg += failed[i + 1];
+				}
+				App.Current.Dispatcher.Invoke(() => {
+					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+				});
 			}
-			UpdateSingleBar();
 		}
 
-		private void ProcessSingleFiles(List<string> files, string outputPath, int pageSizeType, int pagesizex, int pagesizey, string Title, List<Task> tips) {
+		private void ProcessSingleFiles(List<string> files, string outputPath, int pageSizeType, int pagesizex, int pagesizey, string Title) {
 			files.Sort(StrCmpLogicalW);
 			List<string> failed;
 			try {
@@ -298,23 +319,18 @@ namespace WpfGui {
 			catch (Exception ex) {
 				failed = ["处理过程出现异常", ex.Message];
 			}
-			if (failed.Count > 0)
-				tips.Add(Task.Run(() => {
-					string msg = $"以下文件无法加入 \"零散文件\" ：";
-					for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
-						msg += "\r\n";
-						msg += failed[i];
-						msg += ": ";
-						msg += failed[i + 1];
-					}
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-					});
-				}));
-			lock (m_finishCntMutex) {
-				m_finishCnt++;
+			if (failed.Count > 0) {
+				string msg = $"以下文件无法加入 \"零散文件\" ：";
+				for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
+					msg += "\r\n";
+					msg += failed[i];
+					msg += ": ";
+					msg += failed[i + 1];
+				}
+				App.Current.Dispatcher.Invoke(() => {
+					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+				});
 			}
-			UpdateSingleBar();
 		}
 
 		private static string EnumFileName(string dir, string stem, string exname) {
