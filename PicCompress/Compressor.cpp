@@ -40,6 +40,8 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ file, System::In
 
 	CSI_Result res = csi_convert_into(cstr, view, maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
 
+	UnmapViewOfFile(view);
+
 	delete[] cstr;
 	if (!res.success) {
 		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
