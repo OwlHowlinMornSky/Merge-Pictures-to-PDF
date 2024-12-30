@@ -25,8 +25,8 @@ namespace WpfGui {
 			ChkBoxUseSizeOfFirstPic.IsChecked = true;
 			RadioBtnFixedWidth.IsChecked = true;
 
-			PicMergeToPdf.Process.BeginSingle = UpdateSingleBegin;
-			PicMergeToPdf.Process.SingleUpdate += UpdateSingle;
+			PicMerge.Main.BeginSingle = UpdateSingleBegin;
+			PicMerge.Main.SingleUpdate += UpdateSingle;
 		}
 
 		private void TextNum_PreviewKeyDown(object sender, KeyEventArgs e) {
@@ -287,7 +287,7 @@ namespace WpfGui {
 
 			List<string> failed;
 			try {
-				failed = PicMergeToPdf.Process.Normal(outputPath, filelist, pageSizeType, pagesizex, pagesizey, Title);
+				failed = PicMerge.Main.Process(outputPath, filelist, pageSizeType, pagesizex, pagesizey, Title);
 			}
 			catch (Exception ex) {
 				failed = ["处理过程出现异常", ex.Message];
@@ -310,7 +310,7 @@ namespace WpfGui {
 			files.Sort(StrCmpLogicalW);
 			List<string> failed;
 			try {
-				failed = PicMergeToPdf.Process.Normal(outputPath, files, pageSizeType, pagesizex, pagesizey, Title);
+				failed = PicMerge.Main.Process(outputPath, files, pageSizeType, pagesizex, pagesizey, Title);
 			}
 			catch (Exception ex) {
 				failed = ["处理过程出现异常", ex.Message];

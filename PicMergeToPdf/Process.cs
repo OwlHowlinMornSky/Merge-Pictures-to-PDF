@@ -5,13 +5,13 @@ using iText.Kernel.Pdf;
 using SixLabors.ImageSharp;
 using IOP = System.IO.Path;
 
-namespace PicMergeToPdf {
-	public static class Process {
+namespace PicMerge {
+	public static class Main {
 
 		public static Func<int> BeginSingle = () => 0;
 		public static Action<int, int, int> SingleUpdate = (id, cnt, n) => { };
 
-		public static List<string> Normal(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
+		public static List<string> Process(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
 			int id = BeginSingle();
 
 			List<string> failed = [];
