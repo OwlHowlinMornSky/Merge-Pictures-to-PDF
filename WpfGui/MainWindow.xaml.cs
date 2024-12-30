@@ -1,8 +1,4 @@
-﻿//using iText.Commons.Utils;
-//using iText.Kernel.Geom;
-//using iText.Layout.Element;
-using iText.Commons.Utils;
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
