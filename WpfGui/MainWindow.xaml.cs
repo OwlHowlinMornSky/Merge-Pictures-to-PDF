@@ -251,12 +251,23 @@ namespace WpfGui {
 				}
 				else if (Directory.Exists(path)) { // 是否是文件夹。
 					int dirfilecnt = Directory.EnumerateFiles(path).Count();
-					if (dirfilecnt > 0) {
-						directories.Add(Tuple.Create(path, ""));
-						cnt += dirfilecnt;
+					var dirParent = Path.GetDirectoryName(path);
+					if (dirParent == null) {
+						if (dirfilecnt > 0) {
+							directories.Add(Tuple.Create(path, ""));
+							cnt += dirfilecnt;
+						}
+						if (recursion)
+							cnt += RecursionAllDirectories(path, path, ref directories);
 					}
-					if (recursion)
-						cnt += RecursionAllDirectories(path, path, ref directories);
+					else {
+						if (dirfilecnt > 0) {
+							directories.Add(Tuple.Create(dirParent, Path.GetRelativePath(dirParent, path)));
+							cnt += dirfilecnt;
+						}
+						if (recursion)
+							cnt += RecursionAllDirectories(path, dirParent, ref directories);
+					}
 				}
 				else {
 					unknown.Add(path); // 加入无法处理的列表。
