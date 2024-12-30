@@ -10,7 +10,7 @@ public:
 	~Compressor();
 
 public:
-	System::Void Compress(System::String^ file, System::IntPtr handle, System::Int64 maxlen);
+	System::Int32 Compress(System::String^ file, System::IntPtr handle, System::Int64 maxlen);
 };
 
 }

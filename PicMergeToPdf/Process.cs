@@ -5,6 +5,7 @@ using iText.Kernel.Pdf;
 using SixLabors.ImageSharp;
 using IOP = System.IO.Path;
 using System.IO.MemoryMappedFiles;
+using SixLabors.ImageSharp.Formats.Gif;
 
 namespace PicMerge {
 	public static class Main {
@@ -15,76 +16,26 @@ namespace PicMerge {
 		private static readonly PicCompress.Compressor compressor = new();
 		private const long MapFileSize = 0x04000000;
 
-		public static List<string> Process(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
+		public static List<string> Process(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, bool compress, string Title = "") {
 			int id = BeginSingle();
 
 			List<string> failed = [];
 
-			bool warningedFormat = false;
-
-			/*SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder encoder = new() {
-				SkipMetadata = true,
-				Quality = 90,
-				ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.Rgb,
-				Interleaved = false
-			};
-			*/
-
-			/*SixLabors.ImageSharp.Formats.Png.PngEncoder encoder = new() {
-				ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.Rgb,
-				SkipMetadata = true,
-				BitDepth = SixLabors.ImageSharp.Formats.Png.PngBitDepth.Bit8
-			};*/
-
-
-			SixLabors.ImageSharp.Formats.Gif.GifEncoder gifEncoder = new() {
-				SkipMetadata = true
-			};
+			Func<string, ImageData?> load = compress ? LoadImage_Compress : LoadImage_Direct;
 
 			int i = 0;
 			ImageData? imageData = null;
 			for (; i < files.Count; ++i) {
 				SingleUpdate(id, i, files.Count);
 				string file = files[i];
-				try {
-					try { // 尝试直接加载
-						imageData = ImageDataFactory.Create(file);
-					}
-					catch (Exception) { // 若不支持则转码
-						using Image image = Image.Load(file);
-						using MemoryStream imgSt = new();
-						//image.SaveAsJpeg(imgSt, encoder);
-						//image.SaveAsPng(imgSt, encoder);
-						//image.SaveAsTiff(imgSt);
-						//image.SaveAsBmp(imgSt);
-						image.SaveAsGif(imgSt, gifEncoder);
-						imageData = ImageDataFactory.Create(imgSt.ToArray());
-						imgSt.Close();
-					}
-					using var mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
-					nint handle = mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle();
-					compressor.Compress(file, handle, MapFileSize);
-					using var mapstream = mapfile.CreateViewStream();
-					using Image ii = Image.Load(mapstream);
-					ii.Save("C:\\Users\\Tyler Parret True\\Documents\\@Works\\@Code\\Git.Private\\PicMergeToPdf\\publish\\test.png");
-					mapstream.Close();
+				imageData = load(file);
+				if (imageData != null) {
 					break;
 				}
-				catch (UnknownImageFormatException) {
-					if (!warningedFormat) {
-						failed.Add(IOP.GetDirectoryName(file) ?? file);
-						failed.Add("Invalid format around.");
-						warningedFormat = true;
-					}
-				}
-				catch (Exception e) {
-					//failed.Add(e.GetType().FullName ?? "");
-					failed.Add(file);
-					failed.Add(e.Message);
-				}
+				failed.Add(file);
 			}
-			if (i >= files.Count) {
-				return [];
+			if (imageData == null) {
+				return failed;
 			}
 
 			using FileStream stream = new(outputfilepath, FileMode.CreateNew, FileAccess.Write);
@@ -96,40 +47,16 @@ namespace PicMerge {
 				using PdfDocument pdfDocument = new(writer);
 				pdfDocument.GetDocumentInfo().SetKeywords(Title);
 
-				if (imageData != null)
-					AddImage(imageData, pdfDocument, pageSizeType, pagesizex, pagesizey);
-				for (i++; i < files.Count; ++i) {
+				AddImage(imageData, pdfDocument, pageSizeType, ref pagesizex, ref pagesizey);
+				for (++i; i < files.Count; ++i) {
 					SingleUpdate(id, i, files.Count);
 					string file = files[i];
-					try {
-						try { // 尝试直接加载
-							imageData = ImageDataFactory.Create(file);
-						}
-						catch (Exception) { // 若不支持则转码
-							using Image image = Image.Load(file);
-							using MemoryStream imgSt = new();
-							//image.SaveAsJpeg(imgSt, encoder);
-							//image.SaveAsPng(imgSt, encoder);
-							//image.SaveAsTiff(imgSt);
-							//image.SaveAsBmp(imgSt);
-							image.SaveAsGif(imgSt, gifEncoder);
-							imageData = ImageDataFactory.Create(imgSt.ToArray());
-							imgSt.Close();
-						}
-						AddImage(imageData, pdfDocument, pageSizeType, pagesizex, pagesizey);
-					}
-					catch (UnknownImageFormatException) {
-						if (!warningedFormat) {
-							failed.Add(IOP.GetDirectoryName(file) ?? file);
-							failed.Add("Invalid format around.");
-							warningedFormat = true;
-						}
-					}
-					catch (Exception e) {
-						//failed.Add(e.GetType().FullName ?? "");
+					imageData = load(file);
+					if (imageData == null) {
 						failed.Add(file);
-						failed.Add(e.Message);
+						continue;
 					}
+					AddImage(imageData, pdfDocument, pageSizeType, ref pagesizex, ref pagesizey);
 				}
 			}
 
@@ -140,7 +67,89 @@ namespace PicMerge {
 			return failed;
 		}
 
-		private static void AddImage(ImageData imageData, PdfDocument pdfDocument, int pageSizeType, float pagesizex, float pagesizey) {
+		private static ImageData? LoadImage_Compress(string file) {
+			ImageData? imageData = null;
+
+			// 尝试利用 Caesium-Iodine 压缩
+			try {
+				using var mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
+				int len = compressor.Compress(file, mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
+				using var mapstream = mapfile.CreateViewStream();
+				using BinaryReader br = new(mapstream);
+				imageData = ImageDataFactory.Create(br.ReadBytes(len));
+				br.Close();
+				mapstream.Close();
+			}
+			catch (Exception) { }
+			if (imageData != null)
+				return imageData;
+
+			// 若不支持则 尝试 直接加载
+			try {
+				imageData = ImageDataFactory.Create(file);
+			}
+			catch (Exception) { }
+			if (imageData != null)
+				return imageData;
+
+			// 若不支持则 尝试利用 ImageSharp 压缩
+			try {
+				GifEncoder gifEncoder = new() {
+					SkipMetadata = true
+				};
+				using Image image = Image.Load(file);
+				using MemoryStream imgSt = new();
+				image.SaveAsGif(imgSt, gifEncoder);
+				imageData = ImageDataFactory.Create(imgSt.ToArray());
+				imgSt.Close();
+			}
+			catch (Exception) { }
+
+			return imageData;
+		}
+
+		private static ImageData? LoadImage_Direct(string file) {
+			ImageData? imageData = null;
+
+			// 尝试 直接加载
+			try {
+				imageData = ImageDataFactory.Create(file);
+			}
+			catch (Exception) { }
+			if (imageData != null)
+				return imageData;
+
+			// 若不支持则 尝试利用 Caesium-Iodine 压缩
+			try {
+				using var mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
+				int len = compressor.Compress(file, mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
+				using var mapstream = mapfile.CreateViewStream();
+				using BinaryReader br = new(mapstream);
+				imageData = ImageDataFactory.Create(br.ReadBytes(len));
+				br.Close();
+				mapstream.Close();
+			}
+			catch (Exception) { }
+			if (imageData != null)
+				return imageData;
+
+			// 若不支持则 尝试利用 ImageSharp 压缩
+			try {
+				GifEncoder gifEncoder = new() {
+					SkipMetadata = true
+				};
+				using Image image = Image.Load(file);
+				using MemoryStream imgSt = new();
+				image.SaveAsGif(imgSt, gifEncoder);
+				imageData = ImageDataFactory.Create(imgSt.ToArray());
+				imgSt.Close();
+			}
+			catch (Exception) { }
+
+			return imageData;
+		}
+
+		private static void AddImage(ImageData imageData, PdfDocument pdfDocument, int pageSizeType, ref float pagesizex, ref float pagesizey) {
 			PageSize pageSize;
 			PageSize imageSize;
 			float width = imageData.GetWidth();

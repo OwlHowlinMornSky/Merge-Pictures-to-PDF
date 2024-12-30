@@ -10,9 +10,9 @@ PicCompress::Compressor::Compressor() {}
 
 PicCompress::Compressor::~Compressor() {}
 
-System::Void PicCompress::Compressor::Compress(System::String^ file, System::IntPtr handle, System::Int64 maxlen) {
+System::Int32 PicCompress::Compressor::Compress(System::String^ file, System::IntPtr handle, System::Int64 maxlen) {
 	if (maxlen < 1) {
-		throw gcnew InvalidOperationException("Invalid maxlen.");
+		throw gcnew ArgumentException("Invalid maxlen.");
 	}
 
 	cli::array<wchar_t>^ wArray = file->ToCharArray();
@@ -44,5 +44,8 @@ System::Void PicCompress::Compressor::Compress(System::String^ file, System::Int
 	if (!res.success) {
 		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
 	}
-	return;
+	if (res.code < 1 || res.code > 2147483600ull) {
+		throw gcnew InsufficientMemoryException();
+	}
+	return (System::Int32)res.code;
 }

@@ -22,7 +22,7 @@ namespace WpfGui {
 
 		public MainWindow() {
 			InitializeComponent();
-			ChkBoxUseSizeOfFirstPic.IsChecked = true;
+			//ChkBoxUseSizeOfFirstPic.IsChecked = true;
 			RadioBtnFixedWidth.IsChecked = true;
 
 			PicMerge.Main.BeginSingle = UpdateSingleBegin;
@@ -139,6 +139,7 @@ namespace WpfGui {
 			}
 			bool recursion = ChkBoxRecursion.IsChecked != false;
 			bool keepStruct = ChkBoxKeepStructure.IsChecked != false;
+			bool compress = ChkBoxCompressAll.IsChecked != false;
 			bool stayNoMove = ChkBoxStayNoMove.IsChecked == true;
 			int pagesizex = 0;
 			int pagesizey = 0;
@@ -146,11 +147,11 @@ namespace WpfGui {
 				pagesizex = int.Parse(TextWidth.Text);
 				pagesizey = int.Parse(TextHeight.Text);
 			}
-			m_lastTask = Task.Run(() => { Process(paths, recursion, keepStruct, stayNoMove, m_pageSizeType, pagesizex, pagesizey); });
+			m_lastTask = Task.Run(() => { Process(paths, recursion, keepStruct, stayNoMove, compress, m_pageSizeType, pagesizex, pagesizey); });
 			return;
 		}
 
-		private void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove, int pageSizeType, int pagesizex, int pagesizey) {
+		private void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove, bool compress, int pageSizeType, int pagesizex, int pagesizey) {
 			string destFolder = "";
 			if (!stayNoMove) {
 				bool? result = false;
@@ -214,7 +215,7 @@ namespace WpfGui {
 						() => {
 							ProcessSingleFiles(
 								files,
-								outputPath,
+								outputPath, compress,
 								pageSizeType, pagesizex, pagesizey,
 								Path.GetDirectoryName(files[0]) ?? ""
 							);
@@ -245,7 +246,7 @@ namespace WpfGui {
 							() => {
 								ProcessOneFolder(
 									Path.Combine(pair.Item1, pair.Item2),
-									outputPath,
+									outputPath, compress,
 									pageSizeType, pagesizex, pagesizey,
 									string.IsNullOrEmpty(pair.Item2) ? Path.GetFileName(pair.Item1) : pair.Item2
 								);
@@ -275,7 +276,7 @@ namespace WpfGui {
 			});
 		}
 
-		private void ProcessOneFolder(string sourceDir, string outputPath, int pageSizeType, int pagesizex, int pagesizey, string Title) {
+		private void ProcessOneFolder(string sourceDir, string outputPath, bool compress, int pageSizeType, int pagesizex, int pagesizey, string Title) {
 			var fileList = Directory.EnumerateFiles(sourceDir);
 			if (!fileList.Any()) { // 跳过空文件夹
 				int id = UpdateSingleBegin();
@@ -287,18 +288,16 @@ namespace WpfGui {
 
 			List<string> failed;
 			try {
-				failed = PicMerge.Main.Process(outputPath, filelist, pageSizeType, pagesizex, pagesizey, Title);
+				failed = PicMerge.Main.Process(outputPath, filelist, pageSizeType, pagesizex, pagesizey, compress, Title);
 			}
 			catch (Exception ex) {
 				failed = ["处理过程出现异常", ex.Message];
 			}
 			if (failed.Count > 0) {
-				string msg = $"以下文件无法加入《{Title}》：";
-				for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
-					msg += "\r\n";
-					msg += failed[i];
-					msg += ": ";
-					msg += failed[i + 1];
+				string msg = $"以下文件无法加入《{Title}》：\r\n";
+				foreach (var str in failed) {
+					msg += str;
+					msg += ".\r\n";
 				}
 				App.Current.Dispatcher.Invoke(() => {
 					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -306,22 +305,20 @@ namespace WpfGui {
 			}
 		}
 
-		private void ProcessSingleFiles(List<string> files, string outputPath, int pageSizeType, int pagesizex, int pagesizey, string Title) {
+		private void ProcessSingleFiles(List<string> files, string outputPath, bool compress, int pageSizeType, int pagesizex, int pagesizey, string Title) {
 			files.Sort(StrCmpLogicalW);
 			List<string> failed;
 			try {
-				failed = PicMerge.Main.Process(outputPath, files, pageSizeType, pagesizex, pagesizey, Title);
+				failed = PicMerge.Main.Process(outputPath, files, pageSizeType, pagesizex, pagesizey, compress, Title);
 			}
 			catch (Exception ex) {
 				failed = ["处理过程出现异常", ex.Message];
 			}
 			if (failed.Count > 0) {
-				string msg = $"以下文件无法加入 \"零散文件\" ：";
-				for (int i = 0, n = failed.Count; i + 1 < n; i += 2) {
-					msg += "\r\n";
-					msg += failed[i];
-					msg += ": ";
-					msg += failed[i + 1];
+				string msg = $"以下文件无法加入 \"零散文件\" ：\r\n";
+				foreach (var str in failed) {
+					msg += str;
+					msg += ".\r\n";
 				}
 				App.Current.Dispatcher.Invoke(() => {
 					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
