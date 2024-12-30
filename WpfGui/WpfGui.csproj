@@ -15,4 +15,8 @@
     <ProjectReference Include="..\PicMergeToPdf\PicMerge.csproj" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="COPY /Y $(OHMS_LIB_DIR)\libiodine\libiodine.dll $(OUTDIR)" />
+  </Target>
+
 </Project>

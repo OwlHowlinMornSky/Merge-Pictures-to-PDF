@@ -4,12 +4,16 @@ using iText.Kernel.Pdf.Canvas;
 using iText.Kernel.Pdf;
 using SixLabors.ImageSharp;
 using IOP = System.IO.Path;
+using System.IO.MemoryMappedFiles;
 
 namespace PicMerge {
 	public static class Main {
 
 		public static Func<int> BeginSingle = () => 0;
 		public static Action<int, int, int> SingleUpdate = (id, cnt, n) => { };
+
+		private static readonly PicCompress.Compressor compressor = new();
+		private const long MapFileSize = 0x04000000;
 
 		public static List<string> Process(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, string Title = "") {
 			int id = BeginSingle();
@@ -31,6 +35,7 @@ namespace PicMerge {
 				SkipMetadata = true,
 				BitDepth = SixLabors.ImageSharp.Formats.Png.PngBitDepth.Bit8
 			};*/
+
 
 			SixLabors.ImageSharp.Formats.Gif.GifEncoder gifEncoder = new() {
 				SkipMetadata = true
@@ -56,6 +61,13 @@ namespace PicMerge {
 						imageData = ImageDataFactory.Create(imgSt.ToArray());
 						imgSt.Close();
 					}
+					using var mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
+					nint handle = mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle();
+					compressor.Compress(file, handle, MapFileSize);
+					using var mapstream = mapfile.CreateViewStream();
+					using Image ii = Image.Load(mapstream);
+					ii.Save("C:\\Users\\Tyler Parret True\\Documents\\@Works\\@Code\\Git.Private\\PicMergeToPdf\\publish\\test.png");
+					mapstream.Close();
 					break;
 				}
 				catch (UnknownImageFormatException) {
