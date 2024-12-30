@@ -3,6 +3,7 @@
 //using iText.Layout.Element;
 using iText.Commons.Utils;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 
@@ -16,7 +17,7 @@ namespace WpfGui {
 		int m_pageSizeType = 2;
 		int m_totalCnt = 1; // 此次处理将生成多少目标文件。
 		int m_finishCnt = 0;
-		object m_finishCntMutex = new object();
+		private readonly object m_finishCntMutex = new();
 		Task? m_lastTask;
 
 		public MainWindow() {
@@ -93,8 +94,9 @@ namespace WpfGui {
 			});
 		}
 
-		[System.Runtime.InteropServices.DllImport("Shlwapi.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-		private static extern int StrCmpLogicalW(string psz1, string psz2);
+		[LibraryImport("Shlwapi.dll", EntryPoint = "StrCmpLogicalW", StringMarshalling = StringMarshalling.Utf16)]
+		[return: MarshalAs(UnmanagedType.I4)]
+		private static partial int StrCmpLogicalW(string psz1, string psz2);
 
 		private void Window_Drop(object sender, DragEventArgs e) {
 			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
@@ -211,7 +213,6 @@ namespace WpfGui {
 				);
 			}
 			if (directories.Count > 0) { // 拖入的列表中存在目录。
-				m_totalCnt += directories.Count;
 				foreach (Tuple<string, string> pair in directories) {
 					string sourceDir = Path.Combine(pair.Item1, pair.Item2);
 					string destDir;
