@@ -10,15 +10,12 @@ using SixLabors.ImageSharp.Formats.Gif;
 namespace PicMerge {
 	public static class Main {
 
-		public static Func<int> BeginSingle = () => 0;
-		public static Action<int, int, int> SingleUpdate = (id, cnt, n) => { };
+		public static Action SingleUpdate = () => { };
 
 		private static readonly PicCompress.Compressor compressor = new();
 		private const long MapFileSize = 0x04000000;
 
 		public static List<string> Process(string outputfilepath, List<string> files, int pageSizeType, float pagesizex, float pagesizey, bool compress, string Title = "") {
-			int id = BeginSingle();
-
 			List<string> failed = [];
 
 			Func<string, ImageData?> load = compress ? LoadImage_Compress : LoadImage_Direct;
@@ -26,16 +23,16 @@ namespace PicMerge {
 			int i = 0;
 			ImageData? imageData = null;
 			for (; i < files.Count; ++i) {
-				SingleUpdate(id, i, files.Count);
 				string file = files[i];
 				imageData = load(file);
 				if (imageData != null) {
 					break;
 				}
 				failed.Add(file);
+				SingleUpdate();
 			}
 			if (imageData == null) {
-				return failed;
+				return [];
 			}
 
 			using FileStream stream = new(outputfilepath, FileMode.CreateNew, FileAccess.Write);
@@ -48,22 +45,21 @@ namespace PicMerge {
 				pdfDocument.GetDocumentInfo().SetKeywords(Title);
 
 				AddImage(imageData, pdfDocument, pageSizeType, ref pagesizex, ref pagesizey);
+				SingleUpdate();
 				for (++i; i < files.Count; ++i) {
-					SingleUpdate(id, i, files.Count);
 					string file = files[i];
 					imageData = load(file);
 					if (imageData == null) {
 						failed.Add(file);
+						SingleUpdate();
 						continue;
 					}
 					AddImage(imageData, pdfDocument, pageSizeType, ref pagesizex, ref pagesizey);
+					SingleUpdate();
 				}
 			}
 
-			SingleUpdate(id, files.Count, files.Count);
-
 			stream.Close();
-
 			return failed;
 		}
 

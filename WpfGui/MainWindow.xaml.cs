@@ -16,16 +16,12 @@ namespace WpfGui {
 
 		private int m_totalCnt = 1; // 此次处理将生成多少目标文件。
 		private readonly object m_finishCntMutex = new();
-
-		private readonly List<Tuple<int, int>> m_singleCnt = [];
-		private readonly object m_singleCntMutex = new();
+		private int m_finishCnt = 0;
 
 		public MainWindow() {
 			InitializeComponent();
-			//ChkBoxUseSizeOfFirstPic.IsChecked = true;
 			RadioBtnFixedWidth.IsChecked = true;
 
-			PicMerge.Main.BeginSingle = UpdateSingleBegin;
 			PicMerge.Main.SingleUpdate += UpdateSingle;
 		}
 
@@ -86,35 +82,22 @@ namespace WpfGui {
 			}
 		}
 
-		private int UpdateSingleBegin() {
-			int resid;
-			lock (m_singleCntMutex) {
-				m_singleCnt.Add(Tuple.Create(0, 1));
-				resid = m_singleCnt.Count - 1;
-			}
-			return resid;
-		}
-		private void UpdateSingle(int id, int cnt, int n) {
-			lock (m_singleCntMutex) {
-				m_singleCnt[id] = Tuple.Create(cnt, n);
+		private void UpdateSingle() {
+			lock (m_finishCntMutex) {
+				m_finishCnt++;
 			}
 			UpdateBar();
 		}
 
 		private void UpdateBar() {
-			List<Tuple<int, int>> singles;
-			lock (m_singleCntMutex) {
-				lock (m_finishCntMutex) {
-					singles = new List<Tuple<int, int>>(m_singleCnt);
-				}
+			int fin = 0;
+			lock (m_finishCntMutex) {
+				fin = m_finishCnt;
 			}
-			double sr = 0.0;
-			foreach (var p in singles) {
-				sr += 1.0 * p.Item1 / p.Item2;
-			}
+			double ratio = 100.0 * fin / m_totalCnt;
 			App.Current.Dispatcher.Invoke(() => {
-				PorgBarTotal.Value = 100.0 * sr / m_totalCnt;
-				LabelTotal.Content = $"{PorgBarTotal.Value:F1}%";
+				LabelTotal.Content = $"{ratio:F1}%";
+				PorgBarTotal.Value = ratio;
 			});
 		}
 
@@ -147,63 +130,49 @@ namespace WpfGui {
 				pagesizex = int.Parse(TextWidth.Text);
 				pagesizey = int.Parse(TextHeight.Text);
 			}
+			m_totalCnt = 1;
+			m_finishCnt = 0;
+			UpdateBar();
 			m_lastTask = Task.Run(() => { Process(paths, recursion, keepStruct, stayNoMove, compress, m_pageSizeType, pagesizex, pagesizey); });
 			return;
 		}
 
 		private void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove, bool compress, int pageSizeType, int pagesizex, int pagesizey) {
-			string destFolder = "";
-			if (!stayNoMove) {
-				bool? result = false;
-				App.Current.Dispatcher.Invoke(() => {
-					// Configure open folder dialog box
-					Microsoft.Win32.OpenFolderDialog dialog = new() {
-						Multiselect = false,
-						Title = "选择输出地点",
-						DefaultDirectory = Directory.Exists(paths[0]) ? paths[0] : (Path.GetDirectoryName(paths[0]) ?? "")
-					};
-
-					// Show open folder dialog box
-					result = dialog.ShowDialog(this);
-
-					// Get the selected folder
-					destFolder = dialog.FolderName;
-				});
-
-				// Process open folder dialog box results
-				if (result != true)
-					return;
-				EnsureFolderExisting(destFolder);
-			}
-
+			string? destFolder = null;
+			m_finishCnt = 0;
+			m_totalCnt = 0;
 			List<string> files = [];       // 文件列表。
 			List<Tuple<string, string>> directories = []; // 文件夹列表，第一个是基准文件夹的绝对路径，第二个是相对路径。
 			List<string> unknown = [];     // 无法处理的文件的列表。
-			foreach (var path in paths) {  // 遍历拖入的路径。
-				if (File.Exists(path)) {   // 是否是文件。
-					files.Add(path);
-				}
-				else if (Directory.Exists(path)) { // 是否是文件夹。
-					directories.Add(Tuple.Create(path, ""));
-					if (recursion)
-						RecursionAllDirectories(path, path, directories);
+
+			{
+				List<Task<int>> prepare = [];
+
+				prepare.Add(Task.Run(() => {
+					return ScanInput(paths, recursion, ref files, ref directories, ref unknown);
+				}));
+				if (!stayNoMove) {
+					prepare.Add(Task.Run(() => {
+						destFolder = AskForDestation(paths[0]);
+						return 0;
+					}));
 				}
 				else {
-					unknown.Add(path); // 加入无法处理的列表。
+					destFolder = "";
 				}
+
+				Task.WaitAll([.. prepare]);
+
+				m_totalCnt = prepare[0].Result;
 			}
 
-			m_totalCnt = 0;
-			lock (m_singleCntMutex) {
-				m_singleCnt.Clear();
-			}
+			if (destFolder == null || m_totalCnt < 1)
+				return;
+
+			UpdateBar();
 
 			List<Task> tasks = [];
 
-			m_totalCnt = directories.Count;
-			if (files.Count > 0)
-				m_totalCnt++;
-			UpdateBar();
 			if (files.Count > 0) { // 拖入的列表中存在文件。
 				string outputPath = EnumFileName(
 					stayNoMove ? (Path.GetDirectoryName(files[0]) ?? "") : destFolder,
@@ -267,22 +236,63 @@ namespace WpfGui {
 			}
 			Task.WaitAll([.. tasks]);
 
-			lock (m_singleCntMutex) {
-				m_singleCnt.Clear();
-			}
-
 			App.Current.Dispatcher.Invoke(() => {
 				LabelTotal.Content = "就绪";
 			});
 		}
 
+		private static int ScanInput(string[] paths, bool recursion, ref List<string> files, ref List<Tuple<string, string>> directories, ref List<string> unknown) {
+			int cnt = 0;
+			foreach (var path in paths) {  // 遍历拖入的路径。
+				if (File.Exists(path)) {   // 是否是文件。
+					files.Add(path);
+				}
+				else if (Directory.Exists(path)) { // 是否是文件夹。
+					int dirfilecnt = Directory.EnumerateFiles(path).Count();
+					if (dirfilecnt > 0) {
+						directories.Add(Tuple.Create(path, ""));
+						cnt += dirfilecnt;
+					}
+					if (recursion)
+						cnt += RecursionAllDirectories(path, path, directories);
+				}
+				else {
+					unknown.Add(path); // 加入无法处理的列表。
+				}
+			}
+			return cnt;
+		}
+
+		private string? AskForDestation(string defpath) {
+			string res = "";
+
+			bool? result = false;
+			App.Current.Dispatcher.Invoke(() => {
+				// Configure open folder dialog box
+				Microsoft.Win32.OpenFolderDialog dialog = new() {
+					Multiselect = false,
+					Title = "选择输出地点",
+					DefaultDirectory = Directory.Exists(defpath) ? defpath : (Path.GetDirectoryName(defpath) ?? "")
+				};
+
+				// Show open folder dialog box
+				result = dialog.ShowDialog(this);
+
+				// Get the selected folder
+				res = dialog.FolderName;
+			});
+
+			// Process open folder dialog box results
+			if (result != true)
+				return null;
+
+			EnsureFolderExisting(res);
+			return res;
+		}
+
 		private void ProcessOneFolder(string sourceDir, string outputPath, bool compress, int pageSizeType, int pagesizex, int pagesizey, string Title) {
 			var fileList = Directory.EnumerateFiles(sourceDir);
-			if (!fileList.Any()) { // 跳过空文件夹
-				int id = UpdateSingleBegin();
-				UpdateSingle(id, 1, 1);
-				return;
-			}
+
 			List<string> filelist = fileList.ToList();
 			filelist.Sort(StrCmpLogicalW);
 
@@ -336,12 +346,17 @@ namespace WpfGui {
 			return res;
 		}
 
-		private static void RecursionAllDirectories(string dir, string basedir, List<Tuple<string, string>> list) {
-			foreach (string d in Directory.GetDirectories(dir)) {
-				list.Add(Tuple.Create(basedir, Path.GetRelativePath(basedir, d)));
+		private static int RecursionAllDirectories(string dir, string basedir, List<Tuple<string, string>> list) {
+			int cnt = 0;
+			foreach (string d in Directory.EnumerateDirectories(dir)) {
+				int dirfilecnt = Directory.EnumerateFiles(d).Count();
+				if (dirfilecnt > 0) {
+					list.Add(Tuple.Create(basedir, Path.GetRelativePath(basedir, d)));
+					cnt += dirfilecnt;
+				}
 				RecursionAllDirectories(d, basedir, list);
 			}
-			return;
+			return cnt;
 		}
 
 		private static void EnsureFolderExisting(string path) {
