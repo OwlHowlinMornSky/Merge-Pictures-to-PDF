@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Runtime.InteropServices;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 
@@ -10,22 +8,61 @@ namespace WpfGui {
 	/// </summary>
 	public partial class MainWindow : Window {
 
-		private bool m_useSizeOfFirstPic = true;
+		/// <summary>
+		/// 页面大小类型，与GUI对应：1是与每张图片一致，2是固定宽度，3是固定大小。
+		/// </summary>
 		private int m_pageSizeType = 2;
+		/// <summary>
+		/// 是否 使用第一张图片的尺寸数据。
+		/// </summary>
+		private bool m_useSizeOfFirstPic = true;
 
-		private Task? m_lastTask;
-
-		private int m_totalCnt = 1; // 此次处理将生成多少目标文件。
-		private readonly object m_finishCntMutex = new();
-		private int m_finishCnt = 0;
+		/// <summary>
+		/// 用来 lock 进度条和标签 的 对象。
+		/// </summary>
+		private readonly object m_lockBar = new();
+		/// <summary>
+		/// 处理拖入数据 的 对象。
+		/// </summary>
+		private readonly Processor m_processor;
 
 		public MainWindow() {
 			InitializeComponent();
-			RadioBtnFixedWidth.IsChecked = true;
+			RadioBtnFixedWidth.IsChecked = true; // 默认固定宽度。
 
-			PicMerge.Main.SingleUpdate += UpdateSingle;
+			m_processor = new Processor(this, BarSetNum, BarSetFinish); // 不能放上去，因为要用this。
 		}
 
+		/// <summary>
+		/// 用于 设置进度条进度 的 回调目标。
+		/// </summary>
+		/// <param name="i">分子</param>
+		/// <param name="n">分母</param>
+		private void BarSetNum(int i, int n) {
+			lock (m_lockBar) {
+				double ratio = 100.0 * i / n;
+				App.Current.Dispatcher.Invoke(() => {
+					LabelTotal.Content = $"已完成：{ratio:F1}%";
+					PorgBarTotal.Value = ratio;
+				});
+			}
+		}
+
+		/// <summary>
+		/// 用来 设置任务完成 的 回调目标。
+		/// </summary>
+		private void BarSetFinish() {
+			lock (m_lockBar) {
+				App.Current.Dispatcher.Invoke(() => {
+					LabelTotal.Content = "就绪";
+					PorgBarTotal.Value = 100.0;
+				});
+			}
+		}
+
+		/// <summary>
+		/// 输入尺寸的框 的 键入通知。用来限制 只能输入数字。
+		/// </summary>
 		private void TextNum_PreviewKeyDown(object sender, KeyEventArgs e) {
 			bool isNum = e.Key >= Key.D0 && e.Key <= Key.D9;
 			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
@@ -36,6 +73,9 @@ namespace WpfGui {
 			e.Handled = true;
 		}
 
+		/// <summary>
+		/// 页面尺寸类型的单选框 改变 的 通知。用来确定m_pageSizeType。
+		/// </summary>
 		private void BtnPageSize_Changed(object sender, RoutedEventArgs e) {
 			if (RadioBtnAutoSize.IsChecked == true)
 				m_pageSizeType = 1;
@@ -77,315 +117,68 @@ namespace WpfGui {
 			}
 		}
 
+		/// <summary>
+		/// 拖入的通知。只接受文件。
+		/// </summary>
 		private void Window_DragEnter(object sender, DragEventArgs e) {
 			if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
 				e.Effects = DragDropEffects.Move;
 			}
 		}
 
-		private void UpdateSingle() {
-			lock (m_finishCntMutex) {
-				m_finishCnt++;
-			}
-			UpdateBar();
-		}
-
-		private void UpdateBar() {
-			int fin = 0;
-			lock (m_finishCntMutex) {
-				fin = m_finishCnt;
-			}
-			double ratio = 100.0 * fin / m_totalCnt;
-			App.Current.Dispatcher.Invoke(() => {
-				LabelTotal.Content = $"{ratio:F1}%";
-				PorgBarTotal.Value = ratio;
-			});
-		}
-
-		[LibraryImport("Shlwapi.dll", EntryPoint = "StrCmpLogicalW", StringMarshalling = StringMarshalling.Utf16)]
-		[return: MarshalAs(UnmanagedType.I4)]
-		private static partial int StrCmpLogicalW(string psz1, string psz2);
-
+		/// <summary>
+		/// 拖放的通知。只接收文件。交予Processor处理。不能 同时有两次拖放在处理。
+		/// </summary>
 		private void Window_Drop(object sender, DragEventArgs e) {
+			Activate();
 			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
 				return;
 			}
 			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths) {
-				MessageBox.Show(this, "拖入的数据不合规。", $"{this.Title}: Error");
+				Task.Run(() => {
+					App.Current.Dispatcher.Invoke(() => {
+						MessageBox.Show(this, "拖入的数据不合规。", $"{Title}: 错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+					});
+				});
 				return;
 			}
-			if (m_lastTask != null && !m_lastTask.IsCompleted) {
-				MessageBox.Show(this, "请等待当前任务完成。", $"{Title}: Error");
+			if (m_processor.IsRunning()) {
+				Task.Run(() => {
+					App.Current.Dispatcher.Invoke(() => {
+						MessageBox.Show(this, "请等待当前任务完成。", $"{Title}: 错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+					});
+				});
 				return;
 			}
 			if (paths.Length <= 0) {
 				return;
 			}
-			bool recursion = ChkBoxRecursion.IsChecked != false;
-			bool keepStruct = ChkBoxKeepStructure.IsChecked != false;
-			bool compress = ChkBoxCompressAll.IsChecked != false;
-			bool stayNoMove = ChkBoxStayNoMove.IsChecked == true;
-			int pagesizex = 0;
-			int pagesizey = 0;
-			if (!m_useSizeOfFirstPic) {
-				pagesizex = int.Parse(TextWidth.Text);
-				pagesizey = int.Parse(TextHeight.Text);
+			BarSetNum(0, 1);
+			m_processor.Set(
+				recursion: ChkBoxRecursion.IsChecked != false,
+				keepStruct: ChkBoxKeepStructure.IsChecked != false,
+				compress: ChkBoxCompressAll.IsChecked != false,
+				stayNoMove: ChkBoxStayNoMove.IsChecked == true,
+				pageSizeType: m_pageSizeType,
+				pagesizex: m_useSizeOfFirstPic ? 0 : int.Parse(TextWidth.Text),
+				pagesizey: m_useSizeOfFirstPic ? 0 : int.Parse(TextHeight.Text)
+			);
+			if (m_processor.Start(paths) == false) {
+				Task.Run(() => {
+					App.Current.Dispatcher.Invoke(() => {
+						MessageBox.Show(this, "请等待当前任务完成。", $"{Title}: 错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+					});
+				});
 			}
-			m_totalCnt = 1;
-			m_finishCnt = 0;
-			UpdateBar();
-			m_lastTask = Task.Run(() => { Process(paths, recursion, keepStruct, stayNoMove, compress, m_pageSizeType, pagesizex, pagesizey); });
 			return;
 		}
 
-		private void Process(string[] paths, bool recursion, bool keepStruct, bool stayNoMove, bool compress, int pageSizeType, int pagesizex, int pagesizey) {
-			string? destFolder = null;
-			m_finishCnt = 0;
-			m_totalCnt = 0;
-			List<string> files = [];       // 文件列表。
-			List<Tuple<string, string>> directories = []; // 文件夹列表，第一个是基准文件夹的绝对路径，第二个是相对路径。
-			List<string> unknown = [];     // 无法处理的文件的列表。
-
-			{
-				List<Task<int>> prepare = [];
-
-				prepare.Add(Task.Run(() => {
-					return ScanInput(paths, recursion, ref files, ref directories, ref unknown);
-				}));
-				if (!stayNoMove) {
-					prepare.Add(Task.Run(() => {
-						destFolder = AskForDestation(paths[0]);
-						return 0;
-					}));
-				}
-				else {
-					destFolder = "";
-				}
-
-				Task.WaitAll([.. prepare]);
-
-				m_totalCnt = prepare[0].Result;
-			}
-
-			if (destFolder == null || m_totalCnt < 1)
-				return;
-
-			UpdateBar();
-
-			List<Task> tasks = [];
-
-			if (files.Count > 0) { // 拖入的列表中存在文件。
-				string outputPath = EnumFileName(
-					stayNoMove ? (Path.GetDirectoryName(files[0]) ?? "") : destFolder,
-					Path.GetFileNameWithoutExtension(files[0]),
-					".pdf"
-				);
-				tasks.Add(
-					Task.Run(
-						() => {
-							ProcessSingleFiles(
-								files,
-								outputPath, compress,
-								pageSizeType, pagesizex, pagesizey,
-								Path.GetDirectoryName(files[0]) ?? ""
-							);
-						}
-					)
-				);
-			}
-			if (directories.Count > 0) { // 拖入的列表中存在目录。
-				foreach (Tuple<string, string> pair in directories) {
-					string sourceDir = Path.Combine(pair.Item1, pair.Item2);
-					string destDir;
-					if (stayNoMove) {
-						destDir = Path.GetDirectoryName(sourceDir) ?? sourceDir;
-					}
-					else if (keepStruct) {
-						destDir = Path.Combine(destFolder, pair.Item2);
-						if (!string.IsNullOrEmpty(pair.Item2))
-							destDir = Path.GetDirectoryName(destDir) ?? destDir;
-						EnsureFolderExisting(destDir);
-					}
-					else {
-						destDir = destFolder;
-					}
-					string outputPath = EnumFileName(destDir, Path.GetFileName(sourceDir), ".pdf");
-
-					tasks.Add(
-						Task.Run(
-							() => {
-								ProcessOneFolder(
-									Path.Combine(pair.Item1, pair.Item2),
-									outputPath, compress,
-									pageSizeType, pagesizex, pagesizey,
-									string.IsNullOrEmpty(pair.Item2) ? Path.GetFileName(pair.Item1) : pair.Item2
-								);
-							}
-						)
-					);
-				}
-			}
-			if (unknown.Count > 0) {
-				string msg = "以下内容无法处理：";
-				foreach (string str in unknown) {
-					msg += "\r\n";
-					msg += str;
-				}
-				App.Current.Dispatcher.Invoke(() => {
-					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-				});
-			}
-			Task.WaitAll([.. tasks]);
-
-			App.Current.Dispatcher.Invoke(() => {
-				LabelTotal.Content = "就绪";
-			});
-		}
-
-		private static int ScanInput(string[] paths, bool recursion, ref List<string> files, ref List<Tuple<string, string>> directories, ref List<string> unknown) {
-			int cnt = 0;
-			foreach (var path in paths) {  // 遍历拖入的路径。
-				if (File.Exists(path)) {   // 是否是文件。
-					files.Add(path);
-					cnt++;
-				}
-				else if (Directory.Exists(path)) { // 是否是文件夹。
-					int dirfilecnt = Directory.EnumerateFiles(path).Count();
-					var dirParent = Path.GetDirectoryName(path);
-					if (dirParent == null) {
-						if (dirfilecnt > 0) {
-							directories.Add(Tuple.Create(path, ""));
-							cnt += dirfilecnt;
-						}
-						if (recursion)
-							cnt += RecursionAllDirectories(path, path, ref directories);
-					}
-					else {
-						if (dirfilecnt > 0) {
-							directories.Add(Tuple.Create(dirParent, Path.GetRelativePath(dirParent, path)));
-							cnt += dirfilecnt;
-						}
-						if (recursion)
-							cnt += RecursionAllDirectories(path, dirParent, ref directories);
-					}
-				}
-				else {
-					unknown.Add(path); // 加入无法处理的列表。
-					cnt++;
-				}
-			}
-			return cnt;
-		}
-
-		private string? AskForDestation(string defpath) {
-			string res = "";
-
-			bool? result = false;
-			App.Current.Dispatcher.Invoke(() => {
-				// Configure open folder dialog box
-				Microsoft.Win32.OpenFolderDialog dialog = new() {
-					Multiselect = false,
-					Title = "选择输出地点",
-					DefaultDirectory = Directory.Exists(defpath) ? defpath : (Path.GetDirectoryName(defpath) ?? "")
-				};
-
-				// Show open folder dialog box
-				result = dialog.ShowDialog(this);
-
-				// Get the selected folder
-				res = dialog.FolderName;
-			});
-
-			// Process open folder dialog box results
-			if (result != true)
-				return null;
-
-			EnsureFolderExisting(res);
-			return res;
-		}
-
-		private void ProcessOneFolder(string sourceDir, string outputPath, bool compress, int pageSizeType, int pagesizex, int pagesizey, string Title) {
-			var fileList = Directory.EnumerateFiles(sourceDir);
-
-			List<string> filelist = fileList.ToList();
-			filelist.Sort(StrCmpLogicalW);
-
-			List<string> failed;
-			try {
-				failed = PicMerge.Main.Process(outputPath, filelist, pageSizeType, pagesizex, pagesizey, compress, Title);
-			}
-			catch (Exception ex) {
-				failed = ["处理过程出现异常", ex.Message];
-			}
-			if (failed.Count > 0) {
-				string msg = $"以下文件无法加入《{Title}》：\r\n";
-				foreach (var str in failed) {
-					msg += str;
-					msg += ".\r\n";
-				}
-				App.Current.Dispatcher.Invoke(() => {
-					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-				});
-			}
-		}
-
-		private void ProcessSingleFiles(List<string> files, string outputPath, bool compress, int pageSizeType, int pagesizex, int pagesizey, string Title) {
-			files.Sort(StrCmpLogicalW);
-			List<string> failed;
-			try {
-				failed = PicMerge.Main.Process(outputPath, files, pageSizeType, pagesizex, pagesizey, compress, Title);
-			}
-			catch (Exception ex) {
-				failed = ["处理过程出现异常", ex.Message];
-			}
-			if (failed.Count > 0) {
-				string msg = $"以下文件无法加入 \"零散文件\" ：\r\n";
-				foreach (var str in failed) {
-					msg += str;
-					msg += ".\r\n";
-				}
-				App.Current.Dispatcher.Invoke(() => {
-					MessageBox.Show(this, msg, $"{Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-				});
-			}
-		}
-
-		private static string EnumFileName(string dir, string stem, string exname) {
-			string res = Path.Combine(dir, stem + exname);
-			int i = 0;
-			while (File.Exists(res)) {
-				i++;
-				res = Path.Combine(dir, $"{stem} ({i}){exname}");
-			}
-			return res;
-		}
-
-		private static int RecursionAllDirectories(string dir, string basedir, ref List<Tuple<string, string>> list) {
-			int cnt = 0;
-			foreach (string d in Directory.EnumerateDirectories(dir)) {
-				int dirfilecnt = Directory.EnumerateFiles(d).Count();
-				if (dirfilecnt > 0) {
-					list.Add(Tuple.Create(basedir, Path.GetRelativePath(basedir, d)));
-					cnt += dirfilecnt;
-				}
-				cnt += RecursionAllDirectories(d, basedir, ref list);
-			}
-			return cnt;
-		}
-
-		private static void EnsureFolderExisting(string path) {
-			if (Directory.Exists(path))
-				return;
-			string parent = Path.GetDirectoryName(path) ??
-				throw new DirectoryNotFoundException($"Parent of \"{path}\" is not exist!");
-			EnsureFolderExisting(parent);
-			Directory.CreateDirectory(path);
-			return;
-		}
-
+		/// <summary>
+		/// 即将关闭窗口的通知。由于主线程必须等待Task处理结束，所以任务进行时不能关闭。
+		/// </summary>
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
-			if (m_lastTask != null && !m_lastTask.IsCompleted) {
-				MessageBox.Show(this, "请等待任务完成。", $"{Title}");
+			if (m_processor.IsRunning()) {
+				MessageBox.Show(this, "请等待当前任务完成。", $"{Title}: 错误", MessageBoxButton.OK, MessageBoxImage.Warning);
 				e.Cancel = true;
 			}
 		}

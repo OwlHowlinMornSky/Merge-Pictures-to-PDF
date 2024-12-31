@@ -3,18 +3,73 @@
 //#include <msclr/marshal_cppstd.h>
 
 #include <libiodine/libiodine.h>
-#define WIN32_LEAN_AND_MEAN (1)
-#include <Windows.h>
 
-PicCompress::Compressor::Compressor() {}
+#include <strsafe.h>
 
-PicCompress::Compressor::~Compressor() {}
+namespace {
 
-System::Int32 PicCompress::Compressor::Compress(System::String^ file, System::IntPtr handle, System::Int64 maxlen) {
+LPVOID WinCheckError(LPCWSTR lpszFunction) noexcept {
+	LPVOID lpMsgBuf = NULL;
+	LPVOID lpDisplayBuf = NULL;
+	DWORD dw = GetLastError();
+
+	FormatMessageW(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dw,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPWSTR)&lpMsgBuf,
+		0, NULL
+	);
+
+	lpDisplayBuf = (LPVOID)LocalAlloc(
+		LMEM_ZEROINIT,
+		(static_cast<SIZE_T>(lstrlenW((LPCWSTR)lpMsgBuf)) +
+			lstrlenW((LPCWSTR)lpszFunction) + 50) * sizeof(WCHAR)
+	);
+	if (lpDisplayBuf) {
+		StringCchPrintfW(
+			(LPWSTR)lpDisplayBuf,
+			LocalSize(lpDisplayBuf) / sizeof(WCHAR),
+			L"%s: %s (%d).",
+			lpszFunction, (LPCWSTR)lpMsgBuf, dw
+		);
+		LocalFree(lpMsgBuf);
+		lpMsgBuf = lpDisplayBuf;
+	}
+	return lpMsgBuf;
+}
+
+}
+
+PicCompress::Compressor::Compressor(System::IntPtr handle, System::Int64 maxlen) {
 	if (maxlen < 1) {
 		throw gcnew ArgumentException("Invalid maxlen.");
 	}
+	r_hmapping = (HANDLE)handle;
+	m_view = MapViewOfFile(r_hmapping, FILE_MAP_WRITE, 0, 0, 0);
+	if (nullptr == m_view) {
+		LPVOID description = ::WinCheckError(L"Failed to Open Map View");
+		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
+		LocalFree(description);
+		throw excep;
+	}
+	m_maxlen = maxlen;
+}
 
+PicCompress::Compressor::~Compressor() {
+	BOOL res = UnmapViewOfFile(m_view);
+	if (0 == res) {
+		LPVOID description = ::WinCheckError(L"Failed to Open Map View");
+		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
+		LocalFree(description);
+		throw excep;
+	}
+}
+
+System::Int32 PicCompress::Compressor::Compress(System::String^ file) {
 	cli::array<wchar_t>^ wArray = file->ToCharArray();
 	cli::array<unsigned char, 1>^ arr = System::Text::Encoding::UTF8->GetBytes(wArray);
 
@@ -31,16 +86,7 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ file, System::In
 	parameters.jpeg_progressive = true;
 	//parameters.png_quality = 80;
 
-	HANDLE hmap = (HANDLE)handle;
-	void* view = MapViewOfFile(hmap, FILE_MAP_WRITE, 0, 0, 0);
-	if (nullptr == view) {
-		delete[] cstr;
-		throw gcnew InvalidOperationException("Failed to Open Map View.");
-	}
-
-	CSI_Result res = csi_convert_into(cstr, view, maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
-
-	UnmapViewOfFile(view);
+	CSI_Result res = csi_convert_into(cstr, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
 
 	delete[] cstr;
 	if (!res.success) {
