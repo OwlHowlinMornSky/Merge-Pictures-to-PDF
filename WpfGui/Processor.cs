@@ -303,7 +303,9 @@ namespace WpfGui {
 					});
 				}
 			}
-			for (int i = 0, n = Environment.ProcessorCount; i < n; i++) {
+			for (int i = 0, n = (int)(Environment.ProcessorCount * 1.5); i < n; i++) {
+				if (m_waitingTasks.Count < 1)
+					break;
 				Task.Run(m_waitingTasks.Dequeue());
 			}
 		}
