@@ -304,7 +304,6 @@ namespace WpfGui {
 						destDir = Path.Combine(destFolder, pair.Item2);
 						if (!string.IsNullOrEmpty(pair.Item2))
 							destDir = Path.GetDirectoryName(destDir) ?? destDir;
-						EnsureFolderExisting(destDir);
 					}
 					else {
 						destDir = destFolder;
@@ -405,8 +404,6 @@ namespace WpfGui {
 			// Process open folder dialog box results
 			if (result != true)
 				return null;
-
-			EnsureFolderExisting(res);
 			return res;
 		}
 
@@ -434,7 +431,7 @@ namespace WpfGui {
 		private void ProcessSingleFiles(List<string> files, string outputPath, string title) {
 			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
 			files.Sort(StrCmpLogicalW);
-			using PicMerge.Merger merge = PicMerge.Merger.Create(
+			using PicMerge.IMerger merge = PicMerge.IMerger.Create(
 				m_parallelOnFileLevel,
 				CallbackFinishOneImgFile,
 				m_pageSizeType,
@@ -443,8 +440,8 @@ namespace WpfGui {
 				m_compress
 			);
 			List<string> failed = merge.Process(outputPath, files, title);
-			CheckMergeReturnedFailedList(title, failed);
 			CallbackFinishAllImgFile();
+			CheckMergeReturnedFailedList(title, failed);
 		}
 
 		/// <summary>
@@ -508,23 +505,6 @@ namespace WpfGui {
 				cnt += RecursionAllDirectories(d, basedir, ref list);
 			}
 			return cnt;
-		}
-
-		/// <summary>
-		/// 确保给定的目录存在。请在传入前 检查 path是 想要的目录的路径 而不是 想要的文件的路径。
-		/// 该方法会 递归地创建链条上的所有目录。例如传入 C:\DirA\DirB\DirC，而 DirA 不存在，
-		/// 那么该方法会创建 DirA、DirB、DirC 使输入路径可用。
-		/// </summary>
-		/// <param name="path">要求的目录</param>
-		/// <exception cref="DirectoryNotFoundException">无法完成任务</exception>
-		private static void EnsureFolderExisting(string path) {
-			if (Directory.Exists(path))
-				return;
-			string parent = Path.GetDirectoryName(path) ??
-				throw new DirectoryNotFoundException($"Parent of \"{path}\" is not exist!");
-			EnsureFolderExisting(parent);
-			Directory.CreateDirectory(path);
-			return;
 		}
 	}
 }

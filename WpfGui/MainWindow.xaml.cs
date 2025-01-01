@@ -30,7 +30,7 @@ namespace WpfGui {
 #endif
 
 		public MainWindow() {
-			if (CultureInfo.CurrentCulture.Name.ToLower() == "zh-cn") {
+			if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase)) {
 				ChangeLang(1);
 			}
 			else {

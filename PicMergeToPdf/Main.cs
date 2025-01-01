@@ -8,59 +8,66 @@ using System.IO.MemoryMappedFiles;
 
 namespace PicMerge {
 	/// <summary>
-	/// 合成器核心。
+	/// 合成器实现：普通串行。
+	/// 目前，该类构造一个只能运行一次。
 	/// </summary>
-	public class Main : Merger {
+	/// <param name="finish1img">完成一个文件的回调</param>
+	/// <param name="pageSizeType">页面大小类型</param>
+	/// <param name="pagesizex">页面大小宽</param>
+	/// <param name="pagesizey">页面大小高</param>
+	/// <param name="compress">是否压缩所有图片</param>
+	public class Main(Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) : IMerger {
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
 		/// </summary>
-		private readonly Action FinishOneImg;
+		private readonly Action FinishOneImg = finish1img;
 		/// <summary>
 		/// 是否压缩所有图片。
 		/// </summary>
-		private readonly bool m_compress;
+		private readonly bool m_compress = compress;
 		/// <summary>
 		/// 页面大小类型。
 		/// </summary>
-		private readonly int m_pageSizeType;
+		private readonly int m_pageSizeType = pageSizeType;
 		/// <summary>
 		/// 页面大小宽。使用第一张图片的尺寸时需要修改，所以不能只读。
 		/// </summary>
-		private float m_pagesizex;
+		private float m_pagesizex = pagesizex;
 		/// <summary>
 		/// 页面大小高。使用第一张图片的尺寸时需要修改，所以不能只读。
 		/// </summary>
-		private float m_pagesizey;
+		private float m_pagesizey = pagesizey;
 
 		/// <summary>
 		/// 内存映射文件设定的最大大小。
 		/// </summary>
 		private const long MapFileSize = 0x04000000;
 		/// <summary>
-		/// 用于接受压缩结果的内存映射文件。
+		/// 用于接受压缩结果的内存映射文件。首次使用时创建。
 		/// </summary>
-		private readonly MemoryMappedFile m_mapfile;
+		private MemoryMappedFile? m_mapfile = null;
 		/// <summary>
-		/// 压缩器。
+		/// 压缩器。首次使用时创建。
 		/// </summary>
-		private readonly PicCompress.Compressor m_compressor;
+		private PicCompress.Compressor? m_compressor = null;
 
-		public Main(Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) {
-			FinishOneImg = finish1img;
-			m_compress = compress;
-			m_pageSizeType = pageSizeType;
-			m_pagesizex = pagesizex;
-			m_pagesizey = pagesizey;
-
-			m_mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
-			m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-		}
+		/// <summary>
+		/// 输出——文件流。首次使用时创建。
+		/// </summary>
+		private FileStream? m_outputFileStream = null;
+		/// <summary>
+		/// 输出——填写器。首次使用时创建。
+		/// </summary>
+		private PdfWriter? m_pdfWriter = null;
+		/// <summary>
+		/// 输出——文档。首次使用时创建。
+		/// </summary>
+		private PdfDocument? m_pdfDocument = null;
 
 		~Main() {
 			Dispose(false);
 		}
-
 
 		/// <summary>
 		/// 合并文件。此方法文件级串行，即依次读取并处理图片。
@@ -91,36 +98,41 @@ namespace PicMerge {
 					return [];
 				}
 				/// 再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出pdf。
-				using FileStream stream = new(outputfilepath, FileMode.OpenOrCreate, FileAccess.Write);
-				WriterProperties writerProperties = new();
-				writerProperties.SetFullCompressionMode(true);
-				writerProperties.SetCompressionLevel(CompressionConstants.DEFAULT_COMPRESSION);
-
-				using (PdfWriter writer = new(stream, writerProperties)) {
-					using PdfDocument pdfDocument = new(writer);
-					pdfDocument.GetDocumentInfo().SetKeywords(title);
-
-					if (false == AddImage(imageData, pdfDocument)) {
-						failed.Add(files[i]);
+				if (m_pdfDocument == null) {
+					if (m_pdfWriter == null) {
+						// 需要写时再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出空文件。
+						if (m_outputFileStream == null) {
+							IMerger.EnsureFileCanExsist(outputfilepath);
+							m_outputFileStream = new(outputfilepath, FileMode.OpenOrCreate, FileAccess.Write);
+						}
+						WriterProperties writerProperties = new();
+						writerProperties.SetFullCompressionMode(true);
+						writerProperties.SetCompressionLevel(CompressionConstants.DEFAULT_COMPRESSION);
+						m_pdfWriter = new(m_outputFileStream, writerProperties);
+					}
+					m_pdfDocument = new(m_pdfWriter);
+					m_pdfDocument.GetDocumentInfo().SetKeywords(title);
+				}
+				if (false == AddImage(imageData, m_pdfDocument)) {
+					failed.Add(files[i]);
+				}
+				FinishOneImg();
+				for (++i; i < files.Count; ++i) {
+					string file = files[i];
+					imageData = load(file);
+					if (imageData == null) {
+						failed.Add(file);
+						FinishOneImg();
+						continue;
+					}
+					if (false == AddImage(imageData, m_pdfDocument)) {
+						failed.Add(file);
 					}
 					FinishOneImg();
-					for (++i; i < files.Count; ++i) {
-						string file = files[i];
-						imageData = load(file);
-						if (imageData == null) {
-							failed.Add(file);
-							FinishOneImg();
-							continue;
-						}
-						if (false == AddImage(imageData, pdfDocument)) {
-							failed.Add(file);
-						}
-						FinishOneImg();
-					}
-					pdfDocument.Close();
-					writer.Close();
 				}
-				stream.Close();
+				m_pdfDocument?.Close();
+				m_pdfWriter?.Close();
+				m_outputFileStream?.Close();
 			}
 			catch (Exception ex) {
 				failed = ["An Exception Occurred:", ex.GetType().ToString(), ex.Message, ex.Source ?? "", ex.StackTrace ?? ""];
@@ -138,8 +150,14 @@ namespace PicMerge {
 
 			// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
 			try {
+				if (m_compressor == null) {
+					m_mapfile ??= MemoryMappedFile.CreateNew(null, MapFileSize);
+					m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
+				}
 				int len = m_compressor.Compress(file);
+#pragma warning disable CS8602 // 解引用可能出现空引用。
 				using var mapstream = m_mapfile.CreateViewStream();
+#pragma warning restore CS8602 // 解引用可能出现空引用。
 				using BinaryReader br = new(mapstream);
 				imageData = ImageDataFactory.Create(br.ReadBytes(len));
 				br.Close();
@@ -191,8 +209,14 @@ namespace PicMerge {
 
 			// 若不支持则 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
 			try {
+				if (m_compressor == null) {
+					m_mapfile ??= MemoryMappedFile.CreateNew(null, MapFileSize);
+					m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
+				}
 				int len = m_compressor.Compress(file);
+#pragma warning disable CS8602 // 解引用可能出现空引用。
 				using var mapstream = m_mapfile.CreateViewStream();
+#pragma warning restore CS8602 // 解引用可能出现空引用。
 				using BinaryReader br = new(mapstream);
 				imageData = ImageDataFactory.Create(br.ReadBytes(len));
 				br.Close();
@@ -280,8 +304,12 @@ namespace PicMerge {
 			if (m_disposed)
 				return;
 			if (disposing) {
-				m_compressor.Dispose();
-				m_mapfile.Dispose();
+				m_pdfDocument?.Close();
+				m_pdfWriter?.Dispose();
+				m_outputFileStream?.Dispose();
+
+				m_compressor?.Dispose();
+				m_mapfile?.Dispose();
 			}
 			m_disposed = true;
 		}

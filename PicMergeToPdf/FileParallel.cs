@@ -7,55 +7,92 @@ using System.IO.MemoryMappedFiles;
 using SixLabors.ImageSharp;
 
 namespace PicMerge {
-	public class FileParallel : Merger {
+	/// <summary>
+	/// 合成器实现：文件级并行。
+	/// 目前，该类构造一个只能运行一次。
+	/// </summary>
+	/// <param name="finish1img">完成一个文件的回调</param>
+	/// <param name="pageSizeType">页面大小类型</param>
+	/// <param name="pagesizex">页面大小宽</param>
+	/// <param name="pagesizey">页面大小高</param>
+	/// <param name="compress">是否压缩所有图片</param>
+	public class FileParallel(Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) : IMerger {
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
 		/// </summary>
-		private readonly Action FinishOneImg;
+		private readonly Action FinishOneImg = finish1img;
 		/// <summary>
 		/// 是否压缩所有图片。
 		/// </summary>
-		private readonly bool m_compress;
+		private readonly bool m_compress = compress;
 		/// <summary>
 		/// 页面大小类型。
 		/// </summary>
-		private readonly int m_pageSizeType;
+		private readonly int m_pageSizeType = pageSizeType;
 		/// <summary>
 		/// 页面大小宽。使用第一张图片的尺寸时需要修改，所以不能只读。
 		/// </summary>
-		private float m_pagesizex;
+		private float m_pagesizex = pagesizex;
 		/// <summary>
 		/// 页面大小高。使用第一张图片的尺寸时需要修改，所以不能只读。
 		/// </summary>
-		private float m_pagesizey;
+		private float m_pagesizey = pagesizey;
 
 		/// <summary>
 		/// 内存映射文件设定的最大大小。
 		/// </summary>
 		private const long MapFileSize = 0x04000000;
 
+		/// <summary>
+		/// 从Process输入的输入文件列表。
+		/// </summary>
 		private List<string> m_files = [];
 
+		/// <summary>
+		/// 已开始运行过的任务 的 计数。
+		/// 用于 每个任务 在最开始 获取 自己该处理哪个文件（m_files[id]）。
+		/// </summary>
 		private int m_startedCnt = 0;
+		/// <summary>
+		/// 已开始运行过的任务计数 的 锁。
+		/// </summary>
 		private readonly object m_startedCntLock = new();
+		/// <summary>
+		/// 已将结果压入队列的任务 的 计数。
+		/// 用于 每个任务 确定 是否 轮到自己 把结果入队 了，保证 入队顺序 就是 输入的文件顺序。
+		/// </summary>
 		private int m_loadedCnt = 0;
+		/// <summary>
+		/// 已将结果压入队列的任务计数 的 锁。
+		/// </summary>
 		private readonly object m_loadedCntLock = new();
 
+		/// <summary>
+		/// 加载结果的队列。
+		/// </summary>
 		private readonly Queue<ImageData?> m_loadedImg = [];
+		/// <summary>
+		/// 加载单个文件的任务 的 列表。
+		/// </summary>
 		private readonly List<Task> m_loadings = [];
+		/// <summary>
+		/// 多任务协作时，任务中sleep的 默认 毫秒数。
+		/// </summary>
+		private const int m_sleepMs = 20;
 
+		/// <summary>
+		/// 输出——文件流。首次使用时创建。
+		/// </summary>
 		private FileStream? m_outputFileStream = null;
+		/// <summary>
+		/// 输出——填写器。首次使用时创建。
+		/// </summary>
 		private PdfWriter? m_pdfWriter = null;
+		/// <summary>
+		/// 输出——文档。首次使用时创建。
+		/// </summary>
 		private PdfDocument? m_pdfDocument = null;
-
-		public FileParallel(Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) {
-			FinishOneImg = finish1img;
-			m_compress = compress;
-			m_pageSizeType = pageSizeType;
-			m_pagesizex = pagesizex;
-			m_pagesizey = pagesizey;
-		}
 
 		~FileParallel() {
 			Dispose(false);
@@ -73,10 +110,13 @@ namespace PicMerge {
 			/// 无法合入的文件的列表。
 			List<string> failed = [];
 			try {
+				/// 按电脑核心数启动load。
 				for (int i = 0, n = Environment.ProcessorCount; i < n; i++)
 					StartNewLoad();
+
 				List<ImageData?> imageDatas = [];
 				int imgCnt = 0;
+				bool havePdfOutput = false;
 				while (true) {
 					bool isEmpty = true;
 					lock (m_loadedImg) {
@@ -88,27 +128,34 @@ namespace PicMerge {
 						}
 					}
 					if (isEmpty) {
-						Thread.Sleep(20);
+						Thread.Sleep(m_sleepMs);
 						continue;
 					}
 					// Add Image.
-					if (m_pdfDocument == null) {
-						if (m_pdfWriter == null) {
-							// 需要写时再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出空文件。
-							m_outputFileStream ??= new(outputfilepath, FileMode.OpenOrCreate, FileAccess.Write);
-							WriterProperties writerProperties = new();
-							writerProperties.SetFullCompressionMode(true);
-							writerProperties.SetCompressionLevel(CompressionConstants.DEFAULT_COMPRESSION);
-							m_pdfWriter = new(m_outputFileStream, writerProperties);
-						}
-						m_pdfDocument = new(m_pdfWriter);
-						m_pdfDocument.GetDocumentInfo().SetKeywords(title);
-					}
 					foreach (var imageData in imageDatas) {
-						if (imageData == null)
+						if (imageData == null) {
 							failed.Add(files[imgCnt]);
-						else
-							AddImage(imageData, m_pdfDocument);
+							FinishOneImg();
+							imgCnt++;
+							continue;
+						}
+						if (m_pdfDocument == null) {
+							if (m_pdfWriter == null) {
+								// 需要写时再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出空文件。
+								if (m_outputFileStream == null) {
+									IMerger.EnsureFileCanExsist(outputfilepath);
+									m_outputFileStream = new(outputfilepath, FileMode.OpenOrCreate, FileAccess.Write);
+								}
+								WriterProperties writerProperties = new();
+								writerProperties.SetFullCompressionMode(true);
+								writerProperties.SetCompressionLevel(CompressionConstants.DEFAULT_COMPRESSION);
+								m_pdfWriter = new(m_outputFileStream, writerProperties);
+							}
+							m_pdfDocument = new(m_pdfWriter);
+							m_pdfDocument.GetDocumentInfo().SetKeywords(title);
+						}
+						havePdfOutput = true;
+						AddImage(imageData, m_pdfDocument);
 						FinishOneImg();
 						imgCnt++;
 					}
@@ -116,6 +163,12 @@ namespace PicMerge {
 					if (imgCnt >= files.Count)
 						break;
 				}
+
+				Task.WaitAll([.. m_loadings]);
+				m_loadings.Clear();
+
+				if (!havePdfOutput) // 一个都没法合成的话返回空。
+					failed.Clear();
 
 				m_pdfDocument?.Close();
 				m_pdfWriter?.Close();
@@ -127,13 +180,20 @@ namespace PicMerge {
 			return failed;
 		}
 
+		/// <summary>
+		/// 开启一个新的加载图片任务。
+		/// </summary>
 		private void StartNewLoad() {
 			lock (m_loadings) {
 				m_loadings.Add(Task.Run(LoadOneProc));
 			}
 		}
 
+		/// <summary>
+		/// 加载一张图片的任务过程。
+		/// </summary>
 		private void LoadOneProc() {
+			/// 取序号。
 			int id;
 			lock (m_startedCntLock) {
 				if (m_startedCnt >= m_files.Count)
@@ -142,28 +202,33 @@ namespace PicMerge {
 			}
 			string file = m_files[id];
 
+			/// 加载并处理。
 			ImageData? imageData =  m_compress ? LoadImage_Compress(file) : LoadImage_Direct(file);
 
-			StartNewLoad(); // Next
-
+			/// Add loaded data into queue.
 			while (true) {
 				lock (m_loadedCntLock) {
+					/// My turn to enqueue.
 					if (id == m_loadedCnt) {
 						while (true) {
 							lock (m_loadedImg) {
-								if (m_loadedImg.Count < 10) {
+								/// Ensure queue is not too large.
+								if (m_loadedImg.Count < Environment.ProcessorCount * 2) {
 									m_loadedImg.Enqueue(imageData);
 									break;
 								}
 							}
-							Thread.Sleep(20);
+							Thread.Sleep(m_sleepMs);
 						}
 						m_loadedCnt++;
 						break;
 					}
 				}
-				Thread.Sleep(20);
+				Thread.Sleep(m_sleepMs);
 			}
+
+			/// Next Task.
+			StartNewLoad();
 		}
 
 		/// <summary>
