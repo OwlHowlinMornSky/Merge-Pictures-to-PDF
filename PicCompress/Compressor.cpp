@@ -1,6 +1,5 @@
 ﻿
 #include "Compressor.h"
-//#include <msclr/marshal_cppstd.h>
 
 #include <libiodine/libiodine.h>
 
@@ -84,8 +83,6 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ file) {
 	parameters.keep_metadata = false;
 	parameters.jpeg_quality = 80;
 	parameters.jpeg_progressive = true;
-
-	//parameters.height = 50;
 	parameters.width = 1680;
 
 	CSI_Result res = csi_convert_into(cstr, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);

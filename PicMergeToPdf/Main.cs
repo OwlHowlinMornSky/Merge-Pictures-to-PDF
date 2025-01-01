@@ -268,7 +268,7 @@ namespace PicMerge {
 				PdfCanvas canvas = new(page, true);
 				canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);
 			}
-			catch (Exception e) {
+			catch (Exception) {
 				return false;
 			}
 			return true;
