@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Globalization;
+using System.Windows;
 using System.Windows.Input;
 
 namespace WpfGui {
@@ -24,11 +25,19 @@ namespace WpfGui {
 		/// 处理拖入数据 的 对象。
 		/// </summary>
 		private readonly Processor m_processor;
+#if DEBUG
+		private int m_lang_test = 1;
+#endif
 
 		public MainWindow() {
+			if (CultureInfo.CurrentCulture.Name.ToLower() == "zh-cn") {
+				ChangeLang(1);
+			}
+			else {
+				ChangeLang(0);
+			}
 			InitializeComponent();
-			RadioBtnFixedWidth.IsChecked = true; // 默认固定宽度。
-
+			RadioBtnFixedWidth.IsChecked = true; // 默认固定宽度。不能在xaml里check，因为回调函数会访问其他还没初始化的控件。
 			m_processor = new Processor(this, BarSetNum, BarSetFinish); // 不能放上去，因为要用this。
 		}
 
@@ -76,7 +85,10 @@ namespace WpfGui {
 		/// 页面尺寸类型的单选框 改变 的 通知。用来确定m_pageSizeType。
 		/// </summary>
 		private void BtnPageSize_Changed(object sender, RoutedEventArgs e) {
-			ChangeLang();
+#if DEBUG
+			ChangeLang(m_lang_test);
+			m_lang_test = m_lang_test == 0 ? 1 : 0;
+#endif
 			if (RadioBtnAutoSize.IsChecked == true)
 				m_pageSizeType = 1;
 			else if (RadioBtnFixedWidth.IsChecked == true)
@@ -207,26 +219,21 @@ namespace WpfGui {
 			}
 		}
 
-#if DEBUG
-		private int m_lang_test = 1;
-		private void ChangeLang() {
-			ResourceDictionary rd = [];
-			switch (m_lang_test) {
-			case 1:
-				rd.Source = new Uri("DictionaryMainGUI.zh-CN.xaml", UriKind.Relative);
-				m_lang_test = 2;
-				break;
-			default:
-				rd.Source = new Uri("DictionaryMainGUI.xaml", UriKind.Relative);
-				m_lang_test = 1;
-				break;
-			}
+		/// <summary>
+		/// 更改语言。
+		/// Change Language.
+		/// </summary>
+		/// <param name="index">default: English, 1: Chinese(S)</param>
+		private static void ChangeLang(int index) {
+			ResourceDictionary rd = new() {
+				Source = index switch {
+					1 => new Uri("DictionaryMainGUI.zh-CN.xaml", UriKind.Relative),
+					_ => new Uri("DictionaryMainGUI.xaml", UriKind.Relative),
+				}
+			};
 			App.Current.Resources.MergedDictionaries.Clear();
 			App.Current.Resources.MergedDictionaries.Add(rd);
 			return;
 		}
-#else
-		private void ChangeLang() {}
-#endif
 	}
 }
