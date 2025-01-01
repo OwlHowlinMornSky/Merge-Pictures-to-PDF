@@ -6,8 +6,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PlatformTarget>x64</PlatformTarget>
-    <PackageId>$(AssemblyName).Core</PackageId>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.1</AssemblyVersion>
+    <FileVersion>1.1.0.1</FileVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Copyright>Copyright (C) 2025 Tyler Parret True &lt;https://github.com/OwlHowlinMornSky&gt;</Copyright>
+    <Authors>Tyler Parret True</Authors>
+    <Product>Pictures2PDF</Product>
+    <Description>Pictures2PDF</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
