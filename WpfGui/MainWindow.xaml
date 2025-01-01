@@ -5,32 +5,32 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
         mc:Ignorable="d"
-        Title="Pictures to PDF" Height="282" Width="384" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter" Closing="Window_Closing">
+        Title="Pictures to PDF" Height="{DynamicResource WndHeight}" Width="{DynamicResource WndWidth}" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter" Closing="Window_Closing">
     <Grid x:Name="GridMain" AllowDrop="True">
         <ProgressBar x:Name="PorgBarTotal" Margin="10,0,10,10" Height="27" VerticalAlignment="Bottom" Grid.ColumnSpan="2"/>
-        <Label x:Name="LabelTotal" Content="就绪" Margin="20,0,0,37" HorizontalAlignment="Left" Width="381" Height="25" VerticalAlignment="Bottom"/>
-        <GroupBox x:Name="GpBoxPageSize" Header="页面尺寸" Margin="10,10,10,0" Height="90" VerticalAlignment="Top" Grid.ColumnSpan="2">
+        <Label x:Name="LabelTotal" Content="{DynamicResource Ready}" Margin="10,0,0,37" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+        <GroupBox x:Name="GpBoxPageSize" Header="{DynamicResource PageSizeBox}" Margin="10,10,10,0" Height="90" VerticalAlignment="Top" Grid.ColumnSpan="2">
             <Grid x:Name="GridPageSize">
-                <RadioButton x:Name="RadioBtnAutoSize" Content="与每张图片一致" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Unchecked="BtnPageSize_Changed" Checked="BtnPageSize_Changed"/>
-                <RadioButton x:Name="RadioBtnFixedWidth" Content="固定宽度" HorizontalAlignment="Left" Margin="10,30,0,0" VerticalAlignment="Top" IsChecked="False" Unchecked="BtnPageSize_Changed" Checked="BtnPageSize_Changed"/>
-                <RadioButton x:Name="RadioBtnFixedSize" Content="固定大小" HorizontalAlignment="Left" Margin="10,49,0,0" VerticalAlignment="Top" Checked="BtnPageSize_Changed" Unchecked="BtnPageSize_Changed"/>
-                <TextBox x:Name="TextWidth" HorizontalAlignment="Left" Margin="201,27,0,0" TextWrapping="Wrap" Text="420" VerticalAlignment="Top" Width="83" PreviewKeyDown="TextNum_PreviewKeyDown"/>
-                <Label x:Name="LabelWidth" Content="宽度" HorizontalAlignment="Left" Margin="157,22,0,0" VerticalAlignment="Top"/>
-                <TextBox x:Name="TextHeight" HorizontalAlignment="Left" Margin="201,46,0,0" TextWrapping="Wrap" Text="595" VerticalAlignment="Top" Width="83" PreviewKeyDown="TextNum_PreviewKeyDown"/>
-                <Label x:Name="LabelHeight" Content="高度" HorizontalAlignment="Left" Margin="157,41,0,0" VerticalAlignment="Top"/>
-                <CheckBox x:Name="ChkBoxUseSizeOfFirstPic" Content="使用第一张图片的尺寸数据" HorizontalAlignment="Left" Margin="141,9,0,0" VerticalAlignment="Top" IsChecked="False" Checked="BtnPageSize_Changed" Unchecked="BtnPageSize_Changed"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="4*"/>
+                </Grid.ColumnDefinitions>
+                <RadioButton x:Name="RadioBtnAutoSize" Content="{DynamicResource PageSizeSameWithEach}" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Unchecked="BtnPageSize_Changed" Checked="BtnPageSize_Changed"/>
+                <RadioButton x:Name="RadioBtnFixedWidth" Content="{DynamicResource PageSizeWidthFixed}" HorizontalAlignment="Left" Margin="10,30,0,0" VerticalAlignment="Top" IsChecked="False" Unchecked="BtnPageSize_Changed" Checked="BtnPageSize_Changed"/>
+                <RadioButton x:Name="RadioBtnFixedSize" Content="{DynamicResource PageSizeSizeFixed}" HorizontalAlignment="Left" Margin="10,49,0,0" VerticalAlignment="Top" Checked="BtnPageSize_Changed" Unchecked="BtnPageSize_Changed"/>
+                <TextBox x:Name="TextWidth" HorizontalAlignment="Left" Margin="75,27,0,0" TextWrapping="Wrap" Text="420" VerticalAlignment="Top" Width="83" PreviewKeyDown="TextNum_PreviewKeyDown" Grid.Column="1" Height="17"/>
+                <Label x:Name="LabelWidth" Content="{DynamicResource PageSizeWidth}" HorizontalAlignment="Left" Margin="26,0,0,0" VerticalAlignment="Center" Grid.Column="1"/>
+                <TextBox x:Name="TextHeight" HorizontalAlignment="Left" Margin="75,46,0,0" TextWrapping="Wrap" Text="595" VerticalAlignment="Top" Width="83" PreviewKeyDown="TextNum_PreviewKeyDown" Grid.Column="1" Height="17"/>
+                <Label x:Name="LabelHeight" Content="{DynamicResource PageSizeHeight}" HorizontalAlignment="Left" Margin="26,41,0,0" VerticalAlignment="Top" Grid.Column="1"/>
+                <CheckBox x:Name="ChkBoxUseSizeOfFirstPic" Content="{DynamicResource PageSizeUseFirstImage}" HorizontalAlignment="Left" Margin="10,9,0,0" VerticalAlignment="Top" IsChecked="False" Checked="BtnPageSize_Changed" Unchecked="BtnPageSize_Changed" Grid.Column="1"/>
             </Grid>
         </GroupBox>
-        <GroupBox x:Name="GpBoxFolder" Header="输入输出" Margin="10,105,10,0" Height="59" VerticalAlignment="Top">
+        <GroupBox x:Name="GpBoxFolder" Header="{DynamicResource IOBox}" Margin="10,105,10,0" Height="{DynamicResource IOBoxHeight}" VerticalAlignment="Top">
             <Grid x:Name="GridFolder">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="9*"/>
-                    <RowDefinition Height="28*"/>
-                </Grid.RowDefinitions>
-                <CheckBox x:Name="ChkBoxStayNoMove" Content="输出到原位" Margin="238,0,0,0" Height="16" VerticalAlignment="Top" HorizontalAlignment="Left" Width="116" Grid.Row="1"/>
-                <CheckBox x:Name="ChkBoxRecursion" Content="递归输入" Margin="10,0,0,0" HorizontalAlignment="Left" Width="80" IsChecked="True" Height="16" VerticalAlignment="Top" Grid.Row="1"/>
-                <CheckBox x:Name="ChkBoxKeepStructure" Content="保持结构" HorizontalAlignment="Left" Margin="85,0,0,0" IsChecked="True" Height="16" VerticalAlignment="Top" Width="104" Grid.Row="1"/>
-                <CheckBox x:Name="ChkBoxCompressAll" Content="全部压缩" HorizontalAlignment="Left" Margin="161,0,0,0" Grid.Row="1" VerticalAlignment="Top" IsChecked="True"/>
+                <CheckBox x:Name="ChkBoxStayNoMove" Content="{DynamicResource IOStayNoMove}" Margin="{DynamicResource IOBoxChk4}" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1"/>
+                <CheckBox x:Name="ChkBoxRecursion" Content="{DynamicResource IORecursion}" Margin="{DynamicResource IOBoxChk1}" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Grid.Row="1"/>
+                <CheckBox x:Name="ChkBoxKeepStructure" Content="{DynamicResource IOKeepStructure}" Margin="{DynamicResource IOBoxChk2}" HorizontalAlignment="Left"  VerticalAlignment="Top" IsChecked="True" Grid.Row="1"/>
+                <CheckBox x:Name="ChkBoxCompressAll" Content="{DynamicResource IOCompress}" Margin="{DynamicResource IOBoxChk3}" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Grid.Row="1"/>
             </Grid>
         </GroupBox>
     </Grid>

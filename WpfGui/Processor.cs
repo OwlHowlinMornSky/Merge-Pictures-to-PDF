@@ -254,14 +254,20 @@ namespace WpfGui {
 
 			/// 报告无法处理的列表。
 			if (unknown.Count > 0) {
-				string msg = "以下内容无法处理：";
+				string msg = App.Current.FindResource("CannotProcess").ToString() ?? "Cannot process:";
 				foreach (string str in unknown) {
 					msg += "\r\n";
 					msg += str;
 				}
 				m_tasks.Add(Task.Run(() => {
 					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(m_guiMain, msg, $"{m_guiMain.Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+						MessageBox.Show(
+							m_guiMain,
+							msg,
+							$"{m_guiMain.Title}: {App.Current.FindResource("Warning")}",
+							MessageBoxButton.OK,
+							MessageBoxImage.Warning
+						);
 					});
 				}));
 			}
@@ -431,13 +437,19 @@ namespace WpfGui {
 		/// <param name="failed">失败列表</param>
 		private void CheckMergeReturnedFailedList(string title, List<string> failed) {
 			if (failed.Count > 0) {
-				string msg = $"以下文件无法加入“{title}”：\r\n";
+				string msg = string.Format(App.Current.FindResource("CannotMerge").ToString() ?? "Failed to merge into {0}:", title);
 				foreach (var str in failed) {
-					msg += str;
 					msg += ".\r\n";
+					msg += str;
 				}
 				App.Current.Dispatcher.Invoke(() => {
-					MessageBox.Show(m_guiMain, msg, $"{m_guiMain.Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+					MessageBox.Show(
+						m_guiMain,
+						msg,
+						$"{m_guiMain.Title}: {App.Current.FindResource("Warning")}",
+						MessageBoxButton.OK,
+						MessageBoxImage.Warning
+					);
 				});
 			}
 		}

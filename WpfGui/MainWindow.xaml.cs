@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interop;
 
 namespace WpfGui {
 	/// <summary>
@@ -42,7 +41,7 @@ namespace WpfGui {
 			lock (m_lockBar) {
 				double ratio = 100.0 * i / n;
 				App.Current.Dispatcher.Invoke(() => {
-					LabelTotal.Content = $"已完成：{ratio:F1}%";
+					LabelTotal.Content = string.Format(App.Current.FindResource("HaveFinishedPercent").ToString() ?? "{0:F2}", ratio);
 					PorgBarTotal.Value = ratio;
 				});
 			}
@@ -54,7 +53,7 @@ namespace WpfGui {
 		private void BarSetFinish() {
 			lock (m_lockBar) {
 				App.Current.Dispatcher.Invoke(() => {
-					LabelTotal.Content = "就绪";
+					LabelTotal.Content = App.Current.FindResource("Ready").ToString();
 					PorgBarTotal.Value = 100.0;
 				});
 			}
@@ -77,6 +76,7 @@ namespace WpfGui {
 		/// 页面尺寸类型的单选框 改变 的 通知。用来确定m_pageSizeType。
 		/// </summary>
 		private void BtnPageSize_Changed(object sender, RoutedEventArgs e) {
+			ChangeLang();
 			if (RadioBtnAutoSize.IsChecked == true)
 				m_pageSizeType = 1;
 			else if (RadioBtnFixedWidth.IsChecked == true)
@@ -137,7 +137,13 @@ namespace WpfGui {
 			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths) {
 				Task.Run(() => {
 					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(this, "拖入的数据不合规。", $"{Title}: 错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+						MessageBox.Show(
+							this,
+							App.Current.FindResource("InvalidDrop").ToString(),
+							$"{Title}: {App.Current.FindResource("Error")}",
+							MessageBoxButton.OK,
+							MessageBoxImage.Error
+						);
 					});
 				});
 				return;
@@ -145,7 +151,13 @@ namespace WpfGui {
 			if (m_processor.IsRunning()) {
 				Task.Run(() => {
 					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(this, "请等待当前任务完成。", $"{Title}: 错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+						MessageBox.Show(
+							this,
+							App.Current.FindResource("WaitForCurrentTask").ToString(),
+							$"{Title}: {App.Current.FindResource("Error")}",
+							MessageBoxButton.OK,
+							MessageBoxImage.Error
+						);
 					});
 				});
 				return;
@@ -166,7 +178,13 @@ namespace WpfGui {
 			if (m_processor.Start(paths) == false) {
 				Task.Run(() => {
 					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(this, "请等待当前任务完成。", $"{Title}: 错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+						MessageBox.Show(
+							this,
+							App.Current.FindResource("WaitForCurrentTask").ToString(),
+							$"{Title}: {App.Current.FindResource("Error")}",
+							MessageBoxButton.OK,
+							MessageBoxImage.Error
+						);
 					});
 				});
 			}
@@ -178,9 +196,37 @@ namespace WpfGui {
 		/// </summary>
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
 			if (m_processor.IsRunning()) {
-				MessageBox.Show(this, "请等待当前任务完成。", $"{Title}: 错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show(
+					this,
+					App.Current.FindResource("WaitForCurrentTask").ToString(),
+					Title,
+					MessageBoxButton.OK,
+					MessageBoxImage.Information
+				);
 				e.Cancel = true;
 			}
 		}
+
+#if DEBUG
+		private int m_lang_test = 1;
+		private void ChangeLang() {
+			ResourceDictionary rd = [];
+			switch (m_lang_test) {
+			case 1:
+				rd.Source = new Uri("DictionaryMainGUI.zh-CN.xaml", UriKind.Relative);
+				m_lang_test = 2;
+				break;
+			default:
+				rd.Source = new Uri("DictionaryMainGUI.xaml", UriKind.Relative);
+				m_lang_test = 1;
+				break;
+			}
+			App.Current.Resources.MergedDictionaries.Clear();
+			App.Current.Resources.MergedDictionaries.Add(rd);
+			return;
+		}
+#else
+		private void ChangeLang() {}
+#endif
 	}
 }
