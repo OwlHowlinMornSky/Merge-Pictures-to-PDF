@@ -107,7 +107,9 @@ namespace WpfGui {
 		private void CallbackFinishAllImgFile() {
 			int c = TaskCntDecrease();
 			if (m_waitingTasks.Count > 0) {
-				Task.Run(m_waitingTasks.Dequeue());
+				lock (m_waitingTasks) {
+					Task.Run(m_waitingTasks.Dequeue());
+				}
 			}
 			else if (c == 0) { // 计数是一次性加满的，然后子任务一个一个减一。减到零就是所有任务完成。
 				SetBarFinish(); // 设置进度条为完成。
@@ -306,7 +308,9 @@ namespace WpfGui {
 			for (int i = 0, n = (int)(Environment.ProcessorCount * 1.5); i < n; i++) {
 				if (m_waitingTasks.Count < 1)
 					break;
-				Task.Run(m_waitingTasks.Dequeue());
+				lock (m_waitingTasks) {
+					Task.Run(m_waitingTasks.Dequeue());
+				}
 			}
 		}
 
