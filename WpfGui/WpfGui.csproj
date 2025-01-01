@@ -7,8 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <PlatformTarget>x64</PlatformTarget>
-    <AssemblyName>PicMergeToPdfGui</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Pictures2PDF</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
