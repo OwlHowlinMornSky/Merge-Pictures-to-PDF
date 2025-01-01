@@ -1,14 +1,14 @@
 ﻿using iText.IO.Image;
-using iText.Kernel.Pdf;
 using iText.Kernel.Geom;
+using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas;
-using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Gif;
 using System.IO.MemoryMappedFiles;
+using SixLabors.ImageSharp;
 
 namespace PicMerge {
 	/// <summary>
-	/// 合成器实现：普通串行。
+	/// 合成器实现：文件级并行。
 	/// 目前，该类构造一个只能运行一次。
 	/// </summary>
 	/// <param name="finish1img">完成一个文件的回调</param>
@@ -16,7 +16,7 @@ namespace PicMerge {
 	/// <param name="pagesizex">页面大小宽</param>
 	/// <param name="pagesizey">页面大小高</param>
 	/// <param name="compress">是否压缩所有图片</param>
-	public class Main(Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) : IMerger {
+	public class FileParallel(Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) : IMerger {
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
@@ -43,14 +43,43 @@ namespace PicMerge {
 		/// 内存映射文件设定的最大大小。
 		/// </summary>
 		private const long MapFileSize = 0x04000000;
+
 		/// <summary>
-		/// 用于接受压缩结果的内存映射文件。首次使用时创建。
+		/// 从Process输入的输入文件列表。
 		/// </summary>
-		private MemoryMappedFile? m_mapfile = null;
+		private List<string> m_files = [];
+
 		/// <summary>
-		/// 压缩器。首次使用时创建。
+		/// 已开始运行过的任务 的 计数。
+		/// 用于 每个任务 在最开始 获取 自己该处理哪个文件（m_files[id]）。
 		/// </summary>
-		private PicCompress.Compressor? m_compressor = null;
+		private int m_startedCnt = 0;
+		/// <summary>
+		/// 已开始运行过的任务计数 的 锁。
+		/// </summary>
+		private readonly object m_startedCntLock = new();
+		/// <summary>
+		/// 已将结果压入队列的任务 的 计数。
+		/// 用于 每个任务 确定 是否 轮到自己 把结果入队 了，保证 入队顺序 就是 输入的文件顺序。
+		/// </summary>
+		private int m_loadedCnt = 0;
+		/// <summary>
+		/// 已将结果压入队列的任务计数 的 锁。
+		/// </summary>
+		private readonly object m_loadedCntLock = new();
+
+		/// <summary>
+		/// 加载结果的队列。
+		/// </summary>
+		private readonly Queue<ImageData?> m_loadedImg = [];
+		/// <summary>
+		/// 加载单个文件的任务 的 列表。
+		/// </summary>
+		private readonly List<Task> m_loadings = [];
+		/// <summary>
+		/// 多任务协作时，任务中sleep的 默认 毫秒数。
+		/// </summary>
+		private const int m_sleepMs = 20;
 
 		/// <summary>
 		/// 输出——文件流。首次使用时创建。
@@ -65,71 +94,82 @@ namespace PicMerge {
 		/// </summary>
 		private PdfDocument? m_pdfDocument = null;
 
-		~Main() {
+		~FileParallel() {
 			Dispose(false);
 		}
 
 		/// <summary>
-		/// 合并文件。此方法文件级串行，即依次读取并处理图片。
+		/// 合并文件。此方法文件级并行，即并发加载处理，再依次加入结果。
 		/// </summary>
 		/// <param name="outputfilepath">输出文件路径</param>
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public virtual List<string> Process(string outputfilepath, List<string> files, string title = "") {
+		public List<string> Process(string outputfilepath, List<string> files, string title = "") {
+			m_files = files;
 			/// 无法合入的文件的列表。
 			List<string> failed = [];
 			try {
-				Func<string, ImageData?> load = m_compress ? LoadImage_Compress : LoadImage_Direct;
+				/// 按电脑核心数启动load。
+				for (int i = 0, n = Environment.ProcessorCount; i < n; i++)
+					StartNewLoad();
 
-				/// 先扫到可以处理的文件。
-				int i = 0;
-				ImageData? imageData = null;
-				for (; i < files.Count; ++i) {
-					string file = files[i];
-					imageData = load(file);
-					if (imageData != null) {
-						break;
-					}
-					failed.Add(file);
-					FinishOneImg();
-				}
-				if (imageData == null) {
-					return [];
-				}
-				/// 再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出pdf。
-				if (m_pdfDocument == null) {
-					if (m_pdfWriter == null) {
-						// 需要写时再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出空文件。
-						if (m_outputFileStream == null) {
-							IMerger.EnsureFileCanExsist(outputfilepath);
-							m_outputFileStream = new(outputfilepath, FileMode.OpenOrCreate, FileAccess.Write);
+				List<ImageData?> imageDatas = [];
+				int imgCnt = 0;
+				bool havePdfOutput = false;
+				while (true) {
+					bool isEmpty = true;
+					lock (m_loadedImg) {
+						if (m_loadedImg.Count != 0) {
+							isEmpty = false;
+							while (m_loadedImg.Count > 0) {
+								imageDatas.Add(m_loadedImg.Dequeue());
+							}
 						}
-						WriterProperties writerProperties = new();
-						writerProperties.SetFullCompressionMode(true);
-						writerProperties.SetCompressionLevel(CompressionConstants.DEFAULT_COMPRESSION);
-						m_pdfWriter = new(m_outputFileStream, writerProperties);
 					}
-					m_pdfDocument = new(m_pdfWriter);
-					m_pdfDocument.GetDocumentInfo().SetKeywords(title);
-				}
-				if (false == AddImage(imageData, m_pdfDocument)) {
-					failed.Add(files[i]);
-				}
-				FinishOneImg();
-				for (++i; i < files.Count; ++i) {
-					string file = files[i];
-					imageData = load(file);
-					if (imageData == null) {
-						failed.Add(file);
-						FinishOneImg();
+					if (isEmpty) {
+						Thread.Sleep(m_sleepMs);
 						continue;
 					}
-					if (false == AddImage(imageData, m_pdfDocument)) {
-						failed.Add(file);
+					// Add Image.
+					foreach (var imageData in imageDatas) {
+						if (imageData == null) {
+							failed.Add(files[imgCnt]);
+							FinishOneImg();
+							imgCnt++;
+							continue;
+						}
+						if (m_pdfDocument == null) {
+							if (m_pdfWriter == null) {
+								// 需要写时再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出空文件。
+								if (m_outputFileStream == null) {
+									IMerger.EnsureFileCanExsist(outputfilepath);
+									m_outputFileStream = new(outputfilepath, FileMode.OpenOrCreate, FileAccess.Write);
+								}
+								WriterProperties writerProperties = new();
+								writerProperties.SetFullCompressionMode(true);
+								writerProperties.SetCompressionLevel(CompressionConstants.DEFAULT_COMPRESSION);
+								m_pdfWriter = new(m_outputFileStream, writerProperties);
+							}
+							m_pdfDocument = new(m_pdfWriter);
+							m_pdfDocument.GetDocumentInfo().SetKeywords(title);
+						}
+						havePdfOutput = true;
+						AddImage(imageData, m_pdfDocument);
+						FinishOneImg();
+						imgCnt++;
 					}
-					FinishOneImg();
+					imageDatas.Clear();
+					if (imgCnt >= files.Count)
+						break;
 				}
+
+				Task.WaitAll([.. m_loadings]);
+				m_loadings.Clear();
+
+				if (!havePdfOutput) // 一个都没法合成的话返回空。
+					failed.Clear();
+
 				m_pdfDocument?.Close();
 				m_pdfWriter?.Close();
 				m_outputFileStream?.Close();
@@ -138,6 +178,57 @@ namespace PicMerge {
 				failed = ["An Exception Occurred:", ex.GetType().ToString(), ex.Message, ex.Source ?? "", ex.StackTrace ?? ""];
 			}
 			return failed;
+		}
+
+		/// <summary>
+		/// 开启一个新的加载图片任务。
+		/// </summary>
+		private void StartNewLoad() {
+			lock (m_loadings) {
+				m_loadings.Add(Task.Run(LoadOneProc));
+			}
+		}
+
+		/// <summary>
+		/// 加载一张图片的任务过程。
+		/// </summary>
+		private void LoadOneProc() {
+			/// 取序号。
+			int id;
+			lock (m_startedCntLock) {
+				if (m_startedCnt >= m_files.Count)
+					return;
+				id = m_startedCnt++;
+			}
+			string file = m_files[id];
+
+			/// 加载并处理。
+			ImageData? imageData =  m_compress ? LoadImage_Compress(file) : LoadImage_Direct(file);
+
+			/// Add loaded data into queue.
+			while (true) {
+				lock (m_loadedCntLock) {
+					/// My turn to enqueue.
+					if (id == m_loadedCnt) {
+						while (true) {
+							lock (m_loadedImg) {
+								/// Ensure queue is not too large.
+								if (m_loadedImg.Count < Environment.ProcessorCount * 2) {
+									m_loadedImg.Enqueue(imageData);
+									break;
+								}
+							}
+							Thread.Sleep(m_sleepMs);
+						}
+						m_loadedCnt++;
+						break;
+					}
+				}
+				Thread.Sleep(m_sleepMs);
+			}
+
+			/// Next Task.
+			StartNewLoad();
 		}
 
 		/// <summary>
@@ -150,14 +241,10 @@ namespace PicMerge {
 
 			// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
 			try {
-				if (m_compressor == null) {
-					m_mapfile ??= MemoryMappedFile.CreateNew(null, MapFileSize);
-					m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-				}
-				int len = m_compressor.Compress(file);
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-				using var mapstream = m_mapfile.CreateViewStream();
-#pragma warning restore CS8602 // 解引用可能出现空引用。
+				using MemoryMappedFile mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
+				using PicCompress.Compressor compressor = new(mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
+				int len = compressor.Compress(file);
+				using var mapstream = mapfile.CreateViewStream();
 				using BinaryReader br = new(mapstream);
 				imageData = ImageDataFactory.Create(br.ReadBytes(len));
 				br.Close();
@@ -209,14 +296,10 @@ namespace PicMerge {
 
 			// 若不支持则 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
 			try {
-				if (m_compressor == null) {
-					m_mapfile ??= MemoryMappedFile.CreateNew(null, MapFileSize);
-					m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-				}
-				int len = m_compressor.Compress(file);
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-				using var mapstream = m_mapfile.CreateViewStream();
-#pragma warning restore CS8602 // 解引用可能出现空引用。
+				using MemoryMappedFile mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
+				using PicCompress.Compressor compressor = new(mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
+				int len = compressor.Compress(file);
+				using var mapstream = mapfile.CreateViewStream();
 				using BinaryReader br = new(mapstream);
 				imageData = ImageDataFactory.Create(br.ReadBytes(len));
 				br.Close();
@@ -307,12 +390,8 @@ namespace PicMerge {
 				m_pdfDocument?.Close();
 				m_pdfWriter?.Dispose();
 				m_outputFileStream?.Dispose();
-
-				m_compressor?.Dispose();
-				m_mapfile?.Dispose();
 			}
 			m_disposed = true;
 		}
 	}
 }
-

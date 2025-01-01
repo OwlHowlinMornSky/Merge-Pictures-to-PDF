@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Windows;
+using System.Runtime.InteropServices;
 
 namespace WpfGui {
 	/// <summary>
@@ -8,7 +9,7 @@ namespace WpfGui {
 	/// <param name="guiMain">对应的界面的窗口</param>
 	/// <param name="setBarNum">设置进度条进度的回调</param>
 	/// <param name="setBarFinish">设置进度条完成的回调</param>
-	internal class Processor(Window guiMain, Action<int, int> setBarNum, Action setBarFinish) {
+	internal partial class Processor(Window guiMain, Action<int, int> setBarNum, Action setBarFinish) {
 
 		/// <summary>
 		/// 对应的主窗口。用来弹消息框。
@@ -51,6 +52,11 @@ namespace WpfGui {
 		/// 页面大小高，详见MainWindow。
 		/// </summary>
 		private int m_pagesizey = 0;
+
+		/// <summary>
+		/// 文件级并行，即此对象的子任务不并发（一个一个执行），但下面的 读取并处理图片 的操作并行。
+		/// </summary>
+		private bool m_parallelOnFileLevel = true;
 
 		/// <summary>
 		/// 主任务。
@@ -106,12 +112,14 @@ namespace WpfGui {
 		/// </summary>
 		private void CallbackFinishAllImgFile() {
 			int c = TaskCntDecrease();
-			if (m_waitingTasks.Count > 0) {
-				Task.Run(m_waitingTasks.Dequeue());
-			}
-			else if (c == 0) { // 计数是一次性加满的，然后子任务一个一个减一。减到零就是所有任务完成。
-				SetBarFinish(); // 设置进度条为完成。
-				m_tasks.Clear(); // 清空子任务列表。
+			lock (m_waitingTasks) {
+				if (m_waitingTasks.Count > 0) {
+					Task.Run(m_waitingTasks.Dequeue());
+				}
+				else if (c == 0) { // 计数是一次性加满的，然后子任务一个一个减一。减到零就是所有任务完成。
+					SetBarFinish(); // 设置进度条为完成。
+					m_tasks.Clear(); // 清空子任务列表。
+				}
 			}
 		}
 
@@ -167,6 +175,7 @@ namespace WpfGui {
 		/// <param name="pageSizeType">页面大小类型</param>
 		/// <param name="pagesizex">页面大小宽</param>
 		/// <param name="pagesizey">页面大小高</param>
+		/// <param name="parallelOnFileLevel">是否要文件级并行</param>
 		public void Set(
 			bool recursion,
 			bool keepStruct,
@@ -174,7 +183,8 @@ namespace WpfGui {
 			bool compress,
 			int pageSizeType,
 			int pagesizex,
-			int pagesizey
+			int pagesizey,
+			bool parallelOnFileLevel = true
 		) {
 			if (IsRunning()) {
 				return;
@@ -186,6 +196,7 @@ namespace WpfGui {
 			m_pageSizeType = pageSizeType;
 			m_pagesizex = pagesizex;
 			m_pagesizey = pagesizey;
+			m_parallelOnFileLevel = parallelOnFileLevel;
 		}
 
 		/// <summary>
@@ -252,14 +263,20 @@ namespace WpfGui {
 
 			/// 报告无法处理的列表。
 			if (unknown.Count > 0) {
-				string msg = "以下内容无法处理：";
+				string msg = App.Current.FindResource("CannotProcess").ToString() ?? "Cannot process:";
 				foreach (string str in unknown) {
 					msg += "\r\n";
 					msg += str;
 				}
 				m_tasks.Add(Task.Run(() => {
 					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(m_guiMain, msg, $"{m_guiMain.Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+						MessageBox.Show(
+							m_guiMain,
+							msg,
+							$"{m_guiMain.Title}: {App.Current.FindResource("Warning")}",
+							MessageBoxButton.OK,
+							MessageBoxImage.Warning
+						);
 					});
 				}));
 			}
@@ -287,7 +304,6 @@ namespace WpfGui {
 						destDir = Path.Combine(destFolder, pair.Item2);
 						if (!string.IsNullOrEmpty(pair.Item2))
 							destDir = Path.GetDirectoryName(destDir) ?? destDir;
-						EnsureFolderExisting(destDir);
 					}
 					else {
 						destDir = destFolder;
@@ -303,10 +319,13 @@ namespace WpfGui {
 					});
 				}
 			}
-			for (int i = 0, n = (int)(Environment.ProcessorCount * 1.5); i < n; i++) {
-				if (m_waitingTasks.Count < 1)
-					break;
-				Task.Run(m_waitingTasks.Dequeue());
+			/// 文件级并行时，不并发子任务。
+			lock (m_waitingTasks) {
+				for (int i = 0, n = m_parallelOnFileLevel ? 1 : Environment.ProcessorCount; i < n; i++) {
+					if (m_waitingTasks.Count < 1)
+						break;
+					Task.Run(m_waitingTasks.Dequeue());
+				}
 			}
 		}
 
@@ -385,8 +404,6 @@ namespace WpfGui {
 			// Process open folder dialog box results
 			if (result != true)
 				return null;
-
-			EnsureFolderExisting(res);
 			return res;
 		}
 
@@ -401,6 +418,10 @@ namespace WpfGui {
 			ProcessSingleFiles(files, outputPath, title);
 		}
 
+		[LibraryImport("Shlwapi.dll", EntryPoint = "StrCmpLogicalW", StringMarshalling = StringMarshalling.Utf16)]
+		[return: MarshalAs(UnmanagedType.I4)]
+		private static partial int StrCmpLogicalW(string psz1, string psz2);
+
 		/// <summary>
 		/// 子任务过程：处理零散文件。
 		/// </summary>
@@ -408,7 +429,10 @@ namespace WpfGui {
 		/// <param name="outputPath">输出文件</param>
 		/// <param name="title">内定标题（不是文件名）</param>
 		private void ProcessSingleFiles(List<string> files, string outputPath, string title) {
-			using PicMerge.Main merge = new(
+			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
+			files.Sort(StrCmpLogicalW);
+			using PicMerge.IMerger merge = PicMerge.IMerger.Create(
+				m_parallelOnFileLevel,
 				CallbackFinishOneImgFile,
 				m_pageSizeType,
 				m_pagesizex,
@@ -416,8 +440,8 @@ namespace WpfGui {
 				m_compress
 			);
 			List<string> failed = merge.Process(outputPath, files, title);
-			CheckMergeReturnedFailedList(title, failed);
 			CallbackFinishAllImgFile();
+			CheckMergeReturnedFailedList(title, failed);
 		}
 
 		/// <summary>
@@ -427,13 +451,19 @@ namespace WpfGui {
 		/// <param name="failed">失败列表</param>
 		private void CheckMergeReturnedFailedList(string title, List<string> failed) {
 			if (failed.Count > 0) {
-				string msg = $"以下文件无法加入“{title}”：\r\n";
+				string msg = string.Format(App.Current.FindResource("CannotMerge").ToString() ?? "Failed to merge into {0}:", title);
 				foreach (var str in failed) {
-					msg += str;
 					msg += ".\r\n";
+					msg += str;
 				}
 				App.Current.Dispatcher.Invoke(() => {
-					MessageBox.Show(m_guiMain, msg, $"{m_guiMain.Title}: 警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+					MessageBox.Show(
+						m_guiMain,
+						msg,
+						$"{m_guiMain.Title}: {App.Current.FindResource("Warning")}",
+						MessageBoxButton.OK,
+						MessageBoxImage.Warning
+					);
 				});
 			}
 		}
@@ -475,23 +505,6 @@ namespace WpfGui {
 				cnt += RecursionAllDirectories(d, basedir, ref list);
 			}
 			return cnt;
-		}
-
-		/// <summary>
-		/// 确保给定的目录存在。请在传入前 检查 path是 想要的目录的路径 而不是 想要的文件的路径。
-		/// 该方法会 递归地创建链条上的所有目录。例如传入 C:\DirA\DirB\DirC，而 DirA 不存在，
-		/// 那么该方法会创建 DirA、DirB、DirC 使输入路径可用。
-		/// </summary>
-		/// <param name="path">要求的目录</param>
-		/// <exception cref="DirectoryNotFoundException">无法完成任务</exception>
-		private static void EnsureFolderExisting(string path) {
-			if (Directory.Exists(path))
-				return;
-			string parent = Path.GetDirectoryName(path) ??
-				throw new DirectoryNotFoundException($"Parent of \"{path}\" is not exist!");
-			EnsureFolderExisting(parent);
-			Directory.CreateDirectory(path);
-			return;
 		}
 	}
 }
