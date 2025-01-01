@@ -1,6 +1,6 @@
-# PicMergeToPdf
+# Merge Picutes to PDF
 
-Merge-Picutes-to-PDF is an application that allow you to drag-drop image files and/or folders in and merge them with or without compression into seperate PDF files.
+Merge-Picutes-to-PDF is an application that allows you to drag-drop image files and/or folders in and merge them with or without compression into seperate PDF files.
 
 ## Usage
 
