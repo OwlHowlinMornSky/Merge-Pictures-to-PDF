@@ -97,7 +97,7 @@ namespace PicMerge {
 					return [];
 				}
 				/// 再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出pdf。
-				using FileStream stream = new(outputfilepath, FileMode.CreateNew, FileAccess.Write);
+				using FileStream stream = new(outputfilepath, FileMode.OpenOrCreate, FileAccess.Write);
 				WriterProperties writerProperties = new();
 				writerProperties.SetFullCompressionMode(true);
 				writerProperties.SetCompressionLevel(CompressionConstants.DEFAULT_COMPRESSION);
