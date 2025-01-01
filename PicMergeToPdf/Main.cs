@@ -106,7 +106,9 @@ namespace PicMerge {
 					using PdfDocument pdfDocument = new(writer);
 					pdfDocument.GetDocumentInfo().SetKeywords(title);
 
-					AddImage(imageData, pdfDocument);
+					if (false == AddImage(imageData, pdfDocument)) {
+						failed.Add(files[i]);
+					}
 					FinishOneImg();
 					for (++i; i < files.Count; ++i) {
 						string file = files[i];
@@ -116,14 +118,16 @@ namespace PicMerge {
 							FinishOneImg();
 							continue;
 						}
-						AddImage(imageData, pdfDocument);
+						if (false == AddImage(imageData, pdfDocument)) {
+							failed.Add(file);
+						}
 						FinishOneImg();
 					}
 				}
 				stream.Close();
 			}
 			catch (Exception ex) {
-				failed = ["处理过程出现异常", ex.Message];
+				failed = ["An Exception Occurred:", ex.GetType().ToString(), ex.Message, ex.Source ?? "", ex.StackTrace ?? ""];
 			}
 			return failed;
 		}
@@ -223,44 +227,51 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="imageData">图片数据</param>
 		/// <param name="pdfDocument">PDF文件数据</param>
-		private void AddImage(ImageData imageData, PdfDocument pdfDocument) {
-			PageSize pageSize;
-			PageSize imageSize;
-			float width = imageData.GetWidth();
-			float height = imageData.GetHeight();
-			switch (m_pageSizeType) {
-			default:
-			case 1: // 与图片大小一致
-				imageSize = new(width, height);
-				pageSize = imageSize;
-				break;
-			case 2: // 固定宽度
-				if (m_pagesizex == 0) {
-					m_pagesizex = width;
-				}
-				imageSize = new(m_pagesizex, m_pagesizex / width * height);
-				pageSize = imageSize;
-				break;
-			case 3: // 固定大小
-				if (m_pagesizex == 0 || m_pagesizey == 0) {
-					m_pagesizex = width;
-					m_pagesizey = height;
-				}
-				pageSize = new(m_pagesizex, m_pagesizey);
-				float r = float.Min(
+		/// <returns>是否成功</returns>
+		private bool AddImage(ImageData imageData, PdfDocument pdfDocument) {
+			try {
+				PageSize pageSize;
+				PageSize imageSize;
+				float width = imageData.GetWidth();
+				float height = imageData.GetHeight();
+				switch (m_pageSizeType) {
+				default:
+				case 1: // 与图片大小一致
+					imageSize = new(width, height);
+					pageSize = imageSize;
+					break;
+				case 2: // 固定宽度
+					if (m_pagesizex == 0) {
+						m_pagesizex = width;
+					}
+					imageSize = new(m_pagesizex, m_pagesizex / width * height);
+					pageSize = imageSize;
+					break;
+				case 3: // 固定大小
+					if (m_pagesizex == 0 || m_pagesizey == 0) {
+						m_pagesizex = width;
+						m_pagesizey = height;
+					}
+					pageSize = new(m_pagesizex, m_pagesizey);
+					float r = float.Min(
 					1.0f * m_pagesizex / width,
 					1.0f * m_pagesizey / height
 				);
-				imageSize = new(width * r, height * r);
-				imageSize.SetX((pageSize.GetWidth() - imageSize.GetWidth()) / 2.0f);
-				imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
-				break;
+					imageSize = new(width * r, height * r);
+					imageSize.SetX((pageSize.GetWidth() - imageSize.GetWidth()) / 2.0f);
+					imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
+					break;
+				}
+				pageSize.SetWidth(pageSize.GetWidth());
+				pageSize.SetHeight(pageSize.GetHeight());
+				PdfPage page = pdfDocument.AddNewPage(pageSize);
+				PdfCanvas canvas = new(page, true);
+				canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);
 			}
-			pageSize.SetWidth(pageSize.GetWidth());
-			pageSize.SetHeight(pageSize.GetHeight());
-			PdfPage page = pdfDocument.AddNewPage(pageSize);
-			PdfCanvas canvas = new(page, true);
-			canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);
+			catch (Exception e) {
+				return false;
+			}
+			return true;
 		}
 
 		public void Dispose() {
