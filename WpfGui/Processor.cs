@@ -344,34 +344,40 @@ namespace WpfGui {
 			ref List<string> unknown
 		) {
 			int cnt = 0;
+			List<string> tmpDirs = [];
 			foreach (var path in paths) {  // 遍历拖入的路径。
 				if (File.Exists(path)) {   // 是否是文件。
 					files.Add(path);
 					cnt++;
 				}
 				else if (Directory.Exists(path)) { // 是否是文件夹。
-					int dirfilecnt = Directory.EnumerateFiles(path).Count();
-					var dirParent = Path.GetDirectoryName(path);
-					if (dirParent == null) {
-						if (dirfilecnt > 0) { // 不为空 才 加入。
-							directories.Add(Tuple.Create(path, ""));
-							cnt += dirfilecnt;
-						}
-						if (m_recursion)
-							cnt += RecursionAllDirectories(path, path, ref directories);
-					}
-					else {
-						if (dirfilecnt > 0) {
-							directories.Add(Tuple.Create(dirParent, Path.GetRelativePath(dirParent, path)));
-							cnt += dirfilecnt;
-						}
-						if (m_recursion)
-							cnt += RecursionAllDirectories(path, dirParent, ref directories);
-					}
+					tmpDirs.Add(path);
 				}
 				else {
 					unknown.Add(path); // 加入无法处理的列表。
 					cnt++;
+				}
+			}
+			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
+			tmpDirs.Sort(StrCmpLogicalW);
+			foreach (var path in tmpDirs) {
+				int dirfilecnt = Directory.EnumerateFiles(path).Count();
+				var dirParent = Path.GetDirectoryName(path);
+				if (dirParent == null) {
+					if (dirfilecnt > 0) { // 不为空 才 加入。
+						directories.Add(Tuple.Create(path, ""));
+						cnt += dirfilecnt;
+					}
+					if (m_recursion)
+						cnt += RecursionAllDirectories(path, path, ref directories);
+				}
+				else {
+					if (dirfilecnt > 0) { // 不为空 才 加入。
+						directories.Add(Tuple.Create(dirParent, Path.GetRelativePath(dirParent, path)));
+						cnt += dirfilecnt;
+					}
+					if (m_recursion)
+						cnt += RecursionAllDirectories(path, dirParent, ref directories);
 				}
 			}
 			return cnt;
@@ -496,7 +502,10 @@ namespace WpfGui {
 		/// <returns>子树的文件总数（不判断文件类型）</returns>
 		private static int RecursionAllDirectories(string dir, string basedir, ref List<Tuple<string, string>> list) {
 			int cnt = 0;
-			foreach (string d in Directory.EnumerateDirectories(dir)) {
+			List<string> children = [.. Directory.EnumerateDirectories(dir)];
+			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
+			children.Sort(StrCmpLogicalW);
+			foreach (string d in children) {
 				int dirfilecnt = Directory.EnumerateFiles(d).Count();
 				if (dirfilecnt > 0) {
 					list.Add(Tuple.Create(basedir, Path.GetRelativePath(basedir, d)));
