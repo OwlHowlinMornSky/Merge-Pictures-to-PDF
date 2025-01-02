@@ -5,6 +5,7 @@ using iText.Kernel.Pdf.Canvas;
 using SixLabors.ImageSharp.Formats.Gif;
 using System.IO.MemoryMappedFiles;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace PicMerge {
 	/// <summary>
@@ -234,47 +235,74 @@ namespace PicMerge {
 		/// <summary>
 		/// 压缩全部图片时的加载逻辑。
 		/// </summary>
-		/// <param name="file">欲加载的文件</param>
+		/// <param name="filepath">欲加载的文件路径</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private ImageData? LoadImage_Compress(string file) {
+		private static ImageData? LoadImage_Compress(string filepath) {
 			ImageData? imageData = null;
 
-			// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
-			try {
-				using MemoryMappedFile mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
-				using PicCompress.Compressor compressor = new(mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-				int len = compressor.Compress(file);
-				using var mapstream = mapfile.CreateViewStream();
-				using BinaryReader br = new(mapstream);
-				imageData = ImageDataFactory.Create(br.ReadBytes(len));
-				br.Close();
-				mapstream.Close();
-			}
-			catch (Exception) { }
-			if (imageData != null)
-				return imageData;
+			using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
+			using MemoryMappedFile inFile = MemoryMappedFile.CreateFromFile(inputStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+			using var instream = inFile.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
 
-			// 若不支持则 尝试 直接加载
-			try {
-				imageData = ImageDataFactory.Create(file);
-			}
-			catch (Exception) { }
-			if (imageData != null)
-				return imageData;
+			var type = FileType.CheckType(instream);
 
-			// 若不支持则 尝试利用 ImageSharp 压缩（压缩为 GIF）
-			try {
-				GifEncoder gifEncoder = new() {
-					SkipMetadata = true
-				};
-				using Image image = Image.Load(file);
-				using MemoryStream imgSt = new();
-				image.SaveAsGif(imgSt, gifEncoder);
-				imageData = ImageDataFactory.Create(imgSt.ToArray());
-				imgSt.Close();
+			switch (type) {
+			case FileType.Type.JPEG: // CSI, Img#, Direct.
+			case FileType.Type.PNG:  // CSI, Img#, Direct.
+			case FileType.Type.TIFF: // CSI, Img#, Direct.
+			case FileType.Type.WEBP: // CSI, Img#.
+				/// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
+				try {
+					instream.Seek(0, SeekOrigin.Begin);
+					using MemoryMappedFile mapfile = MemoryMappedFile.CreateNew(null, MapFileSize, MemoryMappedFileAccess.ReadWrite);
+					using PicCompress.Compressor compressor = new(mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
+					int len = compressor.CompressFrom(inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length);
+					using var mapstream = mapfile.CreateViewStream();
+					using BinaryReader br = new(mapstream);
+					imageData = ImageDataFactory.Create(br.ReadBytes(len));
+					br.Close();
+					mapstream.Close();
+				}
+				catch (Exception) {
+					imageData = null;
+					goto case FileType.Type.GIF;
+				}
+				break;
+			case FileType.Type.BMP:  // Img#, Direct.
+			case FileType.Type.GIF:  // Img#, Direct.
+				/// 尝试利用 ImageSharp 压缩（压缩为 80% 的 JPG）
+				try {
+					instream.Seek(0, SeekOrigin.Begin);
+					JpegEncoder encoder = new() {
+						SkipMetadata = true,
+						ColorType = JpegEncodingColor.Rgb,
+						Quality = 80,
+						Interleaved = false
+					};
+					using Image image = Image.Load(instream);
+					using MemoryStream imgSt = new();
+					image.SaveAsJpeg(imgSt, encoder);
+					imageData = ImageDataFactory.Create(imgSt.ToArray());
+					imgSt.Close();
+				}
+				catch (Exception) {
+					imageData = null;
+				}
+				if (type == FileType.Type.WEBP)
+					break;
+				/// 尝试 直接加载
+				try {
+					instream.Seek(0, SeekOrigin.Begin);
+					using BinaryReader br = new(instream);
+					imageData = ImageDataFactory.Create(br.ReadBytes((int)instream.Length));
+				}
+				catch (Exception) {
+					imageData = null;
+				}
+				break;
+			default:
+				break;
 			}
-			catch (Exception) { }
-
 			return imageData;
 		}
 
@@ -283,45 +311,70 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="file">欲加载的文件</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private ImageData? LoadImage_Direct(string file) {
+		private static ImageData? LoadImage_Direct(string filepath) {
 			ImageData? imageData = null;
 
-			// 尝试 直接加载
-			try {
-				imageData = ImageDataFactory.Create(file);
-			}
-			catch (Exception) { }
-			if (imageData != null)
-				return imageData;
+			using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
+			using MemoryMappedFile inFile = MemoryMappedFile.CreateFromFile(inputStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+			using var instream = inFile.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
 
-			// 若不支持则 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
-			try {
-				using MemoryMappedFile mapfile = MemoryMappedFile.CreateNew(null, MapFileSize);
-				using PicCompress.Compressor compressor = new(mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-				int len = compressor.Compress(file);
-				using var mapstream = mapfile.CreateViewStream();
-				using BinaryReader br = new(mapstream);
-				imageData = ImageDataFactory.Create(br.ReadBytes(len));
-				br.Close();
-				mapstream.Close();
-			}
-			catch (Exception) { }
-			if (imageData != null)
-				return imageData;
+			var type = FileType.CheckType(instream);
 
-			// 若不支持则 尝试利用 ImageSharp 压缩（压缩为 GIF）
-			try {
-				GifEncoder gifEncoder = new() {
-					SkipMetadata = true
-				};
-				using Image image = Image.Load(file);
-				using MemoryStream imgSt = new();
-				image.SaveAsGif(imgSt, gifEncoder);
-				imageData = ImageDataFactory.Create(imgSt.ToArray());
-				imgSt.Close();
+			switch (type) {
+			case FileType.Type.JPEG: // CSI, Img#, Direct.
+			case FileType.Type.PNG:  // CSI, Img#, Direct.
+			case FileType.Type.TIFF: // CSI, Img#, Direct.
+			case FileType.Type.BMP:  // Img#, Direct.
+			case FileType.Type.GIF:  // Img#, Direct.
+				/// 尝试 直接加载
+				try {
+					instream.Seek(0, SeekOrigin.Begin);
+					using BinaryReader br = new(instream);
+					imageData = ImageDataFactory.Create(br.ReadBytes((int)instream.Length));
+				}
+				catch (Exception) {
+					imageData = null;
+					goto case FileType.Type.WEBP;
+				}
+				break;
+			case FileType.Type.WEBP: // CSI, Img#.
+				/// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
+				try {
+					instream.Seek(0, SeekOrigin.Begin);
+					using MemoryMappedFile mapfile = MemoryMappedFile.CreateNew(null, MapFileSize, MemoryMappedFileAccess.ReadWrite);
+					using PicCompress.Compressor compressor = new(mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
+					int len = compressor.CompressFrom(inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length);
+					using var mapstream = mapfile.CreateViewStream();
+					using BinaryReader br = new(mapstream);
+					imageData = ImageDataFactory.Create(br.ReadBytes(len));
+					br.Close();
+					mapstream.Close();
+				}
+				catch (Exception) {
+					imageData = null;
+				}
+				/// 尝试利用 ImageSharp 压缩（压缩为 80% 的 JPG）
+				try {
+					instream.Seek(0, SeekOrigin.Begin);
+					JpegEncoder encoder = new() {
+						SkipMetadata = true,
+						ColorType = JpegEncodingColor.Rgb,
+						Quality = 80,
+						Interleaved = false
+					};
+					using Image image = Image.Load(instream);
+					using MemoryStream imgSt = new();
+					image.SaveAsJpeg(imgSt, encoder);
+					imageData = ImageDataFactory.Create(imgSt.ToArray());
+					imgSt.Close();
+				}
+				catch (Exception) {
+					imageData = null;
+				}
+				break;
+			default:
+				break;
 			}
-			catch (Exception) { }
-
 			return imageData;
 		}
 

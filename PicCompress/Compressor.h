@@ -28,6 +28,14 @@ public:
 	 */
 	System::Int32 Compress(System::String^ file);
 
+	/**
+	 * @brief 压缩。从指定的内存映射读取，写入构造时指定的内存映射文件。
+	 * @param handle: 内存映射文件的原始句柄。
+	 * @param len: 内存映射文件的大小（字节）。
+	 * @return 输出大小（字节）。
+	 */
+	System::Int32 CompressFrom(System::IntPtr handle, System::Int64 len);
+
 private:
 	HANDLE r_hmapping; // 保存的句柄。似乎没必要保留。应该不能在此 CloseHandle。
 	void* m_view;      // 创建的文件映射。

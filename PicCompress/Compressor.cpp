@@ -44,8 +44,8 @@ LPVOID WinCheckError(LPCWSTR lpszFunction) noexcept {
 }
 
 PicCompress::Compressor::Compressor(System::IntPtr handle, System::Int64 maxlen) {
-	if (maxlen < 1) {
-		throw gcnew ArgumentException("Invalid maxlen.");
+	if ((void*)handle == nullptr || maxlen < 1) {
+		throw gcnew InvalidOperationException("Invalid Mapping File.");
 	}
 	r_hmapping = (HANDLE)handle;
 	m_view = MapViewOfFile(r_hmapping, FILE_MAP_WRITE, 0, 0, 0);
@@ -88,6 +88,35 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ file) {
 	CSI_Result res = csi_convert_into(cstr, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
 
 	delete[] cstr;
+	if (!res.success) {
+		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
+	}
+	if (res.code < 1 || res.code > 2147483600ull) {
+		throw gcnew InsufficientMemoryException();
+	}
+	return (System::Int32)res.code;
+}
+
+System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr handle, System::Int64 len) {
+	if ((void*)handle == nullptr || len < 1) {
+		throw gcnew ArgumentException("Invalid Input File.");
+	}
+	void* inview = MapViewOfFile((HANDLE)handle, FILE_MAP_READ, 0, 0, 0);
+	if (nullptr == inview) {
+		LPVOID description = ::WinCheckError(L"Failed to Open Map View");
+		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
+		LocalFree(description);
+		throw excep;
+	}
+
+	CSI_Parameters parameters = {};
+	parameters.keep_metadata = false;
+	parameters.jpeg_quality = 80;
+	parameters.jpeg_progressive = true;
+	parameters.width = 1680;
+
+	CSI_Result res = csi_convert_fromto(inview, len, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
+
 	if (!res.success) {
 		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
 	}
