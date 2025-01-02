@@ -83,7 +83,8 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ file) {
 	parameters.keep_metadata = false;
 	parameters.jpeg_quality = 80;
 	parameters.jpeg_progressive = true;
-	parameters.width = 1680;
+	parameters.width = 2520;
+	parameters.reduce_by_power_of_2 = true;
 
 	CSI_Result res = csi_convert_into(cstr, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
 
@@ -113,7 +114,8 @@ System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr handle, Syste
 	parameters.keep_metadata = false;
 	parameters.jpeg_quality = 80;
 	parameters.jpeg_progressive = true;
-	parameters.width = 1680;
+	parameters.width = 2520;
+	parameters.reduce_by_power_of_2 = true;
 
 	CSI_Result res = csi_convert_fromto(inview, len, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
 
