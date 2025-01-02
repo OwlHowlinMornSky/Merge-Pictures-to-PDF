@@ -45,12 +45,12 @@ LPVOID WinCheckError(LPCWSTR lpszFunction) noexcept {
 
 PicCompress::Compressor::Compressor(System::IntPtr handle, System::Int64 maxlen) {
 	if ((void*)handle == nullptr || maxlen < 1) {
-		throw gcnew InvalidOperationException("Invalid Mapping File.");
+		throw gcnew InvalidOperationException("Invalid Output Mapping File.");
 	}
 	r_hmapping = (HANDLE)handle;
 	m_view = MapViewOfFile(r_hmapping, FILE_MAP_WRITE, 0, 0, 0);
 	if (nullptr == m_view) {
-		LPVOID description = ::WinCheckError(L"Failed to Open Map View");
+		LPVOID description = ::WinCheckError(L"Failed to Map Output View");
 		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
 		LocalFree(description);
 		throw excep;
@@ -61,7 +61,7 @@ PicCompress::Compressor::Compressor(System::IntPtr handle, System::Int64 maxlen)
 PicCompress::Compressor::~Compressor() {
 	BOOL res = UnmapViewOfFile(m_view);
 	if (0 == res) {
-		LPVOID description = ::WinCheckError(L"Failed to Open Map View");
+		LPVOID description = ::WinCheckError(L"Failed to Unmap Output View");
 		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
 		LocalFree(description);
 		throw excep;
@@ -100,11 +100,11 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ file) {
 
 System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr handle, System::Int64 len) {
 	if ((void*)handle == nullptr || len < 1) {
-		throw gcnew ArgumentException("Invalid Input File.");
+		throw gcnew ArgumentException("Invalid Input Maping File.");
 	}
 	void* inview = MapViewOfFile((HANDLE)handle, FILE_MAP_READ, 0, 0, 0);
 	if (nullptr == inview) {
-		LPVOID description = ::WinCheckError(L"Failed to Open Map View");
+		LPVOID description = ::WinCheckError(L"Failed to Map Input View");
 		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
 		LocalFree(description);
 		throw excep;
@@ -118,6 +118,13 @@ System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr handle, Syste
 	parameters.reduce_by_power_of_2 = true;
 
 	CSI_Result res = csi_convert_fromto(inview, len, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
+
+	if (0 == UnmapViewOfFile(inview)) {
+		LPVOID description = ::WinCheckError(L"Failed to Unmap Input View");
+		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
+		LocalFree(description);
+		throw excep;
+	}
 
 	if (!res.success) {
 		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
