@@ -45,32 +45,32 @@ LPVOID WinCheckError(LPCWSTR lpszFunction) noexcept {
 
 }
 
-PicCompress::Compressor::Compressor(System::IntPtr handle, System::Int64 maxlen) {
-	if ((void*)handle == nullptr || maxlen < 1) {
+PicCompress::Compressor::Compressor(System::IntPtr houtfile, System::Int64 oFileMaxLen) {
+	if ((HANDLE)houtfile == NULL || oFileMaxLen < 1) {
 		throw gcnew InvalidOperationException("Invalid Output Mapping File.");
 	}
-	m_view = MapViewOfFile((HANDLE)handle, FILE_MAP_WRITE, 0, 0, 0);
-	if (nullptr == m_view) {
+	m_viewOfOutFile = MapViewOfFile((HANDLE)houtfile, FILE_MAP_WRITE, 0, 0, 0);
+	if (nullptr == m_viewOfOutFile) {
 		LPVOID description = ::WinCheckError(L"Failed to Map Output View");
-		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
+		auto ex = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
 		LocalFree(description);
-		throw excep;
+		throw ex;
 	}
-	m_maxlen = maxlen;
+	m_oFileMaxLen = oFileMaxLen;
 }
 
 PicCompress::Compressor::~Compressor() {
-	BOOL res = UnmapViewOfFile(m_view);
+	BOOL res = UnmapViewOfFile(m_viewOfOutFile);
 	if (0 == res) {
 		LPVOID description = ::WinCheckError(L"Failed to Unmap Output View");
-		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
+		auto ex = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
 		LocalFree(description);
-		throw excep;
+		throw ex;
 	}
 }
 
-System::Int32 PicCompress::Compressor::Compress(System::String^ file) {
-	cli::array<wchar_t>^ wArray = file->ToCharArray();
+System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile) {
+	cli::array<wchar_t>^ wArray = pathOfInFile->ToCharArray();
 	cli::array<unsigned char, 1>^ arr = System::Text::Encoding::UTF8->GetBytes(wArray);
 
 	int len = arr->Length;
@@ -87,7 +87,7 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ file) {
 	parameters.width = 2520;
 	parameters.reduce_by_power_of_2 = true;
 
-	CSI_Result res = csi_convert_into(cstr, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
+	CSI_Result res = csi_convert_into(cstr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
 
 	delete[] cstr;
 	if (!res.success) {
@@ -99,16 +99,16 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ file) {
 	return (System::Int32)res.code;
 }
 
-System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr handle, System::Int64 len) {
-	if ((void*)handle == nullptr || len < 1) {
+System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr hinfile, System::Int64 iFileLen) {
+	if ((HANDLE)hinfile == NULL || iFileLen < 1) {
 		throw gcnew ArgumentException("Invalid Input Maping File.");
 	}
-	void* inview = MapViewOfFile((HANDLE)handle, FILE_MAP_READ, 0, 0, 0);
+	void* inview = MapViewOfFile((HANDLE)hinfile, FILE_MAP_READ, 0, 0, 0);
 	if (nullptr == inview) {
 		LPVOID description = ::WinCheckError(L"Failed to Map Input View");
-		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
+		auto ex = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
 		LocalFree(description);
-		throw excep;
+		throw ex;
 	}
 
 	CSI_Parameters parameters = {};
@@ -118,13 +118,13 @@ System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr handle, Syste
 	parameters.width = 2520;
 	parameters.reduce_by_power_of_2 = true;
 
-	CSI_Result res = csi_convert_fromto(inview, len, m_view, m_maxlen, CSI_SupportedFileTypes::Jpeg, &parameters);
+	CSI_Result res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
 
 	if (0 == UnmapViewOfFile(inview)) {
 		LPVOID description = ::WinCheckError(L"Failed to Unmap Input View");
-		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
+		auto ex = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
 		LocalFree(description);
-		throw excep;
+		throw ex;
 	}
 
 	if (!res.success) {

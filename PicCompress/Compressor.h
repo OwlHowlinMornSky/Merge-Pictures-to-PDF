@@ -11,31 +11,31 @@ public ref class Compressor {
 public:
 	/**
 	 * @brief 构造函数。
-	 * @param handle: 内存映射文件的原始句柄。
-	 * @param maxlen: 内存映射文件的最大大小（字节）。
+	 * @param houtfile: 输出 之 内存映射文件 之 原始句柄。
+	 * @param oFileMaxLen: 输出 之 内存映射文件 之 最大大小（字节）。
 	 */
-	Compressor(System::IntPtr handle, System::Int64 maxlen);
+	Compressor(System::IntPtr houtfile, System::Int64 oFileMaxLen);
 	~Compressor();
 
 public:
 	/**
-	 * @brief 压缩。写入构造时指定的内存映射文件。
-	 * @param file: 文件路径。
-	 * @return 压缩后的大小（字节）。
+	 * @brief 压缩。将 把结果 写入 构造时指定之内存映射文件。
+	 * @param pathOfInFile: 输入之文件的 路径。
+	 * @return 写入输出文件之大小（字节）。
 	 */
-	System::Int32 Compress(System::String^ file);
+	System::Int32 Compress(System::String^ pathOfInFile);
 
 	/**
-	 * @brief 压缩。从指定的内存映射读取，写入构造时指定的内存映射文件。
-	 * @param handle: 内存映射文件的原始句柄。
-	 * @param len: 内存映射文件的大小（字节）。
-	 * @return 输出大小（字节）。
+	 * @brief 压缩。从 指定之内存映射文件 读取，写入 构造时指定之内存映射文件。
+	 * @param hinfile: 输入 之 内存映射文件 之 原始句柄。
+	 * @param iFileLen: 输入 之 内存映射文件 之 大小（字节）。
+	 * @return 写入输出文件之大小（字节）。
 	 */
-	System::Int32 CompressFrom(System::IntPtr handle, System::Int64 len);
+	System::Int32 CompressFrom(System::IntPtr hinfile, System::Int64 iFileLen);
 
 private:
-	void* m_view;      // 创建的文件映射。
-	System::UInt64 m_maxlen; // 保存的最大大小。
+	void*          m_viewOfOutFile; // 输出之文件映射。
+	System::UInt64 m_oFileMaxLen;   // 输出之最大大小。
 };
 
 }
