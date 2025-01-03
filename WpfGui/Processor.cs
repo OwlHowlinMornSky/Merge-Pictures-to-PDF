@@ -11,6 +11,11 @@ namespace WpfGui {
 	/// <param name="setBarFinish">设置进度条完成的回调</param>
 	internal partial class Processor(Window guiMain, Action<int, int> setBarNum, Action setBarFinish) {
 
+		private struct TaskInputData(bool _isDirectory, List<string> _files) {
+			public readonly bool isDirectory = _isDirectory;
+			public List<string> files = _files;
+		}
+
 		/// <summary>
 		/// 对应的主窗口。用来弹消息框。
 		/// </summary>
@@ -52,7 +57,6 @@ namespace WpfGui {
 		/// 页面大小高，详见MainWindow。
 		/// </summary>
 		private int m_pagesizey = 0;
-
 		/// <summary>
 		/// 文件级并行，即此对象的子任务不并发（一个一个执行），但下面的 读取并处理图片 的操作并行。
 		/// </summary>
@@ -68,21 +72,13 @@ namespace WpfGui {
 		private readonly object m_lockForStart = new();
 
 		/// <summary>
-		/// 等待中的子任务。
+		/// 选定的输出目录，若输出到原位，则为empty。
 		/// </summary>
-		private readonly Queue<Action> m_waitingTasks = [];
+		private string m_destinationDir = "";
 		/// <summary>
-		/// 保存所有子任务。
+		/// 待处理的数据。
 		/// </summary>
-		private readonly List<Task> m_tasks = [];
-		/// <summary>
-		/// 未报告完成的子任务计数。
-		/// </summary>
-		private int m_taskCnt = 0;
-		/// <summary>
-		/// 未报告完成的子任务计数 的 锁。
-		/// </summary>
-		private readonly object m_lockForTaskCnt = new();
+		private readonly Queue<TaskInputData> m_waitings = [];
 
 		/// <summary>
 		/// 报告完成的图片计数。
@@ -111,48 +107,21 @@ namespace WpfGui {
 		/// 用于子任务报告全部完成 的 回调目标。实际上在本对象内的 ProcessSingleFiles 使用了，不需要传给PicMerge。
 		/// </summary>
 		private void CallbackFinishAllImgFile() {
-			int c = TaskCntDecrease();
-			lock (m_waitingTasks) {
-				if (m_waitingTasks.Count > 0) {
-					Task.Run(m_waitingTasks.Dequeue());
+			lock (m_waitings) {
+				if (m_waitings.Count > 0) {
+#pragma warning disable CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
+					ProcessAsync(m_waitings.Dequeue());
+#pragma warning restore CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
+					return;
 				}
-				else if (c == 0) { // 计数是一次性加满的，然后子任务一个一个减一。减到零就是所有任务完成。
+			}
+			/// 没有等待处理的数据了。
+			lock (m_lockForImgCnt) {
+				/// 图片也处理完了。
+				if (m_finishedImgCnt >= m_totalImgCnt) {
 					SetBarFinish(); // 设置进度条为完成。
-					m_tasks.Clear(); // 清空子任务列表。
 				}
 			}
-		}
-
-		/// <summary>
-		/// 将子任务计数重置为零。
-		/// </summary>
-		private void TaskCntReset() {
-			lock (m_lockForTaskCnt) {
-				m_taskCnt = 0;
-			}
-		}
-
-		/// <summary>
-		/// 设置子任务计数。
-		/// </summary>
-		/// <param name="n">要设置的值</param>
-		private void TaskCntSet(int n) {
-			lock (m_lockForTaskCnt) {
-				m_taskCnt = n;
-			}
-		}
-
-		/// <summary>
-		/// 将子任务计数减一。
-		/// </summary>
-		/// <returns>新的计数值</returns>
-		private int TaskCntDecrease() {
-			int res;
-			lock (m_lockForTaskCnt) {
-				m_taskCnt--;
-				res = m_taskCnt;
-			}
-			return res;
 		}
 
 		/// <summary>
@@ -160,8 +129,8 @@ namespace WpfGui {
 		/// </summary>
 		/// <returns>是否正在进行</returns>
 		public bool IsRunning() {
-			lock (m_lockForTaskCnt) {
-				return (m_taskCnt != 0) || (m_taskStem != null && !m_taskStem.IsCompleted);
+			lock (m_waitings) {
+				return (m_waitings.Count != 0) || (m_taskStem != null && !m_taskStem.IsCompleted);
 			}
 		}
 
@@ -209,8 +178,7 @@ namespace WpfGui {
 				if (IsRunning()) {
 					return false;
 				}
-				TaskCntReset();
-				m_taskStem = Task.Run(() => { ProcessStem(paths); });
+				m_taskStem = Task.Run(() => { ProcessStem(paths); return; });
 				return true;
 			}
 		}
@@ -220,113 +188,156 @@ namespace WpfGui {
 		/// </summary>
 		/// <param name="paths">要处理的文件/文件夹</param>
 		private void ProcessStem(string[] paths) {
-			string? destFolder = null;
-			/// 拖放进入的文件列表 通常 只 包括 文件与文件夹。零散文件 即 直接被拖入的文件。
-			/// 一般来说，零散文件都在同一个目录，我也懒得考虑不同目录了。
-			/// 零散文件的列表。
-			List<string> files = [];
-			/// 文件夹列表，第一个是基准文件夹的绝对路径，第二个是相对路径。合起来才表示处理路径。
-			List<Tuple<string, string>> directories = [];
-			/// 无法处理的列表（不是文件也不是文件夹）。
-			List<string> unknown = [];
-
+			m_destinationDir = "";
 			{
-				/// 预处理任务，包括 可能的【询问输出目录】 和 初步扫描统计。
-				List<Task<int>> prepare = [];
 
-				prepare.Add(Task.Run(() => {
-					return ScanInput(paths, ref files, ref directories, ref unknown);
-				}));
-				if (m_stayNoMove) {
-					destFolder = "";
-				}
-				else {
-					prepare.Add(Task.Run(() => {
-						destFolder = AskForDestination(paths[0]);
-						return 0;
-					}));
-				}
-				Task.WaitAll([.. prepare]);
+				/// 拖放进入的文件列表 通常 只 包括 文件与文件夹。零散文件 即 直接被拖入的文件。
+				/// 一般来说，零散文件都在同一个目录，我也懒得考虑不同目录了。
+				/// 零散文件的列表。
+				List<string> files = [];
+				/// 文件夹列表，第一个是基准文件夹的绝对路径，第二个是相对路径。合起来才表示处理路径。
+				List<Tuple<string, string>> directories = [];
+				/// 无法处理的列表（不是文件也不是文件夹）。
+				List<string> unknown = [];
 
-				/// 设置统计值。
-				m_finishedImgCnt = 0;
-				m_totalImgCnt = prepare[0].Result;
-				if (destFolder == null || m_totalImgCnt < 1)
-					return;
-
-				SetBarNum(0, m_totalImgCnt);
-			}
-
-			/// 准备子任务。
-			TaskCntSet(directories.Count + (files.Count > 0 ? 1 : 0) + (unknown.Count > 0 ? 1 : 0));
-			m_tasks.Clear();
-
-			/// 报告无法处理的列表。
-			if (unknown.Count > 0) {
-				string msg = App.Current.FindResource("CannotProcess").ToString() ?? "Cannot process:";
-				foreach (string str in unknown) {
-					msg += "\r\n";
-					msg += str;
-				}
-				m_tasks.Add(Task.Run(() => {
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(
-							m_guiMain,
-							msg,
-							$"{m_guiMain.Title}: {App.Current.FindResource("Warning")}",
-							MessageBoxButton.OK,
-							MessageBoxImage.Warning
-						);
+				{
+					/// 预处理任务，包括 可能的【询问输出目录】 和 初步扫描统计。
+					var taskScan = Task.Run(() => {
+						return ScanInput(paths, ref files, ref directories, ref unknown);
 					});
-				}));
-			}
-			/// 处理零散文件。
-			if (files.Count > 0) { // 拖入的列表中存在文件。
-				/// 输出到原位时，就是输入路径的父目录，否则，就是选定的目标目录。
-				string outputPath = EnumFileName(
-					m_stayNoMove ? (Path.GetDirectoryName(files[0]) ?? "") : destFolder,
-					Path.GetFileNameWithoutExtension(files[0]), ".pdf"
-				);
-				/// 零散文件的标题 取 文件所在父目录的名字。
-				m_waitingTasks.Enqueue(() => {
-					ProcessSingleFiles(files, outputPath, Path.GetFileName(Path.GetDirectoryName(files[0]) ?? ""));
-				});
-			}
-			/// 处理文件夹。
-			if (directories.Count > 0) { // 拖入的列表中存在目录。
-				foreach (Tuple<string, string> pair in directories) {
-					string sourceDir = Path.Combine(pair.Item1, pair.Item2);
-					string destDir;
-					if (m_stayNoMove) {
-						destDir = Path.GetDirectoryName(sourceDir) ?? sourceDir;
+					if (!m_stayNoMove) {
+						var taskQDest = AskForDestinationAsync(paths[0]);
+						taskQDest.Wait();
+						if (taskQDest.Result == null)
+							return;
 					}
-					else if (m_keepStruct) {
-						destDir = Path.Combine(destFolder, pair.Item2);
-						if (!string.IsNullOrEmpty(pair.Item2))
-							destDir = Path.GetDirectoryName(destDir) ?? destDir;
-					}
-					else {
-						destDir = destFolder;
-					}
-					string outputPath = EnumFileName(destDir, Path.GetFileName(sourceDir), ".pdf");
+					taskScan.Wait();
 
-					/// 文件夹对应标题 取 它与基准路径相差的相对路径。
-					m_waitingTasks.Enqueue(() => {
-						ProcessOneFolder(
-							Path.Combine(pair.Item1, pair.Item2), outputPath,
-							string.IsNullOrEmpty(pair.Item2) ? Path.GetFileName(pair.Item1) : pair.Item2
-						);
+					/// 设置统计值。
+					m_finishedImgCnt = 0;
+					m_totalImgCnt = taskScan.Result;
+					if (m_totalImgCnt < 1)
+						return;
+
+					SetBarNum(0, m_totalImgCnt);
+				}
+
+				/// 准备子任务。
+				m_waitings.Clear();
+				/// 报告无法处理的列表。
+				if (unknown.Count > 0) {
+					string msg = App.Current.FindResource("CannotProcess").ToString() ?? "Cannot process:";
+					foreach (string str in unknown) {
+						msg += "\r\n";
+						msg += str;
+					}
+					Task.Run(() => {
+						App.Current.Dispatcher.Invoke(() => {
+							MessageBox.Show(
+								m_guiMain,
+								msg,
+								$"{m_guiMain.Title}: {App.Current.FindResource("Warning")}",
+								MessageBoxButton.OK,
+								MessageBoxImage.Warning
+							);
+						});
 					});
+				}
+				/// 零散文件。
+				if (files.Count > 0) {
+					m_waitings.Enqueue(new TaskInputData(false, files));
+				}
+				/// 文件夹。
+				if (directories.Count > 0) {
+					foreach (Tuple<string, string> pair in directories)
+						m_waitings.Enqueue(new TaskInputData(true, [pair.Item1, pair.Item2]));
 				}
 			}
 			/// 文件级并行时，只并发2个子任务，避免1个PDF写入时全部等待。
-			lock (m_waitingTasks) {
+			lock (m_waitings) {
 				for (int i = 0, n = m_parallelOnFileLevel ? 2 : int.Max(2, Environment.ProcessorCount); i < n; i++) {
-					if (m_waitingTasks.Count < 1)
+					if (m_waitings.Count < 1)
 						break;
-					Task.Run(m_waitingTasks.Dequeue());
+#pragma warning disable CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
+					ProcessAsync(m_waitings.Dequeue());
+#pragma warning restore CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
 				}
 			}
+		}
+
+		private async Task ProcessAsync(TaskInputData data) {
+			if (data.isDirectory) {
+				string baseDir = data.files[0];
+				string relative = data.files[1];
+
+				bool relativeIsEmpty = string.IsNullOrEmpty(relative);
+
+				string srcDir = Path.Combine(baseDir, relative);
+				string dstDir;
+
+				if (m_stayNoMove) {
+					dstDir = Path.GetDirectoryName(srcDir) ?? srcDir;
+				}
+				else if (m_keepStruct) {
+					dstDir = Path.Combine(m_destinationDir, relative);
+					if (!relativeIsEmpty)
+						dstDir = Path.GetDirectoryName(dstDir) ?? dstDir;
+				}
+				else {
+					dstDir = m_destinationDir;
+				}
+
+				string outputPath = EnumFileName(dstDir, Path.GetFileName(srcDir), ".pdf");
+
+				/// 文件夹对应标题 取 它与基准路径相差的相对路径。
+				await ProcessOneFolderAsync(srcDir, outputPath, relativeIsEmpty ? Path.GetFileName(baseDir) : relative);
+			}
+			else {
+				string pathOfFirstFile = data.files[0];
+				string dirOfFirstFile = Path.GetDirectoryName(pathOfFirstFile) ?? "";
+
+				/// 输出到原位时，就是输入路径的父目录，否则，就是选定的目标目录。
+				string outputPath = EnumFileName(
+					m_stayNoMove ? dirOfFirstFile : m_destinationDir,
+					Path.GetFileNameWithoutExtension(pathOfFirstFile), ".pdf"
+				);
+
+				/// 零散文件的标题 取 文件所在父目录的名字。
+				await ProcessFilesAsync(data.files, outputPath, Path.GetFileName(dirOfFirstFile));
+			}
+		}
+
+		/// <summary>
+		/// 子任务过程：处理文件夹。
+		/// </summary>
+		/// <param name="sourceDir">输入目录</param>
+		/// <param name="outputPath">输出文件</param>
+		/// <param name="title">内定标题（不是文件名）</param>
+		private async Task ProcessOneFolderAsync(string sourceDir, string outputPath, string? title) {
+			List<string> files = Directory.EnumerateFiles(sourceDir).ToList();
+			await ProcessFilesAsync(files, outputPath, title);
+		}
+
+		/// <summary>
+		/// 子任务过程：处理零散文件。
+		/// </summary>
+		/// <param name="files">文件列表</param>
+		/// <param name="outputPath">输出文件</param>
+		/// <param name="title">内定标题（不是文件名）</param>
+		private async Task ProcessFilesAsync(List<string> files, string outputPath, string? title) {
+			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
+			files.Sort(StrCmpLogicalW);
+			using PicMerge.IMerger merge = PicMerge.IMerger.Create(
+				m_parallelOnFileLevel,
+				CallbackFinishOneImgFile,
+				m_pageSizeType,
+				m_pagesizex,
+				m_pagesizey,
+				m_compress
+			);
+			List<string> failed = await Task.Run(() => { return merge.Process(outputPath, files, title); });
+			CallbackFinishAllImgFile();
+			CheckMergeReturnedFailedList(title ?? outputPath, failed);
 		}
 
 		/// <summary>
@@ -388,66 +399,31 @@ namespace WpfGui {
 		/// </summary>
 		/// <param name="defpath">初始目录</param>
 		/// <returns>选择的目录，或者 null 表示取消</returns>
-		private string? AskForDestination(string defpath) {
+		private async Task<string?> AskForDestinationAsync(string defpath) {
 			string res = "";
 
 			bool? result = false;
-			App.Current.Dispatcher.Invoke(() => {
-				// Configure open folder dialog box
-				Microsoft.Win32.OpenFolderDialog dialog = new() {
-					Multiselect = false,
-					Title = $"{m_guiMain.Title}: 选择输出地点",
-					DefaultDirectory = Directory.Exists(defpath) ? defpath : (Path.GetDirectoryName(defpath) ?? "")
-				};
+			await Task.Run(() => {
+				App.Current.Dispatcher.Invoke(() => {
+					// Configure open folder dialog box
+					Microsoft.Win32.OpenFolderDialog dialog = new() {
+						Multiselect = false,
+						Title = $"{m_guiMain.Title}: 选择输出地点",
+						DefaultDirectory = Directory.Exists(defpath) ? defpath : (Path.GetDirectoryName(defpath) ?? "")
+					};
 
-				// Show open folder dialog box
-				result = dialog.ShowDialog(m_guiMain);
+					// Show open folder dialog box
+					result = dialog.ShowDialog(m_guiMain);
 
-				// Get the selected folder
-				res = dialog.FolderName;
+					// Get the selected folder
+					res = dialog.FolderName;
+				});
 			});
 
 			// Process open folder dialog box results
 			if (result != true)
 				return null;
 			return res;
-		}
-
-		/// <summary>
-		/// 子任务过程：处理文件夹。
-		/// </summary>
-		/// <param name="sourceDir">输入目录</param>
-		/// <param name="outputPath">输出文件</param>
-		/// <param name="title">内定标题（不是文件名）</param>
-		private void ProcessOneFolder(string sourceDir, string outputPath, string title) {
-			List<string> files = Directory.EnumerateFiles(sourceDir).ToList();
-			ProcessSingleFiles(files, outputPath, title);
-		}
-
-		[LibraryImport("Shlwapi.dll", EntryPoint = "StrCmpLogicalW", StringMarshalling = StringMarshalling.Utf16)]
-		[return: MarshalAs(UnmanagedType.I4)]
-		private static partial int StrCmpLogicalW(string psz1, string psz2);
-
-		/// <summary>
-		/// 子任务过程：处理零散文件。
-		/// </summary>
-		/// <param name="files">文件列表</param>
-		/// <param name="outputPath">输出文件</param>
-		/// <param name="title">内定标题（不是文件名）</param>
-		private void ProcessSingleFiles(List<string> files, string outputPath, string title) {
-			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
-			files.Sort(StrCmpLogicalW);
-			using PicMerge.IMerger merge = PicMerge.IMerger.Create(
-				m_parallelOnFileLevel,
-				CallbackFinishOneImgFile,
-				m_pageSizeType,
-				m_pagesizex,
-				m_pagesizey,
-				m_compress
-			);
-			List<string> failed = merge.Process(outputPath, files, title);
-			CallbackFinishAllImgFile();
-			CheckMergeReturnedFailedList(title, failed);
 		}
 
 		/// <summary>
@@ -515,5 +491,9 @@ namespace WpfGui {
 			}
 			return cnt;
 		}
+
+		[LibraryImport("Shlwapi.dll", EntryPoint = "StrCmpLogicalW", StringMarshalling = StringMarshalling.Utf16)]
+		[return: MarshalAs(UnmanagedType.I4)]
+		private static partial int StrCmpLogicalW(string psz1, string psz2);
 	}
 }
