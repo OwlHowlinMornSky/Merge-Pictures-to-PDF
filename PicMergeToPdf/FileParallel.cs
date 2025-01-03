@@ -106,7 +106,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public List<string> Process(string outputfilepath, List<string> files, string title = "") {
+		public List<string> Process(string outputfilepath, List<string> files, string? title = null) {
 			m_files = files;
 			/// 无法合入的文件的列表。
 			List<string> failed = [];
@@ -155,7 +155,8 @@ namespace PicMerge {
 								m_pdfWriter = new(m_outputFileStream, writerProperties);
 							}
 							m_pdfDocument = new(m_pdfWriter);
-							m_pdfDocument.GetDocumentInfo().SetKeywords(title);
+							if (title != null)
+								m_pdfDocument.GetDocumentInfo().SetSubject(title);
 						}
 						havePdfOutput = true;
 						AddImage(imageData, m_pdfDocument);

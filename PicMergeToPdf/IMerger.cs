@@ -13,7 +13,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public virtual List<string> Process(string outputfilepath, List<string> files, string title = "") {
+		public virtual List<string> Process(string outputfilepath, List<string> files, string? title = null) {
 			return [];
 		}
 
