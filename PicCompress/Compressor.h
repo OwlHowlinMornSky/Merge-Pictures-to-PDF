@@ -1,8 +1,5 @@
 ﻿#pragma once
 
-#define WIN32_LEAN_AND_MEAN (1)
-#include <Windows.h>
-
 using namespace System;
 
 namespace PicCompress {
@@ -37,7 +34,6 @@ public:
 	System::Int32 CompressFrom(System::IntPtr handle, System::Int64 len);
 
 private:
-	HANDLE r_hmapping; // 保存的句柄。似乎没必要保留。应该不能在此 CloseHandle。
 	void* m_view;      // 创建的文件映射。
 	System::UInt64 m_maxlen; // 保存的最大大小。
 };

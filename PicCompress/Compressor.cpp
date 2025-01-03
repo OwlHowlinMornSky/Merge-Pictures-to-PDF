@@ -3,6 +3,8 @@
 
 #include <libiodine/libiodine.h>
 
+#define WIN32_LEAN_AND_MEAN (1)
+#include <Windows.h>
 #include <strsafe.h>
 
 namespace {
@@ -47,8 +49,7 @@ PicCompress::Compressor::Compressor(System::IntPtr handle, System::Int64 maxlen)
 	if ((void*)handle == nullptr || maxlen < 1) {
 		throw gcnew InvalidOperationException("Invalid Output Mapping File.");
 	}
-	r_hmapping = (HANDLE)handle;
-	m_view = MapViewOfFile(r_hmapping, FILE_MAP_WRITE, 0, 0, 0);
+	m_view = MapViewOfFile((HANDLE)handle, FILE_MAP_WRITE, 0, 0, 0);
 	if (nullptr == m_view) {
 		LPVOID description = ::WinCheckError(L"Failed to Map Output View");
 		auto excep = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
