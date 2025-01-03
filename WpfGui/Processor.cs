@@ -11,6 +11,50 @@ namespace WpfGui {
 	/// <param name="setBarFinish">设置进度条完成的回调</param>
 	internal partial class Processor(Window guiMain, Action<int, int> setBarNum, Action setBarFinish) {
 
+		internal struct Parameters(
+			bool _recursion = true,
+			bool _keepStruct = true,
+			bool _stayNoMove = false,
+			bool _compress = true,
+			int _pageSizeType = 2,
+			int _pagesizex = 0,
+			int _pagesizey = 0,
+			bool _parallelOnFileLevel = true
+		) {
+			/// <summary>
+			/// 递归输入文件夹。
+			/// </summary>
+			public bool recursion = _recursion;
+			/// <summary>
+			/// 保持目录结构输出。
+			/// </summary>
+			public bool keepStruct = _keepStruct;
+			/// <summary>
+			/// 压缩所有图片。
+			/// </summary>
+			public bool compress = _compress;
+			/// <summary>
+			/// 输出到原位。
+			/// </summary>
+			public bool stayNoMove = _stayNoMove;
+			/// <summary>
+			/// 页面大小类型，详见MainWindow。
+			/// </summary>
+			public int pageSizeType = _pageSizeType;
+			/// <summary>
+			/// 页面大小宽，详见MainWindow。
+			/// </summary>
+			public int pagesizex = _pagesizex;
+			/// <summary>
+			/// 页面大小高，详见MainWindow。
+			/// </summary>
+			public int pagesizey = _pagesizey;
+			/// <summary>
+			/// 文件级并行，即此对象的子任务不并发（一个一个执行），但下面的 读取并处理图片 的操作并行。
+			/// </summary>
+			public bool parallelOnFileLevel = _parallelOnFileLevel;
+		}
+
 		private struct TaskInputData(bool _isDirectory, List<string> _files) {
 			public readonly bool isDirectory = _isDirectory;
 			public List<string> files = _files;
@@ -30,37 +74,9 @@ namespace WpfGui {
 		private readonly Action SetBarFinish = setBarFinish;
 
 		/// <summary>
-		/// 递归输入文件夹。
+		/// 合成参数。
 		/// </summary>
-		private bool m_recursion = true;
-		/// <summary>
-		/// 保持目录结构输出。
-		/// </summary>
-		private bool m_keepStruct = true;
-		/// <summary>
-		/// 压缩所有图片。
-		/// </summary>
-		private bool m_compress = true;
-		/// <summary>
-		/// 输出到原位。
-		/// </summary>
-		private bool m_stayNoMove = false;
-		/// <summary>
-		/// 页面大小类型，详见MainWindow。
-		/// </summary>
-		private int m_pageSizeType = 2;
-		/// <summary>
-		/// 页面大小宽，详见MainWindow。
-		/// </summary>
-		private int m_pagesizex = 0;
-		/// <summary>
-		/// 页面大小高，详见MainWindow。
-		/// </summary>
-		private int m_pagesizey = 0;
-		/// <summary>
-		/// 文件级并行，即此对象的子任务不并发（一个一个执行），但下面的 读取并处理图片 的操作并行。
-		/// </summary>
-		private bool m_parallelOnFileLevel = true;
+		private Parameters m_param;
 
 		/// <summary>
 		/// 主任务。
@@ -109,9 +125,7 @@ namespace WpfGui {
 		private void CallbackFinishAllImgFile() {
 			lock (m_waitings) {
 				if (m_waitings.Count > 0) {
-#pragma warning disable CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
 					ProcessAsync(m_waitings.Dequeue());
-#pragma warning restore CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
 					return;
 				}
 			}
@@ -135,45 +149,12 @@ namespace WpfGui {
 		}
 
 		/// <summary>
-		/// 设置处理参数。
-		/// </summary>
-		/// <param name="recursion">递归输入文件夹</param>
-		/// <param name="keepStruct">保持目录结构输出</param>
-		/// <param name="stayNoMove">输出到原位</param>
-		/// <param name="compress">压缩全部图像</param>
-		/// <param name="pageSizeType">页面大小类型</param>
-		/// <param name="pagesizex">页面大小宽</param>
-		/// <param name="pagesizey">页面大小高</param>
-		/// <param name="parallelOnFileLevel">是否要文件级并行</param>
-		public void Set(
-			bool recursion,
-			bool keepStruct,
-			bool stayNoMove,
-			bool compress,
-			int pageSizeType,
-			int pagesizex,
-			int pagesizey,
-			bool parallelOnFileLevel = true
-		) {
-			if (IsRunning()) {
-				return;
-			}
-			m_recursion = recursion;
-			m_keepStruct = keepStruct;
-			m_stayNoMove = stayNoMove;
-			m_compress = compress;
-			m_pageSizeType = pageSizeType;
-			m_pagesizex = pagesizex;
-			m_pagesizey = pagesizey;
-			m_parallelOnFileLevel = parallelOnFileLevel;
-		}
-
-		/// <summary>
 		/// 开始处理。
 		/// </summary>
 		/// <param name="paths">要处理的文件/文件夹</param>
 		/// <returns>是否成功开始</returns>
-		public bool Start(string[] paths) {
+		internal bool Start(string[] paths, Parameters param) {
+			m_param = param;
 			lock (m_lockForStart) {
 				if (IsRunning()) {
 					return false;
@@ -190,7 +171,6 @@ namespace WpfGui {
 		private void ProcessStem(string[] paths) {
 			m_destinationDir = "";
 			{
-
 				/// 拖放进入的文件列表 通常 只 包括 文件与文件夹。零散文件 即 直接被拖入的文件。
 				/// 一般来说，零散文件都在同一个目录，我也懒得考虑不同目录了。
 				/// 零散文件的列表。
@@ -205,11 +185,12 @@ namespace WpfGui {
 					var taskScan = Task.Run(() => {
 						return ScanInput(paths, ref files, ref directories, ref unknown);
 					});
-					if (!m_stayNoMove) {
+					if (!m_param.stayNoMove) {
 						var taskQDest = AskForDestinationAsync(paths[0]);
 						taskQDest.Wait();
 						if (taskQDest.Result == null)
 							return;
+						m_destinationDir = taskQDest.Result;
 					}
 					taskScan.Wait();
 
@@ -255,18 +236,16 @@ namespace WpfGui {
 			}
 			/// 文件级并行时，只并发2个子任务，避免1个PDF写入时全部等待。
 			lock (m_waitings) {
-				for (int i = 0, n = m_parallelOnFileLevel ? 2 : int.Max(2, Environment.ProcessorCount); i < n; i++) {
+				for (int i = 0, n = m_param.parallelOnFileLevel ? 2 : int.Max(2, Environment.ProcessorCount); i < n; i++) {
 					if (m_waitings.Count < 1)
 						break;
-#pragma warning disable CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
 					ProcessAsync(m_waitings.Dequeue());
-#pragma warning restore CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
 					Thread.Sleep(50);
 				}
 			}
 		}
 
-		private async Task ProcessAsync(TaskInputData data) {
+		private async void ProcessAsync(TaskInputData data) {
 			if (data.isDirectory) {
 				string baseDir = data.files[0];
 				string relative = data.files[1];
@@ -276,10 +255,10 @@ namespace WpfGui {
 				string srcDir = Path.Combine(baseDir, relative);
 				string dstDir;
 
-				if (m_stayNoMove) {
+				if (m_param.stayNoMove) {
 					dstDir = Path.GetDirectoryName(srcDir) ?? srcDir;
 				}
-				else if (m_keepStruct) {
+				else if (m_param.keepStruct) {
 					dstDir = Path.Combine(m_destinationDir, relative);
 					if (!relativeIsEmpty)
 						dstDir = Path.GetDirectoryName(dstDir) ?? dstDir;
@@ -299,7 +278,7 @@ namespace WpfGui {
 
 				/// 输出到原位时，就是输入路径的父目录，否则，就是选定的目标目录。
 				string outputPath = EnumFileName(
-					m_stayNoMove ? dirOfFirstFile : m_destinationDir,
+					m_param.stayNoMove ? dirOfFirstFile : m_destinationDir,
 					Path.GetFileNameWithoutExtension(pathOfFirstFile), ".pdf"
 				);
 
@@ -329,12 +308,12 @@ namespace WpfGui {
 			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
 			files.Sort(StrCmpLogicalW);
 			using PicMerge.IMerger merger = PicMerge.IMerger.Create(
-				m_parallelOnFileLevel,
+				m_param.parallelOnFileLevel,
 				CallbackFinishOneImgFile,
-				m_pageSizeType,
-				m_pagesizex,
-				m_pagesizey,
-				m_compress
+				m_param.pageSizeType,
+				m_param.pagesizex,
+				m_param.pagesizey,
+				m_param.compress
 			);
 			List<string> failed = await merger.ProcessAsync(outputPath, files, title);
 			CallbackFinishAllImgFile();
@@ -380,7 +359,7 @@ namespace WpfGui {
 						directories.Add(Tuple.Create(path, ""));
 						cnt += dirfilecnt;
 					}
-					if (m_recursion)
+					if (m_param.recursion)
 						cnt += RecursionAllDirectories(path, path, ref directories);
 				}
 				else {
@@ -388,7 +367,7 @@ namespace WpfGui {
 						directories.Add(Tuple.Create(dirParent, Path.GetRelativePath(dirParent, path)));
 						cnt += dirfilecnt;
 					}
-					if (m_recursion)
+					if (m_param.recursion)
 						cnt += RecursionAllDirectories(path, dirParent, ref directories);
 				}
 			}
@@ -401,30 +380,26 @@ namespace WpfGui {
 		/// <param name="defpath">初始目录</param>
 		/// <returns>选择的目录，或者 null 表示取消</returns>
 		private async Task<string?> AskForDestinationAsync(string defpath) {
-			string res = "";
-
-			bool? result = false;
-			await Task.Run(() => {
+			return await Task.Run(() => {
+				string? res = null;
 				App.Current.Dispatcher.Invoke(() => {
 					// Configure open folder dialog box
 					Microsoft.Win32.OpenFolderDialog dialog = new() {
 						Multiselect = false,
 						Title = $"{m_guiMain.Title}: 选择输出地点",
-						DefaultDirectory = Directory.Exists(defpath) ? defpath : (Path.GetDirectoryName(defpath) ?? "")
+						DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+						InitialDirectory = Path.GetDirectoryName(defpath)
 					};
 
 					// Show open folder dialog box
-					result = dialog.ShowDialog(m_guiMain);
-
-					// Get the selected folder
-					res = dialog.FolderName;
+					// Process open folder dialog box results
+					if (dialog.ShowDialog(m_guiMain) == true) {
+						// Get the selected folder
+						res = dialog.FolderName;
+					}
 				});
+				return res;
 			});
-
-			// Process open folder dialog box results
-			if (result != true)
-				return null;
-			return res;
 		}
 
 		/// <summary>
