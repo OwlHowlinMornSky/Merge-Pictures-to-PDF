@@ -261,6 +261,7 @@ namespace WpfGui {
 #pragma warning disable CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
 					ProcessAsync(m_waitings.Dequeue());
 #pragma warning restore CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
+					Thread.Sleep(50);
 				}
 			}
 		}
@@ -327,7 +328,7 @@ namespace WpfGui {
 		private async Task ProcessFilesAsync(List<string> files, string outputPath, string? title) {
 			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
 			files.Sort(StrCmpLogicalW);
-			using PicMerge.IMerger merge = PicMerge.IMerger.Create(
+			using PicMerge.IMerger merger = PicMerge.IMerger.Create(
 				m_parallelOnFileLevel,
 				CallbackFinishOneImgFile,
 				m_pageSizeType,
@@ -335,7 +336,7 @@ namespace WpfGui {
 				m_pagesizey,
 				m_compress
 			);
-			List<string> failed = await Task.Run(() => { return merge.Process(outputPath, files, title); });
+			List<string> failed = await merger.ProcessAsync(outputPath, files, title);
 			CallbackFinishAllImgFile();
 			CheckMergeReturnedFailedList(title ?? outputPath, failed);
 		}
