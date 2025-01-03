@@ -17,28 +17,16 @@ namespace PicMerge {
 	/// <param name="pagesizex">页面大小宽</param>
 	/// <param name="pagesizey">页面大小高</param>
 	/// <param name="compress">是否压缩所有图片</param>
-	public class FileParallel(Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) : IMerger {
+	internal class MergerParallel(Action finish1img, IMerger.Parameters param) : IMerger {
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
 		/// </summary>
 		private readonly Action FinishOneImg = finish1img;
 		/// <summary>
-		/// 是否压缩所有图片。
+		/// 合并之参数。使用第一张图片的尺寸时需要修改，所以不能只读。
 		/// </summary>
-		private readonly bool m_compress = compress;
-		/// <summary>
-		/// 页面大小类型。
-		/// </summary>
-		private readonly int m_pageSizeType = pageSizeType;
-		/// <summary>
-		/// 页面大小宽。使用第一张图片的尺寸时需要修改，所以不能只读。
-		/// </summary>
-		private float m_pagesizex = pagesizex;
-		/// <summary>
-		/// 页面大小高。使用第一张图片的尺寸时需要修改，所以不能只读。
-		/// </summary>
-		private float m_pagesizey = pagesizey;
+		private IMerger.Parameters m_param = param;
 
 		/// <summary>
 		/// 内存映射文件设定的最大大小。
@@ -74,28 +62,11 @@ namespace PicMerge {
 		/// </summary>
 		private readonly Queue<ImageData?> m_loadedImg = [];
 		/// <summary>
-		/// 加载单个文件的任务 的 列表。
-		/// </summary>
-		private readonly List<Task> m_loadings = [];
-		/// <summary>
 		/// 多任务协作时，任务中sleep的 默认 毫秒数。
 		/// </summary>
 		private const int m_sleepMs = 20;
 
-		/// <summary>
-		/// 输出——文件流。首次使用时创建。
-		/// </summary>
-		private FileStream? m_outputFileStream = null;
-		/// <summary>
-		/// 输出——填写器。首次使用时创建。
-		/// </summary>
-		private PdfWriter? m_pdfWriter = null;
-		/// <summary>
-		/// 输出——文档。首次使用时创建。
-		/// </summary>
-		private PdfDocument? m_pdfDocument = null;
-
-		~FileParallel() {
+		~MergerParallel() {
 			Dispose(false);
 		}
 
@@ -111,15 +82,15 @@ namespace PicMerge {
 			/// 无法合入的文件的列表。
 			List<string> failed = [];
 			try {
+				using PdfTarget pdfTarget = new(outputfilepath, title);
 				/// 按电脑核心数启动load，间隔一段时间加入避免同时IO。
 				for (int i = 0, n = Environment.ProcessorCount; i < n; i++) {
-					StartNewLoad();
+					LoadAsync();
 					Thread.Sleep(m_sleepMs);
 				}
 
 				List<ImageData?> imageDatas = [];
 				int imgCnt = 0;
-				bool havePdfOutput = false;
 				while (true) {
 					bool isEmpty = true;
 					lock (m_loadedImg) {
@@ -142,24 +113,9 @@ namespace PicMerge {
 							imgCnt++;
 							continue;
 						}
-						if (m_pdfDocument == null) {
-							if (m_pdfWriter == null) {
-								// 需要写时再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出空文件。
-								if (m_outputFileStream == null) {
-									IMerger.EnsureFileCanExsist(outputfilepath);
-									m_outputFileStream = new(outputfilepath, FileMode.OpenOrCreate, FileAccess.Write);
-								}
-								WriterProperties writerProperties = new();
-								writerProperties.SetFullCompressionMode(true);
-								writerProperties.SetCompressionLevel(CompressionConstants.DEFAULT_COMPRESSION);
-								m_pdfWriter = new(m_outputFileStream, writerProperties);
-							}
-							m_pdfDocument = new(m_pdfWriter);
-							if (title != null)
-								m_pdfDocument.GetDocumentInfo().SetSubject(title);
+						if (!AddImage(imageData, pdfTarget.Document)) {
+							failed.Add(files[imgCnt]);
 						}
-						havePdfOutput = true;
-						AddImage(imageData, m_pdfDocument);
 						FinishOneImg();
 						imgCnt++;
 					}
@@ -168,15 +124,8 @@ namespace PicMerge {
 						break;
 				}
 
-				Task.WaitAll([.. m_loadings]);
-				m_loadings.Clear();
-
-				if (!havePdfOutput) // 一个都没法合成的话返回空。
+				if (!pdfTarget.IsUsed()) // 一个都没法合成的话返回空。
 					failed.Clear();
-
-				m_pdfDocument?.Close();
-				m_pdfWriter?.Close();
-				m_outputFileStream?.Close();
 			}
 			catch (Exception ex) {
 				failed = ["An Exception Occurred:", ex.GetType().ToString(), ex.Message, ex.Source ?? "", ex.StackTrace ?? ""];
@@ -187,10 +136,8 @@ namespace PicMerge {
 		/// <summary>
 		/// 开启一个新的加载图片任务。
 		/// </summary>
-		private void StartNewLoad() {
-			lock (m_loadings) {
-				m_loadings.Add(Task.Run(LoadOneProc));
-			}
+		private async void LoadAsync() {
+			await Task.Run(LoadOneProc);
 		}
 
 		/// <summary>
@@ -207,7 +154,7 @@ namespace PicMerge {
 			string file = m_files[id];
 
 			/// 加载并处理。
-			ImageData? imageData =  m_compress ? LoadImage_Compress(file) : LoadImage_Direct(file);
+			ImageData? imageData = m_param.compress ? LoadImage_Compress(file) : LoadImage_Direct(file);
 
 			/// Add loaded data into queue.
 			while (true) {
@@ -232,7 +179,7 @@ namespace PicMerge {
 			}
 
 			/// Next Task.
-			StartNewLoad();
+			LoadAsync();
 		}
 
 		/// <summary>
@@ -393,28 +340,28 @@ namespace PicMerge {
 				PageSize imageSize;
 				float width = imageData.GetWidth();
 				float height = imageData.GetHeight();
-				switch (m_pageSizeType) {
+				switch (m_param.pageSizeType) {
 				default:
 				case 1: // 与图片大小一致
 					imageSize = new(width, height);
 					pageSize = imageSize;
 					break;
 				case 2: // 固定宽度
-					if (m_pagesizex == 0) {
-						m_pagesizex = width;
+					if (m_param.pagesizex == 0) {
+						m_param.pagesizex = width;
 					}
-					imageSize = new(m_pagesizex, m_pagesizex / width * height);
+					imageSize = new(m_param.pagesizex, m_param.pagesizex / width * height);
 					pageSize = imageSize;
 					break;
 				case 3: // 固定大小
-					if (m_pagesizex == 0 || m_pagesizey == 0) {
-						m_pagesizex = width;
-						m_pagesizey = height;
+					if (m_param.pagesizex == 0 || m_param.pagesizey == 0) {
+						m_param.pagesizex = width;
+						m_param.pagesizey = height;
 					}
-					pageSize = new(m_pagesizex, m_pagesizey);
+					pageSize = new(m_param.pagesizex, m_param.pagesizey);
 					float r = float.Min(
-					1.0f * m_pagesizex / width,
-					1.0f * m_pagesizey / height
+					1.0f * m_param.pagesizex / width,
+					1.0f * m_param.pagesizey / height
 				);
 					imageSize = new(width * r, height * r);
 					imageSize.SetX((pageSize.GetWidth() - imageSize.GetWidth()) / 2.0f);
@@ -442,11 +389,6 @@ namespace PicMerge {
 		protected virtual void Dispose(bool disposing) {
 			if (m_disposed)
 				return;
-			if (disposing) {
-				m_pdfDocument?.Close();
-				m_pdfWriter?.Dispose();
-				m_outputFileStream?.Dispose();
-			}
 			m_disposed = true;
 		}
 	}
