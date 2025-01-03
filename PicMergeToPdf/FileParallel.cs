@@ -111,9 +111,11 @@ namespace PicMerge {
 			/// 无法合入的文件的列表。
 			List<string> failed = [];
 			try {
-				/// 按电脑核心数启动load。
-				for (int i = 0, n = Environment.ProcessorCount; i < n; i++)
+				/// 按电脑核心数启动load，间隔一段时间加入避免同时IO。
+				for (int i = 0, n = Environment.ProcessorCount; i < n; i++) {
 					StartNewLoad();
+					Thread.Sleep(m_sleepMs);
+				}
 
 				List<ImageData?> imageDatas = [];
 				int imgCnt = 0;

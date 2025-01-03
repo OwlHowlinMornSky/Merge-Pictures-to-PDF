@@ -319,9 +319,9 @@ namespace WpfGui {
 					});
 				}
 			}
-			/// 文件级并行时，不并发子任务。
+			/// 文件级并行时，只并发2个子任务，避免1个PDF写入时全部等待。
 			lock (m_waitingTasks) {
-				for (int i = 0, n = m_parallelOnFileLevel ? 1 : Environment.ProcessorCount; i < n; i++) {
+				for (int i = 0, n = m_parallelOnFileLevel ? 2 : int.Max(2, Environment.ProcessorCount); i < n; i++) {
 					if (m_waitingTasks.Count < 1)
 						break;
 					Task.Run(m_waitingTasks.Dequeue());
