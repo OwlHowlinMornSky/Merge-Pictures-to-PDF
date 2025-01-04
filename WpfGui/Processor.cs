@@ -315,7 +315,7 @@ namespace WpfGui {
 				m_param.pagesizey,
 				m_param.compress
 			);
-			List<string> failed = await merger.ProcessAsync(outputPath, files, title);
+			List<PicMerge.IMerger.FailedFile> failed = await merger.ProcessAsync(outputPath, files, title);
 			CallbackFinishAllImgFile();
 			CheckMergeReturnedFailedList(title ?? outputPath, failed);
 		}
@@ -407,12 +407,11 @@ namespace WpfGui {
 		/// </summary>
 		/// <param name="title">内定标题</param>
 		/// <param name="failed">失败列表</param>
-		private void CheckMergeReturnedFailedList(string title, List<string> failed) {
+		private void CheckMergeReturnedFailedList(string title, List<PicMerge.IMerger.FailedFile> failed) {
 			if (failed.Count > 0) {
 				string msg = string.Format(App.Current.FindResource("CannotMerge").ToString() ?? "Failed to merge into {0}:", title);
 				foreach (var str in failed) {
-					msg += ".\r\n";
-					msg += str;
+					msg += $"\r\n<{str.filename}> {str.description}";
 				}
 				App.Current.Dispatcher.Invoke(() => {
 					MessageBox.Show(

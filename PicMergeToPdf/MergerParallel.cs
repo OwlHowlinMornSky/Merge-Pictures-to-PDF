@@ -6,6 +6,7 @@ using SixLabors.ImageSharp.Formats.Gif;
 using System.IO.MemoryMappedFiles;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using static PicMerge.IMerger;
 
 namespace PicMerge {
 	/// <summary>
@@ -66,6 +67,11 @@ namespace PicMerge {
 		/// </summary>
 		private const int m_sleepMs = 20;
 
+		/// <summary>
+		/// 无法合入的文件的列表。
+		/// </summary>
+		private readonly List<FailedFile> m_failed = [];
+
 		~MergerParallel() {
 			Dispose(false);
 		}
@@ -77,60 +83,56 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public virtual List<string> Process(string outputfilepath, List<string> files, string? title = null) {
+		public virtual List<FailedFile> Process(string outputfilepath, List<string> files, string? title = null) {
 			m_files = files;
-			/// 无法合入的文件的列表。
-			List<string> failed = [];
-			try {
-				using PdfTarget pdfTarget = new(outputfilepath, title);
-				/// 按电脑核心数启动load，间隔一段时间加入避免同时IO。
-				for (int i = 0, n = Environment.ProcessorCount; i < n; i++) {
-					LoadAsync();
-					Thread.Sleep(m_sleepMs);
-				}
 
-				List<ImageData?> imageDatas = [];
-				int imgCnt = 0;
-				while (true) {
-					bool isEmpty = true;
-					lock (m_loadedImg) {
-						if (m_loadedImg.Count != 0) {
-							isEmpty = false;
-							while (m_loadedImg.Count > 0) {
-								imageDatas.Add(m_loadedImg.Dequeue());
-							}
+			using PdfTarget pdfTarget = new(outputfilepath, title);
+			/// 按电脑核心数启动load，间隔一段时间加入避免同时IO。
+			for (int i = 0, n = Environment.ProcessorCount; i < n; i++) {
+				LoadAsync();
+				Thread.Sleep(m_sleepMs);
+			}
+
+			List<ImageData?> imageDatas = [];
+			int imgCnt = 0;
+			while (true) {
+				bool isEmpty = true;
+				lock (m_loadedImg) {
+					if (m_loadedImg.Count != 0) {
+						isEmpty = false;
+						while (m_loadedImg.Count > 0) {
+							imageDatas.Add(m_loadedImg.Dequeue());
 						}
 					}
-					if (isEmpty) {
-						Thread.Sleep(m_sleepMs);
-						continue;
-					}
-					// Add Image.
-					foreach (var imageData in imageDatas) {
-						if (imageData == null) {
-							failed.Add(files[imgCnt]);
-							FinishOneImg();
-							imgCnt++;
-							continue;
-						}
-						if (!AddImage(imageData, pdfTarget.Document)) {
-							failed.Add(files[imgCnt]);
-						}
+				}
+				if (isEmpty) {
+					Thread.Sleep(m_sleepMs);
+					continue;
+				}
+				// Add Image.
+				foreach (var imageData in imageDatas) {
+					if (imageData == null) {
 						FinishOneImg();
 						imgCnt++;
+						continue;
 					}
-					imageDatas.Clear();
-					if (imgCnt >= files.Count)
-						break;
+					if (!AddImage(imageData, pdfTarget.Document)) {
+						lock (m_failed) {
+							m_failed.Add(new FailedFile(0x1001, files[imgCnt], "Unable to add into pdf [iText internal problem]."));
+						}
+					}
+					FinishOneImg();
+					imgCnt++;
 				}
+				imageDatas.Clear();
+				if (imgCnt >= files.Count)
+					break;
+			}
 
-				if (!pdfTarget.IsUsed()) // 一个都没法合成的话返回空。
-					failed.Clear();
-			}
-			catch (Exception ex) {
-				failed = ["An Exception Occurred:", ex.GetType().ToString(), ex.Message, ex.Source ?? "", ex.StackTrace ?? ""];
-			}
-			return failed;
+			//if (!pdfTarget.IsUsed()) // 一个都没法合成的话返回空。
+			//	m_failed.Clear();
+
+			return m_failed;
 		}
 
 		/// <summary>
@@ -152,9 +154,16 @@ namespace PicMerge {
 				id = m_startedCnt++;
 			}
 			string file = m_files[id];
-
-			/// 加载并处理。
-			ImageData? imageData = m_param.compress ? LoadImage_Compress(file) : LoadImage_Direct(file);
+			ImageData? imageData = null;
+			try {
+				/// 加载并处理。
+				imageData = m_param.compress ? LoadImage_Compress(file) : LoadImage_Direct(file);
+			}
+			catch (Exception ex) {
+				lock (m_failed) {
+					m_failed.Add(new FailedFile(0x2001, file, $"Failed to load image because: {ex.Message}"));
+				}
+			}
 
 			/// Add loaded data into queue.
 			while (true) {
@@ -180,6 +189,8 @@ namespace PicMerge {
 
 			/// Next Task.
 			LoadAsync();
+
+			return;
 		}
 
 		/// <summary>
@@ -249,9 +260,9 @@ namespace PicMerge {
 				catch (Exception) {
 					imageData = null;
 				}
-				break;
+				goto default;
 			default:
-				break;
+				throw new NotImplementedException("Unsupported type.");
 			}
 			return imageData;
 		}
@@ -321,9 +332,9 @@ namespace PicMerge {
 				catch (Exception) {
 					imageData = null;
 				}
-				break;
+				goto default;
 			default:
-				break;
+				throw new NotImplementedException("Unsupported type.");
 			}
 			return imageData;
 		}

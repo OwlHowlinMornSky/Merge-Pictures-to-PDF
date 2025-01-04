@@ -27,6 +27,12 @@ namespace PicMerge {
 			public readonly bool compress = _compress;
 		}
 
+		public readonly struct FailedFile(int _c, string _file, string _desc) {
+			public readonly int code = _c;
+			public readonly string filename = _file;
+			public readonly string description = _desc;
+		}
+
 		/// <summary>
 		/// 合并文件。内部串行并行由具体对象决定。
 		/// </summary>
@@ -34,7 +40,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public Task<List<string>> ProcessAsync(string outputfilepath, List<string> files, string? title = null) {
+		public Task<List<FailedFile>> ProcessAsync(string outputfilepath, List<string> files, string? title = null) {
 			return Task.Run(() => { return Process(outputfilepath, files, title); });
 		}
 
@@ -45,7 +51,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public virtual List<string> Process(string outputfilepath, List<string> files, string? title = null) {
+		public virtual List<FailedFile> Process(string outputfilepath, List<string> files, string? title = null) {
 			return [];
 		}
 
