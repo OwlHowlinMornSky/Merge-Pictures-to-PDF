@@ -386,7 +386,7 @@ namespace WpfGui {
 					// Configure open folder dialog box
 					Microsoft.Win32.OpenFolderDialog dialog = new() {
 						Multiselect = false,
-						Title = $"{m_guiMain.Title}: 选择输出地点",
+						Title = $"{m_guiMain.Title}: {App.Current.FindResource("ChooseDestinationDir").ToString() ?? "output location"}",
 						DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
 						InitialDirectory = Path.GetDirectoryName(defpath)
 					};

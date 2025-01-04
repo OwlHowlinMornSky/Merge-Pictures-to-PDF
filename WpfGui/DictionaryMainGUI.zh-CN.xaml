@@ -34,5 +34,6 @@
 
     <sys:String x:Key="CannotProcess">以下内容无法处理：</sys:String>
     <sys:String x:Key="CannotMerge">以下文件无法加入“{0}”：</sys:String>
+    <sys:String x:Key="ChooseDestinationDir">选择输出位置</sys:String>
 
 </ResourceDictionary>

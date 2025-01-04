@@ -34,5 +34,6 @@
 
     <sys:String x:Key="CannotProcess">File(s) below cannot be processed:</sys:String>
     <sys:String x:Key="CannotMerge">File(s) below cannot be merged into “{0}”:</sys:String>
+    <sys:String x:Key="ChooseDestinationDir">Choose Output Location</sys:String>
 
 </ResourceDictionary>
