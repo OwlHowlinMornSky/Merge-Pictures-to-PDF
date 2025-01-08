@@ -154,6 +154,11 @@ namespace PicMerge {
 				/// 加载并处理。
 				imageData = m_param.compress ? LoadImage_Compress(file) : LoadImage_Direct(file);
 			}
+			catch (FileType.ArchiveException) {
+				lock (m_failed) {
+					m_failed.Add(new FailedFile(0x114514, file, "Archive file convertion is not enabled."));
+				}
+			}
 			catch (Exception ex) {
 				lock (m_failed) {
 					m_failed.Add(new FailedFile(0x2001, file, $"Failed to load image because: {ex.Message}"));
@@ -259,6 +264,10 @@ namespace PicMerge {
 					imageData = null;
 				}
 				goto default;
+			case FileType.Type.ZIP:  // Archive.
+			case FileType.Type._7ZIP:// Archive.
+			case FileType.Type.RAR:  // Archive.
+				throw new FileType.ArchiveException();
 			default:
 				throw new NotImplementedException("Unsupported type.");
 			}
@@ -334,6 +343,10 @@ namespace PicMerge {
 					imageData = null;
 				}
 				goto default;
+			case FileType.Type.ZIP:  // Archive.
+			case FileType.Type._7ZIP:// Archive.
+			case FileType.Type.RAR:  // Archive.
+				throw new FileType.ArchiveException();
 			default:
 				throw new NotImplementedException("Unsupported type.");
 			}

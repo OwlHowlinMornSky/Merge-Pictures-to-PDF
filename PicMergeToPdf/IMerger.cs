@@ -15,8 +15,7 @@ namespace PicMerge {
 
 		internal struct Parameters(
 			int _pageSizeType = 2, int _pagesizex = 0, int _pagesizey = 0,
-			bool _compress = true, int _type = 1, int _quality = 80,
-			bool _archive = true
+			bool _compress = true, int _type = 1, int _quality = 80
 		) {
 			/// <summary>
 			/// 页面大小类型。
@@ -37,7 +36,6 @@ namespace PicMerge {
 
 			public int compressType = _type;
 			public int compressQuality = _quality;
-			public bool convertArchive = _archive;
 		}
 
 		public readonly struct FailedFile(int _c, string _file, string _desc) {
@@ -86,11 +84,10 @@ namespace PicMerge {
 			int pagesizey = 0,
 			bool compress = true,
 			int type = 1,
-			int quality = 80,
-			bool archive = true) {
+			int quality = 80) {
 			return parallel ?
-				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality, archive)) :
-				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality, archive));
+				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality)) :
+				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
 		}
 
 		/// <summary>
