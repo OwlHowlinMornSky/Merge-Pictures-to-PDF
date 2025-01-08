@@ -1,6 +1,4 @@
 ﻿
-using iText.Kernel.Pdf;
-
 namespace PicMerge {
 	/// <summary>
 	/// 合成器接口
@@ -79,15 +77,27 @@ namespace PicMerge {
 		public static IMerger Create(
 			bool parallel,
 			Action finish1img,
-			int pageSizeType = 2,
-			int pagesizex = 0,
-			int pagesizey = 0,
-			bool compress = true,
-			int type = 1,
-			int quality = 80) {
+			int pageSizeType,
+			int pagesizex,
+			int pagesizey,
+			bool compress,
+			int type,
+			int quality) {
 			return parallel ?
 				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality)) :
 				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
+		}
+
+		public static IMerger CreateArchiveConverter(
+			bool keepStruct,
+			Action finish1img,
+			int pageSizeType,
+			int pagesizex,
+			int pagesizey,
+			bool compress,
+			int type,
+			int quality) {
+			return new ArchiveConverter(keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
 		}
 
 		/// <summary>
@@ -117,6 +127,25 @@ namespace PicMerge {
 			if (folder == null)
 				return;
 			EnsureFolderExisting(folder);
+		}
+
+		/// <summary>
+		/// 枚举可用的文件名。防止输出文件名与现有文件相同导致覆盖。
+		/// 但是扫描可用文件名与开始写入有一定时间差，
+		/// 如果用户~脑残到~在这段时间创建同名文件，可能会出问题。
+		/// </summary>
+		/// <param name="dir">文件将所处的目录</param>
+		/// <param name="stem">文件的期望名称</param>
+		/// <param name="exname">文件的扩展名</param>
+		/// <returns>添加可能的" (%d)"后，不与现有文件同名的文件路径</returns>
+		internal static string EnumFileName(string dir, string stem, string exname) {
+			string res = Path.Combine(dir, stem + exname);
+			int i = 0;
+			while (File.Exists(res)) {
+				i++;
+				res = Path.Combine(dir, $"{stem} ({i}){exname}");
+			}
+			return res;
 		}
 	}
 }
