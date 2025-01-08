@@ -113,7 +113,7 @@ namespace PicMerge {
 					m_mapfile ??= MemoryMappedFile.CreateNew(null, MapFileSize);
 					m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
 				}
-				int len = m_compressor.Compress(file);
+				int len = m_compressor.Compress(file, m_param.compressType, m_param.compressQuality);
 #pragma warning disable CS8602 // 解引用可能出现空引用。
 				using var mapstream = m_mapfile.CreateViewStream();
 #pragma warning restore CS8602 // 解引用可能出现空引用。
@@ -172,7 +172,7 @@ namespace PicMerge {
 					m_mapfile ??= MemoryMappedFile.CreateNew(null, MapFileSize);
 					m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
 				}
-				int len = m_compressor.Compress(file);
+				int len = m_compressor.Compress(file, m_param.compressType, m_param.compressQuality);
 #pragma warning disable CS8602 // 解引用可能出现空引用。
 				using var mapstream = m_mapfile.CreateViewStream();
 #pragma warning restore CS8602 // 解引用可能出现空引用。

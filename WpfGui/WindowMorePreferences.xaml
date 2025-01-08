@@ -5,15 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
         mc:Ignorable="d"
-        Title="More Preferences" Height="450" Width="800">
-    <Grid>
+        Title="More Preferences" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight">
+    <Grid Width="400" Height="300">
         <Label Content="Compress Type" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
-        <ComboBox HorizontalAlignment="Left" Margin="60,40,0,0" VerticalAlignment="Top" SelectedIndex="0" Width="150">
-            <ComboBoxItem ContentStringFormat="JPEG"/>
-            <ComboBoxItem ContentStringFormat="PNG"/>
+        <ComboBox x:Name="ComboBoxCompressType" HorizontalAlignment="Left" Margin="60,40,0,0" VerticalAlignment="Top" SelectedIndex="0" Width="150">
+            <ComboBoxItem Content="JPEG"/>
+            <ComboBoxItem Content="PNG"/>
         </ComboBox>
         <Label Content="Compress Quality" HorizontalAlignment="Left" Margin="10,80,0,0" VerticalAlignment="Top"/>
-        <Slider Margin="60,110,10,0" VerticalAlignment="Top"/>
-        <CheckBox Content="Convert Archive Files" HorizontalAlignment="Left" Margin="10,192,0,0" VerticalAlignment="Top" IsChecked="True"/>
+        <Label x:Name="LabelSlideValue" Content="80" Margin="0,112,10,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+        <Slider x:Name="SliderQuality" Margin="60,110,45,0" VerticalAlignment="Top" SmallChange="1" Maximum="100" LargeChange="10" Value="80" TickPlacement="Both" IsSnapToTickEnabled="True" ValueChanged="Slider_ValueChanged"/>
+        <CheckBox x:Name="ChkboxArchive" Content="Convert Archive Files" HorizontalAlignment="Left" Margin="10,192,0,0" VerticalAlignment="Top" IsChecked="True"/>
     </Grid>
 </Window>

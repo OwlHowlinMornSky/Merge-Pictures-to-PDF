@@ -29,6 +29,10 @@ namespace WpfGui {
 		private int m_lang_test = 1;
 #endif
 
+		private int m_type = 1;
+		private int m_quality = 80;
+		private bool m_archive = true;
+
 		public MainWindow() {
 			if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase)) {
 				ChangeLang(1);
@@ -185,7 +189,11 @@ namespace WpfGui {
 				_stayNoMove: ChkBoxStayNoMove.IsChecked == true,
 				_pageSizeType: m_pageSizeType,
 				_pagesizex: m_useSizeOfFirstPic ? 0 : int.Parse(TextWidth.Text),
-				_pagesizey: m_useSizeOfFirstPic ? 0 : int.Parse(TextHeight.Text)
+				_pagesizey: m_useSizeOfFirstPic ? 0 : int.Parse(TextHeight.Text),
+				_parallelOnFileLevel: true,
+				_type: m_type,
+				_quality: m_quality,
+				_archive: m_archive
 			);
 			if (m_processor.Start(paths, param) == false) {
 				Task.Run(() => {
@@ -237,8 +245,28 @@ namespace WpfGui {
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e) {
-			var dialog = new WindowMorePreferences();
+			WindowMorePreferences dialog = new(m_type, m_quality, m_archive);
 			dialog.ShowDialog();
-        }
-    }
+
+			switch (dialog.CompressType) {
+			case "JPEG":
+				m_type = 1;
+				break;
+			case "PNG":
+				m_type = 2;
+				break;
+			default:
+				MessageBox.Show(this, $"Failed to set compression type ({dialog.CompressType}). Default is used (JPEG).", Title);
+				m_type = 1;
+				break;
+			}
+			m_quality = dialog.CompressQuility;
+			m_archive = dialog.ConvertArchive;
+
+			if (m_quality > 100)
+				m_quality = 100;
+			else if (m_quality < 0)
+				m_quality = 0;
+		}
+	}
 }

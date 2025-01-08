@@ -19,7 +19,10 @@ namespace WpfGui {
 			int _pageSizeType = 2,
 			int _pagesizex = 0,
 			int _pagesizey = 0,
-			bool _parallelOnFileLevel = true
+			bool _parallelOnFileLevel = true,
+			int _type = 1,
+			int _quality = 80,
+			bool _archive = true
 		) {
 			/// <summary>
 			/// 递归输入文件夹。
@@ -53,6 +56,10 @@ namespace WpfGui {
 			/// 文件级并行，即此对象的子任务不并发（一个一个执行），但下面的 读取并处理图片 的操作并行。
 			/// </summary>
 			public bool parallelOnFileLevel = _parallelOnFileLevel;
+
+			public int compressType = _type;
+			public int compressQuality = _quality;
+			public bool convertArchive = _archive;
 		}
 
 		private struct TaskInputData(bool _isDirectory, List<string> _files) {
@@ -313,7 +320,10 @@ namespace WpfGui {
 				m_param.pageSizeType,
 				m_param.pagesizex,
 				m_param.pagesizey,
-				m_param.compress
+				m_param.compress,
+				m_param.compressType,
+				m_param.compressQuality,
+				m_param.convertArchive
 			);
 			List<PicMerge.IMerger.FailedFile> failed = await merger.ProcessAsync(outputPath, files, title);
 			CallbackFinishAllImgFile();

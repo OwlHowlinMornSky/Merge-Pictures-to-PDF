@@ -198,7 +198,7 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="filepath">欲加载的文件路径</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private static ImageData? LoadImage_Compress(string filepath) {
+		private ImageData? LoadImage_Compress(string filepath) {
 			ImageData? imageData = null;
 
 			using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -217,7 +217,10 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					using MemoryMappedFile mapfile = MemoryMappedFile.CreateNew(null, MapFileSize, MemoryMappedFileAccess.ReadWrite);
 					using PicCompress.Compressor compressor = new(mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-					int len = compressor.CompressFrom(inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length);
+					int len = compressor.CompressFrom(
+						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
+						m_param.compressType, m_param.compressQuality
+					);
 					using var mapstream = mapfile.CreateViewStream();
 					using BinaryReader br = new(mapstream);
 					imageData = ImageDataFactory.Create(br.ReadBytes(len));
@@ -272,7 +275,7 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="file">欲加载的文件</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private static ImageData? LoadImage_Direct(string filepath) {
+		private ImageData? LoadImage_Direct(string filepath) {
 			ImageData? imageData = null;
 
 			using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -304,7 +307,10 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					using MemoryMappedFile mapfile = MemoryMappedFile.CreateNew(null, MapFileSize, MemoryMappedFileAccess.ReadWrite);
 					using PicCompress.Compressor compressor = new(mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-					int len = compressor.CompressFrom(inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length);
+					int len = compressor.CompressFrom(
+						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
+						m_param.compressType, m_param.compressQuality
+					);
 					using var mapstream = mapfile.CreateViewStream();
 					using BinaryReader br = new(mapstream);
 					imageData = ImageDataFactory.Create(br.ReadBytes(len));

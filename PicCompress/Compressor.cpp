@@ -69,7 +69,7 @@ PicCompress::Compressor::~Compressor() {
 	}
 }
 
-System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile) {
+System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile, System::Int32 type, System::Int32 quality) {
 	cli::array<wchar_t>^ wArray = pathOfInFile->ToCharArray();
 	cli::array<unsigned char, 1>^ arr = System::Text::Encoding::UTF8->GetBytes(wArray);
 
@@ -82,12 +82,22 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile) {
 
 	CSI_Parameters parameters = {};
 	parameters.keep_metadata = false;
-	parameters.jpeg_quality = 80;
+	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
+	parameters.png_quality = quality;
 	parameters.width = 2520;
 	parameters.reduce_by_power_of_2 = true;
 
-	CSI_Result res = csi_convert_into(cstr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
+	CSI_Result res;
+	switch (type) {
+	case 2:
+		res = csi_convert_into(cstr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
+		break;
+	default:
+		res = csi_convert_into(cstr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
+		break;
+	}
+
 
 	delete[] cstr;
 	if (!res.success) {
@@ -99,7 +109,7 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile) {
 	return (System::Int32)res.code;
 }
 
-System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr hinfile, System::Int64 iFileLen) {
+System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr hinfile, System::Int64 iFileLen, System::Int32 type, System::Int32 quality) {
 	if ((HANDLE)hinfile == NULL || iFileLen < 1) {
 		throw gcnew ArgumentException("Invalid Input Maping File.");
 	}
@@ -113,12 +123,21 @@ System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr hinfile, Syst
 
 	CSI_Parameters parameters = {};
 	parameters.keep_metadata = false;
-	parameters.jpeg_quality = 80;
+	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
+	parameters.png_quality = quality;
 	parameters.width = 2520;
 	parameters.reduce_by_power_of_2 = true;
 
-	CSI_Result res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
+	CSI_Result res;
+	switch (type) {
+	case 2:
+		res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
+		break;
+	default:
+		res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
+		break;
+	}
 
 	if (0 == UnmapViewOfFile(inview)) {
 		LPVOID description = ::WinCheckError(L"Failed to Unmap Input View");

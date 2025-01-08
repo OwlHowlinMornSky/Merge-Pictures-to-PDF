@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
         mc:Ignorable="d"
-        Title="Pictures to PDF" Height="{DynamicResource WndHeight}" Width="{DynamicResource WndWidth}" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter" Closing="Window_Closing">
-    <Grid x:Name="GridMain" AllowDrop="True">
+        Title="Pictures to PDF" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter" Closing="Window_Closing" SizeToContent="WidthAndHeight">
+    <Grid x:Name="GridMain" AllowDrop="True" Height="{DynamicResource WndHeight}" Width="{DynamicResource WndWidth}" >
         <ProgressBar x:Name="PorgBarTotal" Margin="10,0,10,10" Height="27" VerticalAlignment="Bottom" Grid.ColumnSpan="2"/>
         <Label x:Name="LabelTotal" Content="{DynamicResource Ready}" Margin="10,0,0,37" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
         <GroupBox x:Name="GpBoxPageSize" Header="{DynamicResource PageSizeBox}" Margin="10,10,10,0" Height="90" VerticalAlignment="Top" Grid.ColumnSpan="2">

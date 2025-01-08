@@ -17,8 +17,39 @@ namespace WpfGui {
 	/// WindowMorePreferences.xaml 的交互逻辑
 	/// </summary>
 	public partial class WindowMorePreferences : Window {
-		public WindowMorePreferences() {
+		public WindowMorePreferences(int _type, int _quality, bool _archive) {
 			InitializeComponent();
+
+			ComboBoxCompressType.SelectedIndex = _type switch {
+				2 => 1,
+				_ => 0,
+			};
+			SliderQuality.Value = _quality;
+			ChkboxArchive.IsChecked = _archive;
+		}
+
+		public string? CompressType {
+			get {
+				return (ComboBoxCompressType.SelectedItem as ComboBoxItem)?.Content.ToString();
+			}
+		}
+
+		public int CompressQuility {
+			get {
+				return (int)SliderQuality.Value;
+			}
+		}
+
+		public bool ConvertArchive {
+			get {
+				return ChkboxArchive.IsChecked != false;
+			}
+		}
+
+		private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
+			if (sender is Slider slider) {
+				LabelSlideValue.Content = slider.Value.ToString();
+			}
 		}
 	}
 }

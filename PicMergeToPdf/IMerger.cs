@@ -8,7 +8,11 @@ namespace PicMerge {
 	/// </summary>
 	public interface IMerger : IDisposable {
 
-		internal struct Parameters(int _pageSizeType = 2, int _pagesizex = 0, int _pagesizey = 0, bool _compress = true) {
+		internal struct Parameters(
+			int _pageSizeType = 2, int _pagesizex = 0, int _pagesizey = 0,
+			bool _compress = true, int _type = 1, int _quality = 80,
+			bool _archive = true
+		) {
 			/// <summary>
 			/// 页面大小类型。
 			/// </summary>
@@ -25,6 +29,10 @@ namespace PicMerge {
 			/// 是否压缩所有图片。
 			/// </summary>
 			public readonly bool compress = _compress;
+
+			public int compressType = _type;
+			public int compressQuality = _quality;
+			public bool convertArchive = _archive;
 		}
 
 		public readonly struct FailedFile(int _c, string _file, string _desc) {
@@ -65,10 +73,19 @@ namespace PicMerge {
 		/// <param name="pagesizey">页面大小高</param>
 		/// <param name="compress">是否压缩所有图片</param>
 		/// <returns>创建的实例</returns>
-		public static IMerger Create(bool parallel, Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) {
+		public static IMerger Create(
+			bool parallel,
+			Action finish1img,
+			int pageSizeType = 2,
+			int pagesizex = 0,
+			int pagesizey = 0,
+			bool compress = true,
+			int type = 1,
+			int quality = 80,
+			bool archive = true) {
 			return parallel ?
-				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress)) :
-				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress));
+				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality, archive)) :
+				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality, archive));
 		}
 
 		/// <summary>
