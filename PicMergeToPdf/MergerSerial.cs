@@ -1,7 +1,4 @@
 ﻿using iText.IO.Image;
-using iText.Kernel.Pdf;
-using iText.Kernel.Geom;
-using iText.Kernel.Pdf.Canvas;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Gif;
 using System.IO.MemoryMappedFiles;
@@ -17,7 +14,7 @@ namespace PicMerge {
 	/// <param name="pagesizex">页面大小宽</param>
 	/// <param name="pagesizey">页面大小高</param>
 	/// <param name="compress">是否压缩所有图片</param>
-	internal class MergerSerial(Action finish1img, IMerger.Parameters param) : IMerger {
+	internal class MergerSerial(Action finish1img, Parameters param) : IMerger {
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
@@ -26,7 +23,7 @@ namespace PicMerge {
 		/// <summary>
 		/// 合并之参数。使用第一张图片的尺寸时需要修改，所以不能只读。
 		/// </summary>
-		private IMerger.Parameters m_param = param;
+		private Parameters m_param = param;
 
 		/// <summary>
 		/// 用于接受压缩结果的内存映射文件。首次使用时创建。
@@ -71,7 +68,7 @@ namespace PicMerge {
 					return failed;
 				}
 				/// 再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出pdf。
-				if (!AddImage(imageData, pdfTarget.Document)) {
+				if (!pdfTarget.AddImage(imageData, ref m_param)) {
 					failed.Add(new FailedFile(0x4001, files[i], "Unable to add into pdf [iText internal problem]."));
 				}
 				FinishOneImg();
@@ -83,7 +80,7 @@ namespace PicMerge {
 						FinishOneImg();
 						continue;
 					}
-					if (!AddImage(imageData, pdfTarget.Document)) {
+					if (!pdfTarget.AddImage(imageData, ref m_param)) {
 						failed.Add(new FailedFile(0x4001, files[i], "Unable to add into pdf [iText internal problem]."));
 					}
 					FinishOneImg();
@@ -195,58 +192,6 @@ namespace PicMerge {
 			catch (Exception) { }
 
 			return imageData;
-		}
-
-		/// <summary>
-		/// 向 PDF 添加一页图片。
-		/// </summary>
-		/// <param name="imageData">图片数据</param>
-		/// <param name="pdfDocument">PDF文件数据</param>
-		/// <returns>是否成功</returns>
-		private bool AddImage(ImageData imageData, PdfDocument pdfDocument) {
-			try {
-				PageSize pageSize;
-				PageSize imageSize;
-				float width = imageData.GetWidth();
-				float height = imageData.GetHeight();
-				switch (m_param.pageSizeType) {
-				default:
-				case 1: // 与图片大小一致
-					imageSize = new(width, height);
-					pageSize = imageSize;
-					break;
-				case 2: // 固定宽度
-					if (m_param.pagesizex == 0) {
-						m_param.pagesizex = width;
-					}
-					imageSize = new(m_param.pagesizex, m_param.pagesizex / width * height);
-					pageSize = imageSize;
-					break;
-				case 3: // 固定大小
-					if (m_param.pagesizex == 0 || m_param.pagesizey == 0) {
-						m_param.pagesizex = width;
-						m_param.pagesizey = height;
-					}
-					pageSize = new(m_param.pagesizex, m_param.pagesizey);
-					float r = float.Min(
-					1.0f * m_param.pagesizex / width,
-					1.0f * m_param.pagesizey / height
-				);
-					imageSize = new(width * r, height * r);
-					imageSize.SetX((pageSize.GetWidth() - imageSize.GetWidth()) / 2.0f);
-					imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
-					break;
-				}
-				pageSize.SetWidth(pageSize.GetWidth());
-				pageSize.SetHeight(pageSize.GetHeight());
-				PdfPage page = pdfDocument.AddNewPage(pageSize);
-				PdfCanvas canvas = new(page, true);
-				canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);
-			}
-			catch (Exception) {
-				return false;
-			}
-			return true;
 		}
 
 		public void Dispose() {

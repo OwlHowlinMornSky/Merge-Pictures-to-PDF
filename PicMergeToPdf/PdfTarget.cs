@@ -1,9 +1,7 @@
-﻿using iText.Kernel.Pdf;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using iText.IO.Image;
+using iText.Kernel.Geom;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas;
 
 namespace PicMerge {
 	internal class PdfTarget(string _outputPath, string? _title) : IDisposable {
@@ -52,6 +50,58 @@ namespace PicMerge {
 
 		internal bool IsUsed() {
 			return _pdfDocument != null;
+		}
+
+		/// <summary>
+		/// 向 PDF 添加一页图片。
+		/// </summary>
+		/// <param name="imageData">图片数据</param>
+		/// <param name="pdfDocument">PDF文件数据</param>
+		/// <returns>是否成功</returns>
+		internal bool AddImage(ImageData imageData, ref IMerger.Parameters param) {
+			try {
+				PageSize pageSize;
+				PageSize imageSize;
+				float width = imageData.GetWidth();
+				float height = imageData.GetHeight();
+				switch (param.pageSizeType) {
+				default:
+				case 1: // 与图片大小一致
+					imageSize = new(width, height);
+					pageSize = imageSize;
+					break;
+				case 2: // 固定宽度
+					if (param.pagesizex == 0) {
+						param.pagesizex = width;
+					}
+					imageSize = new(param.pagesizex, param.pagesizex / width * height);
+					pageSize = imageSize;
+					break;
+				case 3: // 固定大小
+					if (param.pagesizex == 0 || param.pagesizey == 0) {
+						param.pagesizex = width;
+						param.pagesizey = height;
+					}
+					pageSize = new(param.pagesizex, param.pagesizey);
+					float r = float.Min(
+					1.0f * param.pagesizex / width,
+					1.0f * param.pagesizey / height
+				);
+					imageSize = new(width * r, height * r);
+					imageSize.SetX((pageSize.GetWidth() - imageSize.GetWidth()) / 2.0f);
+					imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
+					break;
+				}
+				pageSize.SetWidth(pageSize.GetWidth());
+				pageSize.SetHeight(pageSize.GetHeight());
+				PdfPage page = Document.AddNewPage(pageSize);
+				PdfCanvas canvas = new(page, true);
+				canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);
+			}
+			catch (Exception) {
+				return false;
+			}
+			return true;
 		}
 
 		public void Dispose() {
