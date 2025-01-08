@@ -30,11 +30,6 @@ namespace PicMerge {
 		private IMerger.Parameters m_param = param;
 
 		/// <summary>
-		/// 内存映射文件设定的最大大小。
-		/// </summary>
-		private const long MapFileSize = 0x04000000;
-
-		/// <summary>
 		/// 从Process输入的输入文件列表。
 		/// </summary>
 		private List<string> m_files = [];

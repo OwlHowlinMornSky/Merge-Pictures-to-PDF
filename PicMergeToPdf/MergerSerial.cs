@@ -29,10 +29,6 @@ namespace PicMerge {
 		private IMerger.Parameters m_param = param;
 
 		/// <summary>
-		/// 内存映射文件设定的最大大小。
-		/// </summary>
-		private const long MapFileSize = 0x04000000;
-		/// <summary>
 		/// 用于接受压缩结果的内存映射文件。首次使用时创建。
 		/// </summary>
 		private MemoryMappedFile? m_mapfile = null;

@@ -8,6 +8,11 @@ namespace PicMerge {
 	/// </summary>
 	public interface IMerger : IDisposable {
 
+		/// <summary>
+		/// 内存映射文件设定的最大大小。
+		/// </summary>
+		internal const long MapFileSize = 0x04000000;
+
 		internal struct Parameters(
 			int _pageSizeType = 2, int _pagesizex = 0, int _pagesizey = 0,
 			bool _compress = true, int _type = 1, int _quality = 80,
