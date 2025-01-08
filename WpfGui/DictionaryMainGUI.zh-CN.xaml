@@ -25,6 +25,9 @@
     <wnd:Thickness x:Key="IOBoxChk3">180,12,0,0</wnd:Thickness>
     <wnd:Thickness x:Key="IOBoxChk4">265,12,0,0</wnd:Thickness>
 
+    <sys:String x:Key="DetailButton">详细设置</sys:String>
+    <wnd:Thickness x:Key="DetailButtonMargin">0,170,10,0</wnd:Thickness>
+
     <sys:String x:Key="Ready">就绪</sys:String>
     <sys:String x:Key="HaveFinishedPercent">已完成 {0:F2}%</sys:String>
     <sys:String x:Key="Error">错误</sys:String>

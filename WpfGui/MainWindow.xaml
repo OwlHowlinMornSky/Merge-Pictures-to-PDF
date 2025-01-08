@@ -33,5 +33,6 @@
                 <CheckBox x:Name="ChkBoxCompressAll" Content="{DynamicResource IOCompress}" Margin="{DynamicResource IOBoxChk3}" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Grid.Row="1"/>
             </Grid>
         </GroupBox>
+        <Button Content="{DynamicResource DetailButton}" Margin="{DynamicResource DetailButtonMargin}" VerticalAlignment="Top" HorizontalAlignment="Right" Click="Button_Click"/>
     </Grid>
 </Window>

@@ -235,5 +235,10 @@ namespace WpfGui {
 			App.Current.Resources.MergedDictionaries.Add(rd);
 			return;
 		}
-	}
+
+		private void Button_Click(object sender, RoutedEventArgs e) {
+			var dialog = new WindowMorePreferences();
+			dialog.ShowDialog();
+        }
+    }
 }
