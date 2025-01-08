@@ -60,9 +60,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public virtual List<FailedFile> Process(string outputfilepath, List<string> files, string? title = null) {
-			return [];
-		}
+		public List<FailedFile> Process(string outputfilepath, List<string> files, string? title = null);
 
 		/// <summary>
 		/// 创建一个合成器实例。
@@ -90,7 +88,6 @@ namespace PicMerge {
 
 		public static IMerger CreateArchiveConverter(
 			bool keepStruct,
-			Action finish1img,
 			int pageSizeType,
 			int pagesizex,
 			int pagesizey,

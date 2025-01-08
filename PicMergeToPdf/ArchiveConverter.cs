@@ -9,23 +9,14 @@ using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 
 namespace PicMerge {
-	internal class ArchiveConverter(bool _keepStruct, Parameters param) : IMerger {
-
-		/// <summary>
-		/// 合并之参数。使用第一张图片的尺寸时需要修改，所以不能只读。
-		/// </summary>
-		private Parameters m_param = param;
+	internal class ArchiveConverter(bool _keepStruct, Parameters param) : Merger(param), IMerger {
 
 		private readonly bool m_keepStruct = _keepStruct;
 
 		/// <summary>
-		/// 用于接受压缩结果的内存映射文件。首次使用时创建。
+		/// 用于接受压缩结果。
 		/// </summary>
-		private MemoryMappedFile? m_mapfile = null;
-		/// <summary>
-		/// 压缩器。首次使用时创建。
-		/// </summary>
-		private PicCompress.Compressor? m_compressor = null;
+		private CompressTarget m_compressTarget = new();
 
 		private readonly List<FailedFile> m_failed = [];
 
@@ -76,7 +67,7 @@ namespace PicMerge {
 				ImageData? imageData = null;
 				try {
 					/// 加载并处理。
-					imageData = m_param.compress ? LoadImage_Compress(imgfile) : LoadImage_Direct(imgfile);
+					imageData = ReadImage(imgfile, m_compressTarget);
 				}
 				catch (Exception ex) {
 					m_failed.Add(new FailedFile(0x3002, file, $"Failed to load image because: {ex.Message}"));
@@ -115,168 +106,6 @@ namespace PicMerge {
 			return m_failed;
 		}
 
-		/// <summary>
-		/// 压缩全部图片时的加载逻辑。
-		/// </summary>
-		/// <param name="filepath">欲加载的文件路径</param>
-		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private ImageData? LoadImage_Compress(MemoryMappedFile inFile) {
-			ImageData? imageData = null;
-
-			using var instream = inFile.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
-
-			var type = FileType.CheckType(instream);
-
-			switch (type) {
-			case FileType.Type.JPEG: // CSI, Img#, Direct.
-			case FileType.Type.PNG:  // CSI, Img#, Direct.
-			case FileType.Type.TIFF: // CSI, Img#, Direct.
-			case FileType.Type.WEBP: // CSI, Img#.
-				/// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
-				try {
-					if (m_compressor == null) {
-						m_mapfile ??= MemoryMappedFile.CreateNew(null, MapFileSize);
-						m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-					}
-					int len = m_compressor.CompressFrom(
-						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
-						m_param.compressType, m_param.compressQuality
-					);
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-					using var mapstream = m_mapfile.CreateViewStream();
-#pragma warning restore CS8602 // 解引用可能出现空引用。
-					using BinaryReader br = new(mapstream);
-					imageData = ImageDataFactory.Create(br.ReadBytes(len));
-					br.Close();
-					mapstream.Close();
-				}
-				catch (Exception) {
-					imageData = null;
-					goto case FileType.Type.GIF;
-				}
-				break;
-			case FileType.Type.BMP:  // Img#, Direct.
-			case FileType.Type.GIF:  // Img#, Direct.
-				/// 尝试利用 ImageSharp 压缩（压缩为 80% 的 JPG）
-				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					JpegEncoder encoder = new() {
-						SkipMetadata = true,
-						ColorType = JpegEncodingColor.Rgb,
-						Quality = 80,
-						Interleaved = false
-					};
-					using Image image = Image.Load(instream);
-					using MemoryStream imgSt = new();
-					image.SaveAsJpeg(imgSt, encoder);
-					imageData = ImageDataFactory.Create(imgSt.ToArray());
-					imgSt.Close();
-				}
-				catch (Exception) {
-					imageData = null;
-				}
-				if (type == FileType.Type.WEBP)
-					break;
-				/// 尝试 直接加载
-				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					using BinaryReader br = new(instream);
-					imageData = ImageDataFactory.Create(br.ReadBytes((int)instream.Length));
-				}
-				catch (Exception) {
-					imageData = null;
-				}
-				goto default;
-			//case FileType.Type.ZIP:  // Archive.
-			//case FileType.Type._7ZIP:// Archive.
-			//case FileType.Type.RAR:  // Archive.
-			//	throw new FileType.ArchiveException();
-			default:
-				throw new NotImplementedException("Unsupported type.");
-			}
-			return imageData;
-		}
-
-		/// <summary>
-		/// 直接读取时（不全部压缩）的加载逻辑。
-		/// </summary>
-		/// <param name="file">欲加载的文件</param>
-		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private ImageData? LoadImage_Direct(MemoryMappedFile inFile) {
-			ImageData? imageData = null;
-
-			using var instream = inFile.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
-
-			var type = FileType.CheckType(instream);
-
-			switch (type) {
-			case FileType.Type.JPEG: // CSI, Img#, Direct.
-			case FileType.Type.PNG:  // CSI, Img#, Direct.
-			case FileType.Type.TIFF: // CSI, Img#, Direct.
-			case FileType.Type.BMP:  // Img#, Direct.
-			case FileType.Type.GIF:  // Img#, Direct.
-				/// 尝试 直接加载
-				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					using BinaryReader br = new(instream);
-					imageData = ImageDataFactory.Create(br.ReadBytes((int)instream.Length));
-				}
-				catch (Exception) {
-					imageData = null;
-					goto case FileType.Type.WEBP;
-				}
-				break;
-			case FileType.Type.WEBP: // CSI, Img#.
-				/// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
-				try {
-					if (m_compressor == null) {
-						m_mapfile ??= MemoryMappedFile.CreateNew(null, MapFileSize);
-						m_compressor = new(m_mapfile.SafeMemoryMappedFileHandle.DangerousGetHandle(), MapFileSize);
-					}
-					int len = m_compressor.CompressFrom(
-						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
-						m_param.compressType, m_param.compressQuality
-					);
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-					using var mapstream = m_mapfile.CreateViewStream();
-#pragma warning restore CS8602 // 解引用可能出现空引用。
-					using BinaryReader br = new(mapstream);
-					imageData = ImageDataFactory.Create(br.ReadBytes(len));
-					br.Close();
-					mapstream.Close();
-				}
-				catch (Exception) {
-					imageData = null;
-				}
-				/// 尝试利用 ImageSharp 压缩（压缩为 80% 的 JPG）
-				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					JpegEncoder encoder = new() {
-						SkipMetadata = true,
-						ColorType = JpegEncodingColor.Rgb,
-						Quality = 80,
-						Interleaved = false
-					};
-					using Image image = Image.Load(instream);
-					using MemoryStream imgSt = new();
-					image.SaveAsJpeg(imgSt, encoder);
-					imageData = ImageDataFactory.Create(imgSt.ToArray());
-					imgSt.Close();
-				}
-				catch (Exception) {
-					imageData = null;
-				}
-				goto default;
-			//case FileType.Type.ZIP:  // Archive.
-			//case FileType.Type._7ZIP:// Archive.
-			//case FileType.Type.RAR:  // Archive.
-			//	throw new FileType.ArchiveException();
-			default:
-				throw new NotImplementedException("Unsupported type.");
-			}
-			return imageData;
-		}
-
 		public void Dispose() {
 			Dispose(true);
 			GC.SuppressFinalize(this);
@@ -287,8 +116,7 @@ namespace PicMerge {
 			if (m_disposed)
 				return;
 			if (disposing) {
-				m_compressor?.Dispose();
-				m_mapfile?.Dispose();
+				m_compressTarget.Dispose();
 			}
 			m_disposed = true;
 		}
