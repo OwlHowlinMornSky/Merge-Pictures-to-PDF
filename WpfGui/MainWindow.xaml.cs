@@ -178,16 +178,16 @@ namespace WpfGui {
 				return;
 			}
 			BarSetNum(0, 1);
-			m_processor.Set(
-				recursion: ChkBoxRecursion.IsChecked != false,
-				keepStruct: ChkBoxKeepStructure.IsChecked != false,
-				compress: ChkBoxCompressAll.IsChecked != false,
-				stayNoMove: ChkBoxStayNoMove.IsChecked == true,
-				pageSizeType: m_pageSizeType,
-				pagesizex: m_useSizeOfFirstPic ? 0 : int.Parse(TextWidth.Text),
-				pagesizey: m_useSizeOfFirstPic ? 0 : int.Parse(TextHeight.Text)
+			Processor.Parameters param = new(
+				_recursion: ChkBoxRecursion.IsChecked != false,
+				_keepStruct: ChkBoxKeepStructure.IsChecked != false,
+				_compress: ChkBoxCompressAll.IsChecked != false,
+				_stayNoMove: ChkBoxStayNoMove.IsChecked == true,
+				_pageSizeType: m_pageSizeType,
+				_pagesizex: m_useSizeOfFirstPic ? 0 : int.Parse(TextWidth.Text),
+				_pagesizey: m_useSizeOfFirstPic ? 0 : int.Parse(TextHeight.Text)
 			);
-			if (m_processor.Start(paths) == false) {
+			if (m_processor.Start(paths, param) == false) {
 				Task.Run(() => {
 					App.Current.Dispatcher.Invoke(() => {
 						MessageBox.Show(
