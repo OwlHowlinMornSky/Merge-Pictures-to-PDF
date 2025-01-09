@@ -1,9 +1,4 @@
 ﻿using iText.IO.Image;
-using SharpCompress.Common;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Gif;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 
 namespace PicMerge {
@@ -12,10 +7,7 @@ namespace PicMerge {
 	/// 目前，该类构造一个只能运行一次。
 	/// </summary>
 	/// <param name="finish1img">完成一个文件的回调</param>
-	/// <param name="pageSizeType">页面大小类型</param>
-	/// <param name="pagesizex">页面大小宽</param>
-	/// <param name="pagesizey">页面大小高</param>
-	/// <param name="compress">是否压缩所有图片</param>
+	/// <param name="param">参数</param>
 	internal class MergerSerial(Action finish1img, Parameters param) : Merger(param), IMerger {
 
 		/// <summary>

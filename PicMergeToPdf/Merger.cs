@@ -81,18 +81,45 @@ namespace PicMerge {
 				break;
 			case FileType.Type.BMP:  // Img#, Direct.
 			case FileType.Type.GIF:  // Img#, Direct.
-				/// 尝试利用 ImageSharp 压缩（压缩为 80% 的 JPG）
+				/// 尝试利用 ImageSharp 压缩
 				try {
 					instream.Seek(0, SeekOrigin.Begin);
-					JpegEncoder encoder = new() {
-						SkipMetadata = true,
-						ColorType = JpegEncodingColor.Rgb,
-						Quality = 80,
-						Interleaved = false
-					};
 					using Image image = Image.Load(instream);
 					using MemoryStream imgSt = new();
-					image.SaveAsJpeg(imgSt, encoder);
+					switch (m_param.compressType) {
+					case 2: {
+						int quality = 10 - m_param.compressQuality / 10;
+						PngEncoder encoder = new() {
+							SkipMetadata = true,
+							ColorType = PngColorType.Rgb,
+							CompressionLevel = quality switch {
+								1 => PngCompressionLevel.Level1,
+								2 => PngCompressionLevel.Level2,
+								3 => PngCompressionLevel.Level3,
+								4 => PngCompressionLevel.Level4,
+								5 => PngCompressionLevel.Level5,
+								6 => PngCompressionLevel.Level6,
+								7 => PngCompressionLevel.Level7,
+								8 => PngCompressionLevel.Level8,
+								9 => PngCompressionLevel.Level9,
+								10 => PngCompressionLevel.Level9,
+								_ => PngCompressionLevel.Level0,
+							}
+						};
+						image.SaveAsPng(imgSt, encoder);
+						break;
+					}
+					default: {
+						JpegEncoder encoder = new() {
+							SkipMetadata = true,
+							ColorType = JpegEncodingColor.Rgb,
+							Quality = m_param.compressQuality,
+							Interleaved = false
+						};
+						image.SaveAsJpeg(imgSt, encoder);
+						break;
+					}
+					}
 					imageData = ImageDataFactory.Create(imgSt.ToArray());
 					imgSt.Close();
 				}
@@ -110,7 +137,7 @@ namespace PicMerge {
 				catch (Exception) {
 					imageData = null;
 				}
-				goto default;
+				break;
 			case FileType.Type.ZIP:  // Archive.
 			case FileType.Type._7ZIP:// Archive.
 			case FileType.Type.RAR:  // Archive.
@@ -129,7 +156,7 @@ namespace PicMerge {
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
 		private ImageData? LoadImageInMemory_Direct(MemoryMappedFile inFile, CompressTarget compt) {
 			ImageData? imageData = null;
-			
+
 			using var instream = inFile.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
 
 			var type = FileType.CheckType(instream);
@@ -168,25 +195,52 @@ namespace PicMerge {
 				catch (Exception) {
 					imageData = null;
 				}
-				/// 尝试利用 ImageSharp 压缩（压缩为 80% 的 JPG）
+				/// 尝试利用 ImageSharp 压缩
 				try {
 					instream.Seek(0, SeekOrigin.Begin);
-					JpegEncoder encoder = new() {
-						SkipMetadata = true,
-						ColorType = JpegEncodingColor.Rgb,
-						Quality = 80,
-						Interleaved = false
-					};
 					using Image image = Image.Load(instream);
 					using MemoryStream imgSt = new();
-					image.SaveAsJpeg(imgSt, encoder);
+					switch (m_param.compressType) {
+					case 2: {
+						int quality = 10 - m_param.compressQuality / 10;
+						PngEncoder encoder = new() {
+							SkipMetadata = true,
+							ColorType = PngColorType.Rgb,
+							CompressionLevel = quality switch {
+								1 => PngCompressionLevel.Level1,
+								2 => PngCompressionLevel.Level2,
+								3 => PngCompressionLevel.Level3,
+								4 => PngCompressionLevel.Level4,
+								5 => PngCompressionLevel.Level5,
+								6 => PngCompressionLevel.Level6,
+								7 => PngCompressionLevel.Level7,
+								8 => PngCompressionLevel.Level8,
+								9 => PngCompressionLevel.Level9,
+								10 => PngCompressionLevel.Level9,
+								_ => PngCompressionLevel.Level0,
+							}
+						};
+						image.SaveAsPng(imgSt, encoder);
+						break;
+					}
+					default: {
+						JpegEncoder encoder = new() {
+							SkipMetadata = true,
+							ColorType = JpegEncodingColor.Rgb,
+							Quality = m_param.compressQuality,
+							Interleaved = false
+						};
+						image.SaveAsJpeg(imgSt, encoder);
+						break;
+					}
+					}
 					imageData = ImageDataFactory.Create(imgSt.ToArray());
 					imgSt.Close();
 				}
 				catch (Exception) {
 					imageData = null;
 				}
-				goto default;
+				break;
 			case FileType.Type.ZIP:  // Archive.
 			case FileType.Type._7ZIP:// Archive.
 			case FileType.Type.RAR:  // Archive.
