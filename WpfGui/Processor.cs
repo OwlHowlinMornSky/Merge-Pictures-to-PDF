@@ -67,6 +67,10 @@ namespace WpfGui {
 			public List<string> files = _files;
 		}
 
+		private class Count(int _v) {
+			public int value = _v;
+		}
+
 		/// <summary>
 		/// 对应的主窗口。用来弹消息框。
 		/// </summary>
@@ -102,27 +106,22 @@ namespace WpfGui {
 		/// 待处理的数据。
 		/// </summary>
 		private readonly Queue<TaskInputData> m_waitings = [];
-
-		/// <summary>
-		/// 报告完成的图片计数。
-		/// </summary>
-		private int m_finishedImgCnt = 0;
 		/// <summary>
 		/// 图片总计数。
 		/// </summary>
 		private int m_totalImgCnt = 0;
 		/// <summary>
-		/// 报告完成的图片计数 的 锁。
+		/// 报告完成的图片计数。
 		/// </summary>
-		private readonly object m_lockForImgCnt = new();
+		private readonly Count m_finishedImg = new(0);
 
 		/// <summary>
 		/// 用于子任务报告完成一张图片 的 回调目标。
 		/// </summary>
 		private void CallbackFinishOneImgFile() {
-			lock (m_lockForImgCnt) {
-				m_finishedImgCnt++;
-				SetBarNum(m_finishedImgCnt, m_totalImgCnt); // 更新进度条。
+			lock (m_finishedImg) {
+				m_finishedImg.value++;
+				SetBarNum(m_finishedImg.value, m_totalImgCnt); // 更新进度条。
 			}
 		}
 
@@ -137,9 +136,9 @@ namespace WpfGui {
 				}
 			}
 			/// 没有等待处理的数据了。
-			lock (m_lockForImgCnt) {
+			lock (m_finishedImg) {
 				/// 图片也处理完了。
-				if (m_finishedImgCnt >= m_totalImgCnt) {
+				if (m_finishedImg.value >= m_totalImgCnt) {
 					SetBarFinish(); // 设置进度条为完成。
 				}
 			}
@@ -202,7 +201,7 @@ namespace WpfGui {
 					taskScan.Wait();
 
 					/// 设置统计值。
-					m_finishedImgCnt = 0;
+					m_finishedImg.value = 0;
 					m_totalImgCnt = taskScan.Result;
 					if (m_totalImgCnt < 1)
 						return;
