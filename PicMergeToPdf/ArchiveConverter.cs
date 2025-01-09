@@ -3,8 +3,6 @@ using SharpCompress;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
 using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 

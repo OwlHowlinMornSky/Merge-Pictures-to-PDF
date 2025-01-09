@@ -1,7 +1,4 @@
 ﻿using iText.IO.Image;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 
 namespace PicMerge {
@@ -10,19 +7,19 @@ namespace PicMerge {
 	/// 目前，该类构造一个只能运行一次。
 	/// </summary>
 	/// <param name="finish1img">完成一个文件的回调</param>
-	/// <param name="pageSizeType">页面大小类型</param>
-	/// <param name="pagesizex">页面大小宽</param>
-	/// <param name="pagesizey">页面大小高</param>
-	/// <param name="compress">是否压缩所有图片</param>
+	/// <param name="param">参数</param>
 	internal class MergerParallel(Action finish1img, Parameters param) : Merger(param), IMerger {
 
+		/// <summary>
+		/// 多任务协作时，任务中sleep的 默认 毫秒数。
+		/// </summary>
+		private const int m_sleepMs = 20;
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
 		/// </summary>
 		private readonly Action FinishOneImg = finish1img;
-
 		/// <summary>
-		/// 从Process输入的输入文件列表。
+		/// 无法合入的文件的列表。
 		/// </summary>
 		private List<string> m_files = [];
 

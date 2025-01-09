@@ -1,7 +1,7 @@
 ﻿using iText.IO.Image;
-using SharpCompress.Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
 using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 
@@ -12,17 +12,34 @@ namespace PicMerge {
 		/// </summary>
 		protected Parameters m_param = param;
 
+		/// <summary>
+		/// 用于文件并行方法之加载。
+		/// </summary>
+		/// <param name="filepath">图片文件路径</param>
+		/// <returns>加载结果</returns>
 		internal ImageData? ParaImage(string filepath) {
 			using CompressTarget compt = new();
 			return LoadImage(filepath, compt);
 		}
 
+		/// <summary>
+		/// 用于从文件加载图片。
+		/// </summary>
+		/// <param name="filepath">图片文件路径</param>
+		/// <param name="compt">压缩器</param>
+		/// <returns>加载结果</returns>
 		internal ImageData? LoadImage(string filepath, CompressTarget compt) {
 			using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
 			using MemoryMappedFile inFile = MemoryMappedFile.CreateFromFile(inputStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
 			return ReadImage(inFile, compt);
 		}
 
+		/// <summary>
+		/// 从内存映射文件读取图片。
+		/// </summary>
+		/// <param name="inFile">要读入之图片</param>
+		/// <param name="compt">压缩器</param>
+		/// <returns>加载结果</returns>
 		internal ImageData? ReadImage(MemoryMappedFile inFile, CompressTarget compt) {
 			return m_param.compress ? LoadImageInMemory_Compress(inFile, compt) : LoadImageInMemory_Direct(inFile, compt);
 		}
@@ -30,7 +47,8 @@ namespace PicMerge {
 		/// <summary>
 		/// 压缩全部图片时的加载逻辑。
 		/// </summary>
-		/// <param name="filepath">欲加载的文件路径</param>
+		/// <param name="inFile">欲加载之文件</param>
+		/// <param name="compt">压缩器</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
 		private ImageData? LoadImageInMemory_Compress(MemoryMappedFile inFile, CompressTarget compt) {
 			ImageData? imageData = null;
@@ -43,7 +61,7 @@ namespace PicMerge {
 			case FileType.Type.PNG:  // CSI, Img#, Direct.
 			case FileType.Type.TIFF: // CSI, Img#, Direct.
 			case FileType.Type.WEBP: // CSI, Img#.
-				/// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
+				/// 尝试利用 Caesium-Iodine 压缩
 				try {
 					instream.Seek(0, SeekOrigin.Begin);
 					int len = compt.Compressor.CompressFrom(
@@ -106,7 +124,8 @@ namespace PicMerge {
 		/// <summary>
 		/// 直接读取时（不全部压缩）的加载逻辑。
 		/// </summary>
-		/// <param name="file">欲加载的文件</param>
+		/// <param name="inFile">欲加载之文件</param>
+		/// <param name="compt">压缩器</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
 		private ImageData? LoadImageInMemory_Direct(MemoryMappedFile inFile, CompressTarget compt) {
 			ImageData? imageData = null;
@@ -133,7 +152,7 @@ namespace PicMerge {
 				}
 				break;
 			case FileType.Type.WEBP: // CSI, Img#.
-				/// 尝试利用 Caesium-Iodine 压缩（压缩为 80% 的 JPG）
+				/// 尝试利用 Caesium-Iodine 压缩
 				try {
 					instream.Seek(0, SeekOrigin.Begin);
 					int len = compt.Compressor.CompressFrom(
