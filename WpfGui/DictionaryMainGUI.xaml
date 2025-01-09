@@ -7,18 +7,18 @@
     <sys:Double x:Key="WndWidth">420</sys:Double>
 
     <sys:String x:Key="PageSizeBox">Page Size</sys:String>
-    <sys:String x:Key="PageSizeSameWithEach">Same with Each Image</sys:String>
-    <sys:String x:Key="PageSizeWidthFixed">Width Fixed</sys:String>
-    <sys:String x:Key="PageSizeSizeFixed">Size Fixed</sys:String>
-    <sys:String x:Key="PageSizeUseFirstImage">As First Image's Size</sys:String>
+    <sys:String x:Key="PageSizeSameWithEach">Same with each image</sys:String>
+    <sys:String x:Key="PageSizeWidthFixed">Fixed width</sys:String>
+    <sys:String x:Key="PageSizeSizeFixed">Fixed size</sys:String>
+    <sys:String x:Key="PageSizeUseFirstImage">As first image's</sys:String>
     <sys:String x:Key="PageSizeWidth">Width</sys:String>
     <sys:String x:Key="PageSizeHeight">Height</sys:String>
     
     <sys:String x:Key="IOBox">Input/Output</sys:String>
-    <sys:String x:Key="IORecursion">Input Folder Recursion</sys:String>
-    <sys:String x:Key="IOKeepStructure">Keep Folder Structure</sys:String>
-    <sys:String x:Key="IOCompress">Compress Every Image</sys:String>
-    <sys:String x:Key="IOStayNoMove">Output to Source Folder</sys:String>
+    <sys:String x:Key="IORecursion">Recurse input folder</sys:String>
+    <sys:String x:Key="IOKeepStructure">Keep folder structure</sys:String>
+    <sys:String x:Key="IOCompress">Compress every image</sys:String>
+    <sys:String x:Key="IOStayNoMove">Output to same folder as input</sys:String>
     <sys:Double x:Key="IOBoxHeight">80</sys:Double>
     <wnd:Thickness x:Key="IOBoxChk1">10,10,0,0</wnd:Thickness>
     <wnd:Thickness x:Key="IOBoxChk2">180,10,0,0</wnd:Thickness>
@@ -37,6 +37,6 @@
 
     <sys:String x:Key="CannotProcess">File(s) below cannot be processed:</sys:String>
     <sys:String x:Key="CannotMerge">File(s) below cannot be merged into “{0}”:</sys:String>
-    <sys:String x:Key="ChooseDestinationDir">Choose Output Location</sys:String>
+    <sys:String x:Key="ChooseDestinationDir">Choose output place</sys:String>
 
 </ResourceDictionary>
