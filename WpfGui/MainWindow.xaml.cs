@@ -31,7 +31,7 @@ namespace WpfGui {
 
 		private int m_type = 1;
 		private int m_quality = 80;
-		private bool m_archive = true;
+		private bool m_moveMerged = true;
 
 		public MainWindow() {
 			if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase)) {
@@ -193,7 +193,7 @@ namespace WpfGui {
 				_parallelOnFileLevel: true,
 				_type: m_type,
 				_quality: m_quality,
-				_archive: m_archive
+				_moveMerged: m_moveMerged
 			);
 			if (m_processor.Start(paths, param) == false) {
 				Task.Run(() => {
@@ -245,7 +245,7 @@ namespace WpfGui {
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e) {
-			WindowMorePreferences dialog = new(m_type, m_quality, m_archive);
+			WindowMorePreferences dialog = new(m_type, m_quality, m_moveMerged);
 			dialog.ShowDialog();
 
 			switch (dialog.CompressType) {
@@ -261,7 +261,7 @@ namespace WpfGui {
 				break;
 			}
 			m_quality = dialog.CompressQuility;
-			m_archive = dialog.ConvertArchive;
+			m_moveMerged = dialog.MoveMerged;
 
 			if (m_quality > 100)
 				m_quality = 100;

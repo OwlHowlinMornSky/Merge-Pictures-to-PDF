@@ -22,7 +22,7 @@ namespace WpfGui {
 			bool _parallelOnFileLevel = true,
 			int _type = 1,
 			int _quality = 80,
-			bool _archive = true
+			bool _moveMerged = true
 		) {
 			/// <summary>
 			/// 递归输入文件夹。
@@ -59,7 +59,7 @@ namespace WpfGui {
 
 			public int compressType = _type;
 			public int compressQuality = _quality;
-			public bool convertArchive = _archive;
+			public bool moveMerged = _moveMerged;
 		}
 
 		private struct TaskInputData(bool _isDirectory, List<string> _files) {
@@ -323,7 +323,7 @@ namespace WpfGui {
 				m_param.compressType,
 				m_param.compressQuality
 			);
-			List<PicMerge.IMerger.FailedFile> failed = await merger.ProcessAsync(outputPath, files, title);
+			List<PicMerge.IMerger.FileResult> failed = await merger.ProcessAsync(outputPath, files, title);
 			CallbackFinishAllImgFile();
 			CheckMergeReturnedFailedList(title ?? outputPath, failed);
 		}
@@ -415,7 +415,7 @@ namespace WpfGui {
 		/// </summary>
 		/// <param name="title">内定标题</param>
 		/// <param name="failed">失败列表</param>
-		private void CheckMergeReturnedFailedList(string title, List<PicMerge.IMerger.FailedFile> failed) {
+		private void CheckMergeReturnedFailedList(string title, List<PicMerge.IMerger.FileResult> failed) {
 			if (failed.Count > 0) {
 				string msg = string.Format(App.Current.FindResource("CannotMerge").ToString() ?? "Failed to merge into {0}:", title);
 				foreach (var str in failed) {

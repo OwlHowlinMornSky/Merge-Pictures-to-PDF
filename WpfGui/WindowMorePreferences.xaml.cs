@@ -17,7 +17,7 @@ namespace WpfGui {
 	/// WindowMorePreferences.xaml 的交互逻辑
 	/// </summary>
 	public partial class WindowMorePreferences : Window {
-		public WindowMorePreferences(int _type, int _quality, bool _archive) {
+		public WindowMorePreferences(int _type, int _quality, bool _moveMerged) {
 			InitializeComponent();
 
 			ComboBoxCompressType.SelectedIndex = _type switch {
@@ -25,7 +25,7 @@ namespace WpfGui {
 				_ => 0,
 			};
 			SliderQuality.Value = _quality;
-			ChkboxArchive.IsChecked = _archive;
+			ChkboxMoveMerged.IsChecked = _moveMerged;
 		}
 
 		public string? CompressType {
@@ -40,9 +40,9 @@ namespace WpfGui {
 			}
 		}
 
-		public bool ConvertArchive {
+		public bool MoveMerged {
 			get {
-				return ChkboxArchive.IsChecked != false;
+				return ChkboxMoveMerged.IsChecked != false;
 			}
 		}
 
