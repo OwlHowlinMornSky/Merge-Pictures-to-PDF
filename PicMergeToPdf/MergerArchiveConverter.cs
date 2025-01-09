@@ -7,7 +7,7 @@ using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 
 namespace PicMerge {
-	internal class ArchiveConverter(bool _keepStruct, Parameters param) : Merger(param), IMerger {
+	internal class MergerArchiveConverter(bool _keepStruct, Parameters param) : Merger(param), IMerger {
 
 		private readonly bool m_keepStruct = _keepStruct;
 
@@ -18,7 +18,7 @@ namespace PicMerge {
 
 		private readonly List<FailedFile> m_failed = [];
 
-		~ArchiveConverter() {
+		~MergerArchiveConverter() {
 			Dispose(false);
 		}
 

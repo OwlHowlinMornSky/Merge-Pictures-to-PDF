@@ -94,7 +94,7 @@ namespace PicMerge {
 			bool compress,
 			int type,
 			int quality) {
-			return new ArchiveConverter(keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
+			return new MergerArchiveConverter(keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
 		}
 
 		/// <summary>

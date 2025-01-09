@@ -2,9 +2,6 @@
 namespace PicMerge {
 	internal static class FileType {
 
-		internal class ArchiveException : Exception {
-		}
-
 		internal enum Type {
 			Unknown = 0,
 			JPEG,

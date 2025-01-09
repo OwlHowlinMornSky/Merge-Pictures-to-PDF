@@ -138,10 +138,6 @@ namespace PicMerge {
 					imageData = null;
 				}
 				break;
-			case FileType.Type.ZIP:  // Archive.
-			case FileType.Type._7ZIP:// Archive.
-			case FileType.Type.RAR:  // Archive.
-				throw new FileType.ArchiveException();
 			default:
 				throw new NotImplementedException("Unsupported type.");
 			}
@@ -241,10 +237,6 @@ namespace PicMerge {
 					imageData = null;
 				}
 				break;
-			case FileType.Type.ZIP:  // Archive.
-			case FileType.Type._7ZIP:// Archive.
-			case FileType.Type.RAR:  // Archive.
-				throw new FileType.ArchiveException();
 			default:
 				throw new NotImplementedException("Unsupported type.");
 			}

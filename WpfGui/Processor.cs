@@ -324,12 +324,6 @@ namespace WpfGui {
 				m_param.compressQuality
 			);
 			List<PicMerge.IMerger.FailedFile> failed = await merger.ProcessAsync(outputPath, files, title);
-			if (m_param.convertArchive) {
-				var archives = failed.Where(f => f.code == 0x114514);
-				if (archives.Any()) {
-
-				}
-			}
 			CallbackFinishAllImgFile();
 			CheckMergeReturnedFailedList(title ?? outputPath, failed);
 		}
