@@ -42,7 +42,20 @@ namespace PicMerge {
 				ImageData? imageData = null;
 				for (; i < files.Count; ++i) {
 					string file = files[i];
-					imageData = LoadImage(file, m_compressTarget);
+
+					try {
+						imageData = LoadImage(file, m_compressTarget);
+					}
+					catch (FileType.ArchiveException) {
+						failed.Add(new FailedFile(0x114514, file, "Archive file convertion is not enabled."));
+						continue;
+					}
+					catch (Exception ex) {
+						failed.Add(new FailedFile(0x2001, file, $"Failed to load image because: {ex.Message}"));
+						FinishOneImg();
+						continue;
+					}
+
 					if (imageData != null) {
 						break;
 					}
@@ -59,7 +72,20 @@ namespace PicMerge {
 				FinishOneImg();
 				for (++i; i < files.Count; ++i) {
 					string file = files[i];
-					imageData = LoadImage(file, m_compressTarget);
+
+					try {
+						imageData = LoadImage(file, m_compressTarget);
+					}
+					catch (FileType.ArchiveException) {
+						failed.Add(new FailedFile(0x114514, file, "Archive file convertion is not enabled."));
+						continue;
+					}
+					catch (Exception ex) {
+						failed.Add(new FailedFile(0x2001, file, $"Failed to load image because: {ex.Message}"));
+						FinishOneImg();
+						continue;
+					}
+
 					if (imageData == null) {
 						failed.Add(new FailedFile(0x3001, file, "Unsupported type."));
 						FinishOneImg();
@@ -75,6 +101,9 @@ namespace PicMerge {
 				failed = [new FailedFile(0x4002, ex.Message, ex.Source ?? "")];
 			}
 			return failed;
+		}
+
+		private ImageData? Load(string file) {
 		}
 
 		public void Dispose() {

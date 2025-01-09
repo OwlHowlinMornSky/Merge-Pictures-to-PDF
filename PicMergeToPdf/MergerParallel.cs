@@ -125,6 +125,8 @@ namespace PicMerge {
 			}
 			string file = m_files[id];
 
+			bool finished = true; // 如果是压缩文件就不压入一个 null，避免计数加一。
+
 			/// 加载并处理。
 			ImageData? imageData = null;
 			try {
@@ -134,6 +136,7 @@ namespace PicMerge {
 				lock (m_failed) {
 					m_failed.Add(new FailedFile(0x114514, file, "Archive file convertion is not enabled."));
 				}
+				finished = false;
 			}
 			catch (Exception ex) {
 				lock (m_failed) {
@@ -146,16 +149,17 @@ namespace PicMerge {
 				lock (m_loaded) {
 					/// My turn to enqueue.
 					if (id == m_loaded.value) {
-						while (true) {
-							lock (m_loadedImg) {
-								/// Ensure queue is not too large.
-								if (m_loadedImg.Count < Environment.ProcessorCount * 2) {
-									m_loadedImg.Enqueue(imageData);
-									break;
+						if (finished)
+							while (true) {
+								lock (m_loadedImg) {
+									/// Ensure queue is not too large.
+									if (m_loadedImg.Count < Environment.ProcessorCount * 2) {
+										m_loadedImg.Enqueue(imageData);
+										break;
+									}
 								}
+								Thread.Sleep(m_sleepMs);
 							}
-							Thread.Sleep(m_sleepMs);
-						}
 						m_loaded.value++;
 						break;
 					}
