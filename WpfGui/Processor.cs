@@ -173,13 +173,14 @@ namespace WpfGui {
 		/// </summary>
 		/// <param name="paths">要处理的文件/文件夹</param>
 		private void ProcessStem(string[] paths) {
-			if (paths.Length == 1) {
-				using FileStream stream = new(paths[0], FileMode.Open, FileAccess.Read);
-				switch (PicMerge.FileType.CheckType(stream)) {
-				case PicMerge.FileType.Type.ZIP:
-				case PicMerge.FileType.Type._7ZIP:
-				case PicMerge.FileType.Type.RAR: {
-					using var compt = PicMerge.IMerger.CreateArchiveConverter(
+			try {
+				if (paths.Length == 1 && File.Exists(paths[0])) {
+					using FileStream stream = new(paths[0], FileMode.Open, FileAccess.Read);
+					switch (PicMerge.FileType.CheckType(stream)) {
+					case PicMerge.FileType.Type.ZIP:
+					case PicMerge.FileType.Type._7ZIP:
+					case PicMerge.FileType.Type.RAR: {
+						using var compt = PicMerge.IMerger.CreateArchiveConverter(
 						m_param.keepStruct,
 						m_param.pageSizeType,
 						m_param.pagesizex,
@@ -188,17 +189,21 @@ namespace WpfGui {
 						m_param.compressType,
 						m_param.compressQuality
 					);
-					var outdir = Path.ChangeExtension(paths[0], "[Merged]");
-					SetBarNum(0, 1);
-					var failed = compt.Process(outdir, [paths[0]]);
-					CallbackFinishAllImgFile();
-					CheckResultListFailed(outdir, ref failed);
-					return;
+						var outdir = Path.ChangeExtension(paths[0], "[Merged]");
+						SetBarNum(0, 1);
+						var failed = compt.Process(outdir, [paths[0]]);
+						CallbackFinishAllImgFile();
+						CheckResultListFailed(outdir, ref failed);
+						return;
+					}
+					default:
+						stream.Close();
+						break;
+					}
 				}
-				default:
-					stream.Close();
-					break;
-				}
+			}
+			catch (Exception) {
+				;
 			}
 
 			m_destinationDir = "";
