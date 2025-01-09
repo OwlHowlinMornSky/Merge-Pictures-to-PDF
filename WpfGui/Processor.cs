@@ -292,14 +292,14 @@ namespace WpfGui {
 				}
 				else if (m_param.keepStruct) {
 					dstDir = Path.Combine(m_destinationDir, relative);
-					if (!relativeIsEmpty)
-						dstDir = Path.GetDirectoryName(dstDir) ?? dstDir;
+					//if (!relativeIsEmpty)
+					//	dstDir = Path.GetDirectoryName(dstDir) ?? dstDir;
 				}
 				else {
 					dstDir = m_destinationDir;
 				}
 
-				string outputPath = EnumFileName(dstDir, Path.GetFileName(srcDir), ".pdf");
+				string outputPath = EnumFileName(dstDir, "Images", ".pdf");
 
 				/// 文件夹对应标题 取 它与基准路径相差的相对路径。
 				await ProcessOneFolderAsync(srcDir, outputPath, relativeIsEmpty ? Path.GetFileName(baseDir) : relative);
@@ -311,7 +311,7 @@ namespace WpfGui {
 				/// 输出到原位时，就是输入路径的父目录，否则，就是选定的目标目录。
 				string outputPath = EnumFileName(
 					m_param.stayNoMove ? dirOfFirstFile : m_destinationDir,
-					Path.GetFileNameWithoutExtension(pathOfFirstFile), ".pdf"
+					"Images", ".pdf"
 				);
 
 				/// 零散文件的标题 取 文件所在父目录的名字。

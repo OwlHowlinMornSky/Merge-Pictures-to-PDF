@@ -38,7 +38,7 @@ namespace PicMerge {
 					}
 					_pdfDocument = new(_pdfWriter);
 					if (title != null)
-						_pdfDocument.GetDocumentInfo().SetSubject(title);
+						_pdfDocument.GetDocumentInfo().SetTitle(title);
 				}
 				return _pdfDocument;
 			}
