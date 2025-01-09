@@ -36,10 +36,10 @@ namespace PicMerge {
 			public int compressQuality = _quality;
 		}
 
-		public readonly struct FailedFile(int _c, string _file, string _desc) {
-			public readonly int code = _c;
+		public readonly struct FileResult(uint _c, string _file, string _desc = "Success.") {
+			public readonly uint code = _c;
 			public readonly string filename = _file;
-			public readonly string description = _desc;
+			public readonly string? description = _desc;
 		}
 
 		/// <summary>
@@ -49,7 +49,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public Task<List<FailedFile>> ProcessAsync(string outputfilepath, List<string> files, string? title = null) {
+		public Task<List<FileResult>> ProcessAsync(string outputfilepath, List<string> files, string? title = null) {
 			return Task.Run(() => { return Process(outputfilepath, files, title); });
 		}
 
@@ -60,7 +60,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public List<FailedFile> Process(string outputfilepath, List<string> files, string? title = null);
+		public List<FileResult> Process(string outputfilepath, List<string> files, string? title = null);
 
 		/// <summary>
 		/// 创建一个合成器实例。
@@ -80,7 +80,8 @@ namespace PicMerge {
 			int pagesizey,
 			bool compress,
 			int type,
-			int quality) {
+			int quality
+		) {
 			return parallel ?
 				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality)) :
 				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
@@ -94,7 +95,7 @@ namespace PicMerge {
 			bool compress,
 			int type,
 			int quality) {
-			return new MergerArchiveConverter(keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
+			return new MergerArchive(keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
 		}
 
 		/// <summary>

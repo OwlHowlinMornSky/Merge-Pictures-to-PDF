@@ -7,6 +7,11 @@ using static PicMerge.IMerger;
 
 namespace PicMerge {
 	internal class Merger(Parameters param) {
+
+		protected string StrUnsupported = "Unsupported type.";
+		protected string StrFailedToAdd = "Failed to add into pdf.";
+
+
 		/// <summary>
 		/// 合并之参数。使用第一张图片的尺寸时需要修改，所以不能只读。
 		/// </summary>
@@ -17,7 +22,7 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="filepath">图片文件路径</param>
 		/// <returns>加载结果</returns>
-		internal ImageData? ParaImage(string filepath) {
+		internal  ImageData? ParaImage(string filepath) {
 			using CompressTarget compt = new();
 			return LoadImage(filepath, compt);
 		}
@@ -139,7 +144,8 @@ namespace PicMerge {
 				}
 				break;
 			default:
-				throw new NotImplementedException("Unsupported type.");
+				imageData = null;
+				break;
 			}
 			return imageData;
 		}
@@ -238,7 +244,8 @@ namespace PicMerge {
 				}
 				break;
 			default:
-				throw new NotImplementedException("Unsupported type.");
+				imageData = null;
+				break;
 			}
 			return imageData;
 		}
