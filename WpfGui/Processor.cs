@@ -58,6 +58,8 @@ namespace WpfGui {
 
 			public int compressType = _type;
 			public int compressQuality = _quality;
+
+			public bool keepPdfInFolder = false;
 		}
 
 		private struct TaskInputData(bool _isDirectory, List<string> _files) {
@@ -297,14 +299,14 @@ namespace WpfGui {
 				}
 				else if (m_param.keepStruct) {
 					dstDir = Path.Combine(m_destinationDir, relative);
-					//if (!relativeIsEmpty)
-					//	dstDir = Path.GetDirectoryName(dstDir) ?? dstDir;
+					if (!m_param.keepPdfInFolder && !relativeIsEmpty)
+						dstDir = Path.GetDirectoryName(dstDir) ?? dstDir;
 				}
 				else {
 					dstDir = m_destinationDir;
 				}
 
-				string outputPath = EnumFileName(dstDir, "Images", ".pdf");
+				string outputPath = EnumFileName(dstDir, m_param.keepPdfInFolder ? "Images" : Path.GetFileName(srcDir), ".pdf");
 
 				/// 文件夹对应标题 取 它与基准路径相差的相对路径。
 				await ProcessOneFolderAsync(srcDir, outputPath, relativeIsEmpty ? Path.GetFileName(baseDir) : relative);
