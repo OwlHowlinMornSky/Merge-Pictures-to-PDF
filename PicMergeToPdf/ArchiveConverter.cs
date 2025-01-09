@@ -14,7 +14,7 @@ namespace PicMerge {
 		/// <summary>
 		/// 用于接受压缩结果。
 		/// </summary>
-		private CompressTarget m_compressTarget = new();
+		private readonly CompressTarget m_compressTarget = new();
 
 		private readonly List<FailedFile> m_failed = [];
 
