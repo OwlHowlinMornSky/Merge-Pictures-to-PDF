@@ -15,6 +15,5 @@
         <Label Content="Compress Quality" HorizontalAlignment="Left" Margin="10,80,0,0" VerticalAlignment="Top"/>
         <Label x:Name="LabelSlideValue" Content="80" Margin="0,112,10,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
         <Slider x:Name="SliderQuality" Margin="60,110,45,0" VerticalAlignment="Top" SmallChange="1" Maximum="100" LargeChange="10" Value="80" TickPlacement="Both" IsSnapToTickEnabled="True" ValueChanged="Slider_ValueChanged"/>
-        <CheckBox x:Name="ChkboxMoveMerged" Content="Move merged images to another place&#xD;&#xA;when &quot;output to same folder as input&quot;" HorizontalAlignment="Left" Margin="10,177,0,0" VerticalAlignment="Top" IsChecked="True"/>
     </Grid>
 </Window>

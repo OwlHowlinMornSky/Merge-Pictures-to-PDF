@@ -21,8 +21,7 @@ namespace WpfGui {
 			int _pagesizey = 0,
 			bool _parallelOnFileLevel = true,
 			int _type = 1,
-			int _quality = 80,
-			bool _moveMerged = true
+			int _quality = 80
 		) {
 			/// <summary>
 			/// 递归输入文件夹。
@@ -59,7 +58,6 @@ namespace WpfGui {
 
 			public int compressType = _type;
 			public int compressQuality = _quality;
-			public bool moveMerged = _moveMerged;
 		}
 
 		private struct TaskInputData(bool _isDirectory, List<string> _files) {
