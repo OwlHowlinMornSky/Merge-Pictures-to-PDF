@@ -95,8 +95,8 @@ namespace PicMerge {
 				pageSize.SetWidth(pageSize.GetWidth());
 				pageSize.SetHeight(pageSize.GetHeight());
 				PdfPage page = Document.AddNewPage(pageSize);
-				PdfCanvas canvas = new(page, true);
-				canvas.AddImageFittedIntoRectangle(imageData, imageSize, true);
+				PdfCanvas canvas = new(page);
+				canvas.AddImageFittedIntoRectangle(imageData, imageSize, false);
 			}
 			catch (Exception) {
 				return false;
