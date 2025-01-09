@@ -82,10 +82,18 @@ namespace PicMerge {
 
 					if (!pdfs.ContainsKey(structure)) {
 						string fullstruct = Path.Combine(outputfilepath, structure);
+						string pdfName;
+						if (string.IsNullOrEmpty(structure)) {
+							pdfName = "FilesAtRoot";
+						}
+						else {
+							pdfName = Path.GetFileName(structure);
+							fullstruct = Path.GetDirectoryName(fullstruct) ?? fullstruct;
+						}
 						string outdir = m_keepStruct ? fullstruct : outputfilepath;
-						string filename = EnumFileName(outdir, Path.GetFileNameWithoutExtension(file), ".pdf");
+						string filename = EnumFileName(outdir, pdfName, ".pdf");
 						EnsureFileCanExsist(filename);
-						pdfs.Add(structure, new PdfTarget(filename, fullstruct));
+						pdfs.Add(structure, new PdfTarget(filename, Path.Combine(title ?? Path.GetFileNameWithoutExtension(archivefile), structure)));
 					}
 					if (!pdfs.TryGetValue(structure, out PdfTarget? pdfTarget) || pdfTarget == null) {
 						result.Add(new FileResult(0x80030005, file, "Unable to open target PDF file."));
