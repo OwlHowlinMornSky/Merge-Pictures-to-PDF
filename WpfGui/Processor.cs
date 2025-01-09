@@ -323,9 +323,9 @@ namespace WpfGui {
 				m_param.compressType,
 				m_param.compressQuality
 			);
-			List<PicMerge.IMerger.FileResult> failed = await merger.ProcessAsync(outputPath, files, title);
+			List<PicMerge.IMerger.FileResult> result = await merger.ProcessAsync(outputPath, files, title);
 			CallbackFinishAllImgFile();
-			CheckMergeReturnedFailedList(title ?? outputPath, failed);
+			CheckResultListFailed(title ?? outputPath, ref result);
 		}
 
 		/// <summary>
@@ -414,9 +414,10 @@ namespace WpfGui {
 		/// 子任务步骤：弹窗报告失败的文件。
 		/// </summary>
 		/// <param name="title">内定标题</param>
-		/// <param name="failed">失败列表</param>
-		private void CheckMergeReturnedFailedList(string title, List<PicMerge.IMerger.FileResult> failed) {
-			if (failed.Count > 0) {
+		/// <param name="result">结果列表</param>
+		private void CheckResultListFailed(string title, ref List<PicMerge.IMerger.FileResult> result) {
+			var failed = result.Where(r => r.code > 0x80000000);
+			if (failed.Any()) {
 				string msg = string.Format(App.Current.FindResource("CannotMerge").ToString() ?? "Failed to merge into {0}:", title);
 				foreach (var str in failed) {
 					msg += $"\r\n<{str.filename}> {str.description}";
