@@ -21,40 +21,29 @@ namespace PicMerge {
 		/// <summary>
 		/// 无法合入的文件的列表。
 		/// </summary>
-		private List<string> m_files = [];
+		private readonly List<FailedFile> m_failed = [];
 
+		private class Count(int _v) {
+			public int value = _v;
+		}
 		/// <summary>
-		/// 已开始运行过的任务 的 计数。
-		/// 用于 每个任务 在最开始 获取 自己该处理哪个文件（m_files[id]）。
+		/// 从Process输入的输入文件列表。
 		/// </summary>
-		private int m_startedCnt = 0;
-		/// <summary>
-		/// 已开始运行过的任务计数 的 锁。
-		/// </summary>
-		private readonly object m_startedCntLock = new();
-		/// <summary>
-		/// 已将结果压入队列的任务 的 计数。
-		/// 用于 每个任务 确定 是否 轮到自己 把结果入队 了，保证 入队顺序 就是 输入的文件顺序。
-		/// </summary>
-		private int m_loadedCnt = 0;
-		/// <summary>
-		/// 已将结果压入队列的任务计数 的 锁。
-		/// </summary>
-		private readonly object m_loadedCntLock = new();
-
+		private readonly List<string> m_files = [];
 		/// <summary>
 		/// 加载结果的队列。
 		/// </summary>
 		private readonly Queue<ImageData?> m_loadedImg = [];
 		/// <summary>
-		/// 多任务协作时，任务中sleep的 默认 毫秒数。
+		/// 已开始运行过的任务 的 计数。
+		/// 用于 每个任务 在最开始 获取 自己该处理哪个文件（m_files[id]）。
 		/// </summary>
-		private const int m_sleepMs = 20;
-
+		private readonly Count m_started = new(0);
 		/// <summary>
-		/// 无法合入的文件的列表。
+		/// 已将结果压入队列的任务 的 计数。
+		/// 用于 每个任务 确定 是否 轮到自己 把结果入队 了，保证 入队顺序 就是 输入的文件顺序。
 		/// </summary>
-		private readonly List<FailedFile> m_failed = [];
+		private readonly Count m_loaded = new(0);
 
 		~MergerParallel() {
 			Dispose(false);
@@ -68,7 +57,7 @@ namespace PicMerge {
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
 		public virtual List<FailedFile> Process(string outputfilepath, List<string> files, string? title = null) {
-			m_files = files;
+			m_files.AddRange(files);
 
 			using PdfTarget pdfTarget = new(outputfilepath, title);
 			/// 按电脑核心数启动load，间隔一段时间加入避免同时IO。
@@ -113,9 +102,6 @@ namespace PicMerge {
 					break;
 			}
 
-			//if (!pdfTarget.IsUsed()) // 一个都没法合成的话返回空。
-			//	m_failed.Clear();
-
 			return m_failed;
 		}
 
@@ -132,15 +118,16 @@ namespace PicMerge {
 		private void LoadOneProc() {
 			/// 取序号。
 			int id;
-			lock (m_startedCntLock) {
-				if (m_startedCnt >= m_files.Count)
+			lock (m_started) {
+				if (m_started.value >= m_files.Count)
 					return;
-				id = m_startedCnt++;
+				id = m_started.value++;
 			}
 			string file = m_files[id];
+
+			/// 加载并处理。
 			ImageData? imageData = null;
 			try {
-				/// 加载并处理。
 				imageData = ParaImage(file);
 			}
 			catch (FileType.ArchiveException) {
@@ -156,9 +143,9 @@ namespace PicMerge {
 
 			/// Add loaded data into queue.
 			while (true) {
-				lock (m_loadedCntLock) {
+				lock (m_loaded) {
 					/// My turn to enqueue.
-					if (id == m_loadedCnt) {
+					if (id == m_loaded.value) {
 						while (true) {
 							lock (m_loadedImg) {
 								/// Ensure queue is not too large.
@@ -169,7 +156,7 @@ namespace PicMerge {
 							}
 							Thread.Sleep(m_sleepMs);
 						}
-						m_loadedCnt++;
+						m_loaded.value++;
 						break;
 					}
 				}
