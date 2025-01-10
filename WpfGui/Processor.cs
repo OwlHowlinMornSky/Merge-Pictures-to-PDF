@@ -267,6 +267,9 @@ namespace WpfGui {
 							m_waitings.Enqueue(new TaskInputData(TaskInputData.Type.Archive, [archivePath]));
 						}
 						onlyArchive = true;
+						// 统计压缩文件大小的神金操作。
+						m_totalImgCnt *= 100;
+						SetBarNum(0, m_totalImgCnt);
 					}
 					else {
 						m_waitings.Enqueue(new TaskInputData(TaskInputData.Type.FileNotArchive, files));
@@ -382,6 +385,7 @@ namespace WpfGui {
 		private async Task ProcessArchiveAsync(string filePath, string outputPath) {
 			using var merger = PicMerge.IMerger.CreateArchiveConverter(
 				m_param.keepStruct,
+				CallbackFinishOneImgFile,
 				m_param.pageSizeType,
 				m_param.pagesizex,
 				m_param.pagesizey,
@@ -390,7 +394,6 @@ namespace WpfGui {
 				m_param.compressQuality
 			);
 			List<PicMerge.IMerger.FileResult> failed = await merger.ProcessAsync(outputPath, [filePath]);
-			CallbackFinishOneImgFile();
 			CallbackFinishAllImgFile();
 			CheckResultListFailed(outputPath, ref failed);
 		}
