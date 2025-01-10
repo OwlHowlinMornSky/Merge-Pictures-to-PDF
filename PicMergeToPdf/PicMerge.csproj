@@ -6,14 +6,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PlatformTarget>x64</PlatformTarget>
-    <Version>1.1.0</Version>
-    <AssemblyVersion>1.1.0.2</AssemblyVersion>
-    <FileVersion>1.1.0.2</FileVersion>
+    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.0.3</AssemblyVersion>
+    <FileVersion>1.2.0.3</FileVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Copyright>Copyright (C) 2025 Tyler Parret True &lt;https://github.com/OwlHowlinMornSky&gt;</Copyright>
     <Authors>Tyler Parret True</Authors>
     <Product>Pictures2PDF</Product>
     <Description>Pictures2PDF</Description>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -27,6 +28,7 @@
   <ItemGroup>
     <PackageReference Include="itext7" Version="9.0.0" />
     <PackageReference Include="itext7.bouncy-castle-adapter" Version="9.0.0" />
+    <PackageReference Include="SharpCompress" Version="0.38.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
   </ItemGroup>
 

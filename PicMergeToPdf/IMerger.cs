@@ -1,6 +1,4 @@
 ﻿
-using iText.Kernel.Pdf;
-
 namespace PicMerge {
 	/// <summary>
 	/// 合成器接口
@@ -8,7 +6,15 @@ namespace PicMerge {
 	/// </summary>
 	public interface IMerger : IDisposable {
 
-		internal struct Parameters(int _pageSizeType = 2, int _pagesizex = 0, int _pagesizey = 0, bool _compress = true) {
+		/// <summary>
+		/// 内存映射文件设定的最大大小。
+		/// </summary>
+		internal const long MapFileSize = 0x04000000;
+
+		internal struct Parameters(
+			int _pageSizeType = 2, int _pagesizex = 0, int _pagesizey = 0,
+			bool _compress = true, int _type = 1, int _quality = 80
+		) {
 			/// <summary>
 			/// 页面大小类型。
 			/// </summary>
@@ -25,12 +31,15 @@ namespace PicMerge {
 			/// 是否压缩所有图片。
 			/// </summary>
 			public readonly bool compress = _compress;
+
+			public int compressType = _type;
+			public int compressQuality = _quality;
 		}
 
-		public readonly struct FailedFile(int _c, string _file, string _desc) {
-			public readonly int code = _c;
+		public readonly struct FileResult(uint _c, string _file, string _desc = "Success.") {
+			public readonly uint code = _c;
 			public readonly string filename = _file;
-			public readonly string description = _desc;
+			public readonly string? description = _desc;
 		}
 
 		/// <summary>
@@ -40,7 +49,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public Task<List<FailedFile>> ProcessAsync(string outputfilepath, List<string> files, string? title = null) {
+		public Task<List<FileResult>> ProcessAsync(string outputfilepath, List<string> files, string? title = null) {
 			return Task.Run(() => { return Process(outputfilepath, files, title); });
 		}
 
@@ -51,9 +60,7 @@ namespace PicMerge {
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public virtual List<FailedFile> Process(string outputfilepath, List<string> files, string? title = null) {
-			return [];
-		}
+		public List<FileResult> Process(string outputfilepath, List<string> files, string? title = null);
 
 		/// <summary>
 		/// 创建一个合成器实例。
@@ -65,10 +72,30 @@ namespace PicMerge {
 		/// <param name="pagesizey">页面大小高</param>
 		/// <param name="compress">是否压缩所有图片</param>
 		/// <returns>创建的实例</returns>
-		public static IMerger Create(bool parallel, Action finish1img, int pageSizeType = 2, int pagesizex = 0, int pagesizey = 0, bool compress = true) {
+		public static IMerger Create(
+			bool parallel,
+			Action finish1img,
+			int pageSizeType,
+			int pagesizex,
+			int pagesizey,
+			bool compress,
+			int type,
+			int quality
+		) {
 			return parallel ?
-				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress)) :
-				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress));
+				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality)) :
+				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
+		}
+
+		public static IMerger CreateArchiveConverter(
+			bool keepStruct,
+			int pageSizeType,
+			int pagesizex,
+			int pagesizey,
+			bool compress,
+			int type,
+			int quality) {
+			return new MergerArchive(keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
 		}
 
 		/// <summary>
@@ -98,6 +125,25 @@ namespace PicMerge {
 			if (folder == null)
 				return;
 			EnsureFolderExisting(folder);
+		}
+
+		/// <summary>
+		/// 枚举可用的文件名。防止输出文件名与现有文件相同导致覆盖。
+		/// 但是扫描可用文件名与开始写入有一定时间差，
+		/// 如果用户~脑残到~在这段时间创建同名文件，可能会出问题。
+		/// </summary>
+		/// <param name="dir">文件将所处的目录</param>
+		/// <param name="stem">文件的期望名称</param>
+		/// <param name="exname">文件的扩展名</param>
+		/// <returns>添加可能的" (%d)"后，不与现有文件同名的文件路径</returns>
+		internal static string EnumFileName(string dir, string stem, string exname) {
+			string res = Path.Combine(dir, stem + exname);
+			int i = 0;
+			while (File.Exists(res)) {
+				i++;
+				res = Path.Combine(dir, $"{stem} ({i}){exname}");
+			}
+			return res;
 		}
 	}
 }

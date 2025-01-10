@@ -19,7 +19,9 @@ namespace WpfGui {
 			int _pageSizeType = 2,
 			int _pagesizex = 0,
 			int _pagesizey = 0,
-			bool _parallelOnFileLevel = true
+			bool _parallelOnFileLevel = true,
+			int _type = 1,
+			int _quality = 80
 		) {
 			/// <summary>
 			/// 递归输入文件夹。
@@ -53,11 +55,26 @@ namespace WpfGui {
 			/// 文件级并行，即此对象的子任务不并发（一个一个执行），但下面的 读取并处理图片 的操作并行。
 			/// </summary>
 			public bool parallelOnFileLevel = _parallelOnFileLevel;
+
+			public int compressType = _type;
+			public int compressQuality = _quality;
+
+			public bool keepPdfInFolder = false;
 		}
 
-		private struct TaskInputData(bool _isDirectory, List<string> _files) {
-			public readonly bool isDirectory = _isDirectory;
+		private struct TaskInputData(TaskInputData.Type _type, List<string> _files) {
+			public enum Type : byte {
+				None = 0,
+				Directory,
+				FileNotArchive,
+				Archive,
+			}
+			public readonly Type type = _type;
 			public List<string> files = _files;
+		}
+
+		private class Count(int _v) {
+			public int value = _v;
 		}
 
 		/// <summary>
@@ -95,27 +112,26 @@ namespace WpfGui {
 		/// 待处理的数据。
 		/// </summary>
 		private readonly Queue<TaskInputData> m_waitings = [];
-
-		/// <summary>
-		/// 报告完成的图片计数。
-		/// </summary>
-		private int m_finishedImgCnt = 0;
 		/// <summary>
 		/// 图片总计数。
 		/// </summary>
 		private int m_totalImgCnt = 0;
 		/// <summary>
-		/// 报告完成的图片计数 的 锁。
+		/// 报告完成的图片计数。
 		/// </summary>
-		private readonly object m_lockForImgCnt = new();
+		private readonly Count m_finishedImg = new(0);
+		/// <summary>
+		/// 记录未完成的任务数。
+		/// </summary>
+		private readonly Count m_unfinishedTask = new(0);
 
 		/// <summary>
 		/// 用于子任务报告完成一张图片 的 回调目标。
 		/// </summary>
 		private void CallbackFinishOneImgFile() {
-			lock (m_lockForImgCnt) {
-				m_finishedImgCnt++;
-				SetBarNum(m_finishedImgCnt, m_totalImgCnt); // 更新进度条。
+			lock (m_finishedImg) {
+				m_finishedImg.value++;
+				SetBarNum(m_finishedImg.value, m_totalImgCnt); // 更新进度条。
 			}
 		}
 
@@ -123,6 +139,9 @@ namespace WpfGui {
 		/// 用于子任务报告全部完成 的 回调目标。实际上在本对象内的 ProcessSingleFiles 使用了，不需要传给PicMerge。
 		/// </summary>
 		private void CallbackFinishAllImgFile() {
+			lock (m_unfinishedTask) {
+				m_unfinishedTask.value--;
+			}
 			lock (m_waitings) {
 				if (m_waitings.Count > 0) {
 					ProcessAsync(m_waitings.Dequeue());
@@ -130,9 +149,9 @@ namespace WpfGui {
 				}
 			}
 			/// 没有等待处理的数据了。
-			lock (m_lockForImgCnt) {
+			lock (m_finishedImg) {
 				/// 图片也处理完了。
-				if (m_finishedImgCnt >= m_totalImgCnt) {
+				if (m_finishedImg.value >= m_totalImgCnt) {
 					SetBarFinish(); // 设置进度条为完成。
 				}
 			}
@@ -144,7 +163,7 @@ namespace WpfGui {
 		/// <returns>是否正在进行</returns>
 		public bool IsRunning() {
 			lock (m_waitings) {
-				return (m_waitings.Count != 0) || (m_taskStem != null && !m_taskStem.IsCompleted);
+				return (m_waitings.Count != 0) || (m_unfinishedTask.value > 0) || (m_taskStem != null && !m_taskStem.IsCompleted);
 			}
 		}
 
@@ -169,6 +188,7 @@ namespace WpfGui {
 		/// </summary>
 		/// <param name="paths">要处理的文件/文件夹</param>
 		private void ProcessStem(string[] paths) {
+			bool onlyArchive = false;
 			m_destinationDir = "";
 			{
 				/// 拖放进入的文件列表 通常 只 包括 文件与文件夹。零散文件 即 直接被拖入的文件。
@@ -195,7 +215,7 @@ namespace WpfGui {
 					taskScan.Wait();
 
 					/// 设置统计值。
-					m_finishedImgCnt = 0;
+					m_finishedImg.value = 0;
 					m_totalImgCnt = taskScan.Result;
 					if (m_totalImgCnt < 1)
 						return;
@@ -224,19 +244,41 @@ namespace WpfGui {
 						});
 					});
 				}
-				/// 零散文件。
-				if (files.Count > 0) {
-					m_waitings.Enqueue(new TaskInputData(false, files));
-				}
 				/// 文件夹。
 				if (directories.Count > 0) {
 					foreach (Tuple<string, string> pair in directories)
-						m_waitings.Enqueue(new TaskInputData(true, [pair.Item1, pair.Item2]));
+						m_waitings.Enqueue(new TaskInputData(TaskInputData.Type.Directory, [pair.Item1, pair.Item2]));
+				}
+				/// 零散文件。
+				if (files.Count > 0) {
+					int archiveCnt = -1;
+					if (directories.Count < 1) { // 没有拖入目录（即只有文件）
+						archiveCnt = files.Where(x => {
+							string ext = Path.GetExtension(x);
+							bool isZip = ext.Equals(".zip", StringComparison.OrdinalIgnoreCase);
+							bool is7z = ext.Equals(".7z", StringComparison.OrdinalIgnoreCase);
+							bool isRar = ext.Equals(".rar", StringComparison.OrdinalIgnoreCase);
+							return isZip || is7z || isRar;
+						}).Count();
+					}
+					if (archiveCnt == files.Count) { // 只有压缩文件
+						files.Sort(StrCmpLogicalW);
+						foreach (string archivePath in files) {
+							m_waitings.Enqueue(new TaskInputData(TaskInputData.Type.Archive, [archivePath]));
+						}
+						onlyArchive = true;
+					}
+					else {
+						m_waitings.Enqueue(new TaskInputData(TaskInputData.Type.FileNotArchive, files));
+					}
 				}
 			}
+			m_unfinishedTask.value = m_waitings.Count;
 			/// 文件级并行时，只并发2个子任务，避免1个PDF写入时全部等待。
 			lock (m_waitings) {
-				for (int i = 0, n = m_param.parallelOnFileLevel ? 2 : int.Max(2, Environment.ProcessorCount); i < n; i++) {
+				int i = 0;
+				int n = !onlyArchive && m_param.parallelOnFileLevel ? 2 : int.Max(2, Environment.ProcessorCount);
+				for (; i < n; i++) {
 					if (m_waitings.Count < 1)
 						break;
 					ProcessAsync(m_waitings.Dequeue());
@@ -246,7 +288,8 @@ namespace WpfGui {
 		}
 
 		private async void ProcessAsync(TaskInputData data) {
-			if (data.isDirectory) {
+			switch (data.type) {
+			case TaskInputData.Type.Directory: {
 				string baseDir = data.files[0];
 				string relative = data.files[1];
 
@@ -260,30 +303,44 @@ namespace WpfGui {
 				}
 				else if (m_param.keepStruct) {
 					dstDir = Path.Combine(m_destinationDir, relative);
-					if (!relativeIsEmpty)
+					if (!m_param.keepPdfInFolder && !relativeIsEmpty)
 						dstDir = Path.GetDirectoryName(dstDir) ?? dstDir;
 				}
 				else {
 					dstDir = m_destinationDir;
 				}
 
-				string outputPath = EnumFileName(dstDir, Path.GetFileName(srcDir), ".pdf");
+				string outputPath = EnumFileName(dstDir, m_param.keepPdfInFolder ? "Images" : Path.GetFileName(srcDir), ".pdf");
 
 				/// 文件夹对应标题 取 它与基准路径相差的相对路径。
 				await ProcessOneFolderAsync(srcDir, outputPath, relativeIsEmpty ? Path.GetFileName(baseDir) : relative);
+				break;
 			}
-			else {
+			case TaskInputData.Type.FileNotArchive: {
 				string pathOfFirstFile = data.files[0];
 				string dirOfFirstFile = Path.GetDirectoryName(pathOfFirstFile) ?? "";
 
 				/// 输出到原位时，就是输入路径的父目录，否则，就是选定的目标目录。
 				string outputPath = EnumFileName(
 					m_param.stayNoMove ? dirOfFirstFile : m_destinationDir,
-					Path.GetFileNameWithoutExtension(pathOfFirstFile), ".pdf"
+					"Images", ".pdf"
 				);
 
 				/// 零散文件的标题 取 文件所在父目录的名字。
 				await ProcessFilesAsync(data.files, outputPath, Path.GetFileName(dirOfFirstFile));
+				break;
+			}
+			case TaskInputData.Type.Archive: {
+				string archivePath = data.files[0];
+				string outdir = Path.ChangeExtension(archivePath, "[Merged]");
+				if (!m_param.stayNoMove)
+					outdir = Path.Combine(m_destinationDir, Path.GetFileName(outdir));
+				await ProcessArchiveAsync(archivePath, outdir);
+				break;
+			}
+			default:
+				CallbackFinishAllImgFile();
+				break;
 			}
 		}
 
@@ -313,11 +370,29 @@ namespace WpfGui {
 				m_param.pageSizeType,
 				m_param.pagesizex,
 				m_param.pagesizey,
-				m_param.compress
+				m_param.compress,
+				m_param.compressType,
+				m_param.compressQuality
 			);
-			List<PicMerge.IMerger.FailedFile> failed = await merger.ProcessAsync(outputPath, files, title);
+			List<PicMerge.IMerger.FileResult> result = await merger.ProcessAsync(outputPath, files, title);
 			CallbackFinishAllImgFile();
-			CheckMergeReturnedFailedList(title ?? outputPath, failed);
+			CheckResultListFailed(title ?? outputPath, ref result);
+		}
+
+		private async Task ProcessArchiveAsync(string filePath, string outputPath) {
+			using var merger = PicMerge.IMerger.CreateArchiveConverter(
+				m_param.keepStruct,
+				m_param.pageSizeType,
+				m_param.pagesizex,
+				m_param.pagesizey,
+				m_param.compress,
+				m_param.compressType,
+				m_param.compressQuality
+			);
+			List<PicMerge.IMerger.FileResult> failed = await merger.ProcessAsync(outputPath, [filePath]);
+			CallbackFinishOneImgFile();
+			CallbackFinishAllImgFile();
+			CheckResultListFailed(outputPath, ref failed);
 		}
 
 		/// <summary>
@@ -406,9 +481,10 @@ namespace WpfGui {
 		/// 子任务步骤：弹窗报告失败的文件。
 		/// </summary>
 		/// <param name="title">内定标题</param>
-		/// <param name="failed">失败列表</param>
-		private void CheckMergeReturnedFailedList(string title, List<PicMerge.IMerger.FailedFile> failed) {
-			if (failed.Count > 0) {
+		/// <param name="result">结果列表</param>
+		private void CheckResultListFailed(string title, ref List<PicMerge.IMerger.FileResult> result) {
+			var failed = result.Where(r => r.code > 0x80000000);
+			if (failed.Any()) {
 				string msg = string.Format(App.Current.FindResource("CannotMerge").ToString() ?? "Failed to merge into {0}:", title);
 				foreach (var str in failed) {
 					msg += $"\r\n<{str.filename}> {str.description}";
