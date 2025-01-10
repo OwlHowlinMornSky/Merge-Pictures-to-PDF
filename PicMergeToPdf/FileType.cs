@@ -1,8 +1,8 @@
 ﻿
 namespace PicMerge {
-	public static class FileType {
+	internal static class FileType {
 
-		public enum Type {
+		internal enum Type {
 			Unknown = 0,
 			JPEG,
 			PNG,
@@ -17,7 +17,7 @@ namespace PicMerge {
 			RAR,
 		}
 
-		public static Type CheckType(Stream file) {
+		internal static Type CheckType(Stream file) {
 			Type res = Type.Unknown;
 
 			BinaryReader br = new(file);
