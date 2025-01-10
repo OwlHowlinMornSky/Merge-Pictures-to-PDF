@@ -14,14 +14,10 @@ namespace PicMerge {
 	/// </summary>
 	/// <param name="_keepStruct">保持压缩包内结构</param>
 	/// <param name="param">参数</param>
-	/// <err frag="0x8003" ack="0009"></err>
-	internal partial class MergerArchive(Action finish1img, bool _keepStruct, Parameters param) : Merger(param), IMerger {
+	/// <err frag="0x8003" ack="0008"></err>
+	internal partial class MergerArchive(bool _keepStruct, Parameters param) : Merger(param), IMerger {
 
 		private readonly bool m_keepStruct = _keepStruct;
-		/// <summary>
-		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
-		/// </summary>
-		private readonly Action FinishOneImg = finish1img;
 
 		/// <summary>
 		/// 用于接受压缩结果。
@@ -35,11 +31,6 @@ namespace PicMerge {
 		private string m_outputDir = "";
 
 		private string m_archivePath = "";
-
-		private long m_totalSize = 0;
-		private long m_mergedSize = 0;
-
-		private long m_prevVirtualFinishedImgCnt = 0;
 
 		~MergerArchive() {
 			Dispose(false);
@@ -66,14 +57,8 @@ namespace PicMerge {
 				}
 
 				using IArchive archive = ArchiveFactory.Open(m_archivePath);
-				m_totalSize = archive.TotalUncompressSize;
-				if (m_totalSize <= 0) {
-					m_result.Add(new FileResult(0x80030008, m_archivePath, "Size of archive is zero."));
-					return m_result;
-				}
 
 				Task? prevTask = null;
-				long prevSize = 0;
 
 				using IReader reader = archive.ExtractAllEntries();
 				while (reader.MoveToNextEntry()) {
@@ -95,14 +80,9 @@ namespace PicMerge {
 						entryStream.Close();
 					}
 					prevTask?.Wait();
-					m_mergedSize += prevSize;
-					UpdateSizeBar();
 					prevTask = CompressAndAddAsync(outputfilepath, imgKey, imgMapFile);
-					prevSize = entry.Size;
 				}
 				prevTask?.Wait();
-				m_mergedSize += prevSize;
-				UpdateSizeBar();
 
 				foreach (var pair in m_pdfs) {
 					pair.Value.Item1.Dispose();
@@ -166,16 +146,6 @@ namespace PicMerge {
 			m_result.Add(new FileResult(0x1, imgKey));
 
 			imgMapFile.Dispose();
-		}
-
-		private void UpdateSizeBar() {
-			long virtualImgCnt = m_mergedSize * 100 / m_totalSize;
-			if (virtualImgCnt > 100)
-				virtualImgCnt = 100;
-			while (virtualImgCnt > m_prevVirtualFinishedImgCnt) {
-				FinishOneImg();
-				m_prevVirtualFinishedImgCnt++;
-			}
 		}
 
 		public void Dispose() {

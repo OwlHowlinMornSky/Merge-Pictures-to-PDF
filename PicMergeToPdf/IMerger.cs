@@ -89,14 +89,13 @@ namespace PicMerge {
 
 		public static IMerger CreateArchiveConverter(
 			bool keepStruct,
-			Action finish1img,
 			int pageSizeType,
 			int pagesizex,
 			int pagesizey,
 			bool compress,
 			int type,
 			int quality) {
-			return new MergerArchive(finish1img, keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
+			return new MergerArchive(keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
 		}
 
 		/// <summary>
