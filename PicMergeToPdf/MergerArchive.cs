@@ -4,6 +4,7 @@ using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 using static PicMerge.IMerger;
 
 namespace PicMerge {
@@ -14,7 +15,7 @@ namespace PicMerge {
 	/// <param name="_keepStruct">保持压缩包内结构</param>
 	/// <param name="param">参数</param>
 	/// <err frag="0x8003" ack="0003"></err>
-	internal class MergerArchive(bool _keepStruct, Parameters param) : Merger(param), IMerger {
+	internal partial class MergerArchive(bool _keepStruct, Parameters param) : Merger(param), IMerger {
 
 		private readonly bool m_keepStruct = _keepStruct;
 
@@ -41,19 +42,19 @@ namespace PicMerge {
 				result.Add(new FileResult(0x80030001, "", "Only support for one archive one time."));
 				return result;
 			}
-			string archivefile = files[0];
+			string archivePath = files[0];
 			try {
-				if (!ArchiveFactory.IsArchive(archivefile, out ArchiveType? archiveType)) {
+				if (!ArchiveFactory.IsArchive(archivePath, out ArchiveType? archiveType)) {
 					result.Add(new FileResult(0x80030002, "", $"Unsupported type: {archiveType}."));
 					return result;
 				}
 
-				using MemoryMappedFile imgfile = MemoryMappedFile.CreateNew(null, MapFileSize, MemoryMappedFileAccess.ReadWrite);
-				using MemoryMappedViewStream imgstream = imgfile.CreateViewStream();
+				using MemoryMappedFile imgMapFile = MemoryMappedFile.CreateNew(null, MapFileSize, MemoryMappedFileAccess.ReadWrite);
+				using MemoryMappedViewStream imgView = imgMapFile.CreateViewStream();
 
-				Dictionary<string, PdfTarget> pdfs = [];
+				Dictionary<string, Tuple<PdfTarget, List<string>>> pdfs = [];
 
-				using IArchive archive = ArchiveFactory.Open(archivefile);
+				using IArchive archive = ArchiveFactory.Open(archivePath);
 				using IReader reader = archive.ExtractAllEntries();
 				while (reader.MoveToNextEntry()) {
 					IEntry entry = reader.Entry;
@@ -64,57 +65,70 @@ namespace PicMerge {
 						result.Add(new FileResult(0x80030003, "", "A file whose name unknown."));
 						continue;
 					}
-					string file = entry.Key;
+					string imgKey = entry.Key;
 
 					using (EntryStream entryStream = reader.OpenEntryStream()) {
-						imgstream.Seek(0, SeekOrigin.Begin);
-						entryStream.TransferTo(imgstream);
+						imgView.Seek(0, SeekOrigin.Begin);
+						entryStream.TransferTo(imgView);
 						entryStream.Close();
 					}
 
-					ImageData? imageData = ReadImage(imgfile, m_compressTarget);
+					ImageData? imageData = ReadImage(imgMapFile, m_compressTarget);
 					if (imageData == null) {
-						result.Add(new FileResult(0x80030004, file, StrUnsupported));
+						result.Add(new FileResult(0x80030004, imgKey, StrUnsupported));
 						continue;
 					}
 
-					string structure = Path.GetDirectoryName(file) ?? "";
+					string imgDirChain = Path.GetDirectoryName(imgKey) ?? "";
 
-					if (!pdfs.ContainsKey(structure)) {
-						string fullstruct = Path.Combine(outputfilepath, structure);
+					if (!pdfs.ContainsKey(imgDirChain)) {
+						string pdfDir = Path.Combine(outputfilepath, imgDirChain);
 						string pdfName;
-						if (string.IsNullOrEmpty(structure)) {
+						if (string.IsNullOrEmpty(imgDirChain)) {
 							pdfName = "FilesAtRoot";
 						}
 						else {
-							pdfName = Path.GetFileName(structure);
-							fullstruct = Path.GetDirectoryName(fullstruct) ?? fullstruct;
+							pdfName = Path.GetFileName(imgDirChain);
+							pdfDir = Path.GetDirectoryName(pdfDir) ?? pdfDir;
 						}
-						string outdir = m_keepStruct ? fullstruct : outputfilepath;
-						string filename = EnumFileName(outdir, pdfName, ".pdf");
-						EnsureFileCanExsist(filename);
-						pdfs.Add(structure, new PdfTarget(filename, Path.Combine(title ?? Path.GetFileNameWithoutExtension(archivefile), structure)));
+						if (!m_keepStruct)
+							pdfDir = outputfilepath;
+						string pdfPath = EnumFileName(pdfDir, pdfName, ".pdf");
+						EnsureFileCanExsist(pdfPath);
+						pdfs.Add(imgDirChain, Tuple.Create<PdfTarget, List<string>>(new PdfTarget(pdfPath, Path.Combine(title ?? Path.GetFileNameWithoutExtension(archivePath), imgDirChain)), []));
 					}
-					if (!pdfs.TryGetValue(structure, out PdfTarget? pdfTarget) || pdfTarget == null) {
-						result.Add(new FileResult(0x80030005, file, "Unable to open target PDF file."));
+					if (!pdfs.TryGetValue(imgDirChain, out var tuple) || tuple == null) {
+						result.Add(new FileResult(0x80030005, imgKey, "Unable to open target PDF file."));
+						continue;
+					}
+					var pdfTarget = tuple.Item1;
+					var imageNames = tuple.Item2;
+					string curImgName = Path.GetFileName(imgKey);
+
+					int index = imageNames.Count;
+					for (; index > 0; index--) {
+						var imageName = imageNames[index - 1];
+						if (StrCmpLogicalW(imageName, curImgName) <= 0) {
+							break;
+						}
+					}
+					tuple.Item2.Insert(index, curImgName);
+
+					if (!pdfTarget.AddImage(imageData, ref m_param, index)) {
+						result.Add(new FileResult(0x80030006, imgKey, StrFailedToAdd));
 						continue;
 					}
 
-					if (!pdfTarget.AddImage(imageData, ref m_param)) {
-						result.Add(new FileResult(0x80030006, file, StrFailedToAdd));
-						continue;
-					}
-
-					result.Add(new FileResult(0x1, file));
+					result.Add(new FileResult(0x1, imgKey));
 				}
 
 				foreach (var pair in pdfs) {
-					pair.Value.Dispose();
+					pair.Value.Item1.Dispose();
 				}
 				pdfs.Clear();
 			}
 			catch (Exception ex) {
-				result.Add(new FileResult(0x80030007, archivefile, (ex.Source ?? "") + ", " + ex.Message));
+				result.Add(new FileResult(0x80030007, archivePath, (ex.Source ?? "") + ", " + ex.Message));
 			}
 
 			return result;
@@ -134,5 +148,9 @@ namespace PicMerge {
 			}
 			m_disposed = true;
 		}
+
+		[LibraryImport("Shlwapi.dll", EntryPoint = "StrCmpLogicalW", StringMarshalling = StringMarshalling.Utf16)]
+		[return: MarshalAs(UnmanagedType.I4)]
+		private static partial int StrCmpLogicalW(string psz1, string psz2);
 	}
 }

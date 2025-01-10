@@ -58,7 +58,8 @@ namespace PicMerge {
 		/// <param name="imageData">图片数据</param>
 		/// <param name="pdfDocument">PDF文件数据</param>
 		/// <returns>是否成功</returns>
-		internal bool AddImage(ImageData imageData, ref IMerger.Parameters param) {
+		internal bool AddImage(ImageData imageData, ref IMerger.Parameters param, int index = -1) {
+			index++;
 			try {
 				PageSize pageSize;
 				PageSize imageSize;
@@ -94,7 +95,7 @@ namespace PicMerge {
 				}
 				pageSize.SetWidth(pageSize.GetWidth());
 				pageSize.SetHeight(pageSize.GetHeight());
-				PdfPage page = Document.AddNewPage(pageSize);
+				PdfPage page = (index < 1 || index > Document.GetNumberOfPages()) ? Document.AddNewPage(pageSize) : Document.AddNewPage(index, pageSize);
 				PdfCanvas canvas = new(page);
 				canvas.AddImageFittedIntoRectangle(imageData, imageSize, false);
 			}
