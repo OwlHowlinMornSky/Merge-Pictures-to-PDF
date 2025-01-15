@@ -19,7 +19,6 @@ namespace WpfGui {
 			int _pageSizeType = 2,
 			int _pagesizex = 0,
 			int _pagesizey = 0,
-			bool _parallelOnFileLevel = true,
 			int _type = 1,
 			int _quality = 80
 		) {
@@ -52,13 +51,16 @@ namespace WpfGui {
 			/// </summary>
 			public int pagesizey = _pagesizey;
 			/// <summary>
-			/// 文件级并行，即此对象的子任务不并发（一个一个执行），但下面的 读取并处理图片 的操作并行。
+			/// 压缩图片的目标类型（目前仅支持jpg=_和png=2）
 			/// </summary>
-			public bool parallelOnFileLevel = _parallelOnFileLevel;
-
 			public int compressType = _type;
+			/// <summary>
+			/// 压缩质量。ImageSharp的PNG使用压缩等级，但在Merger将[0, 100]映射到[0, 9]，因此本属性范围就为[0, 100]。
+			/// </summary>
 			public int compressQuality = _quality;
-
+			/// <summary>
+			/// 把合成的PDF放在和图片同样的目录级别中。即设为true时，不把PDF放在目录并排位置。
+			/// </summary>
 			public bool keepPdfInFolder = false;
 		}
 
@@ -277,7 +279,7 @@ namespace WpfGui {
 			/// 文件级并行时，只并发2个子任务，避免1个PDF写入时全部等待。
 			lock (m_waitings) {
 				int i = 0;
-				int n = !onlyArchive && m_param.parallelOnFileLevel ? 2 : int.Max(2, Environment.ProcessorCount);
+				int n = !onlyArchive ? 2 : int.Max(2, Environment.ProcessorCount);
 				for (; i < n; i++) {
 					if (m_waitings.Count < 1)
 						break;
@@ -365,7 +367,7 @@ namespace WpfGui {
 			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
 			files.Sort(StrCmpLogicalW);
 			using PicMerge.IMerger merger = PicMerge.IMerger.Create(
-				m_param.parallelOnFileLevel,
+				true,
 				CallbackFinishOneImgFile,
 				m_param.pageSizeType,
 				m_param.pagesizex,

@@ -189,7 +189,6 @@ namespace WpfGui {
 				_pageSizeType: m_pageSizeType,
 				_pagesizex: m_useSizeOfFirstPic ? 0 : int.Parse(TextWidth.Text),
 				_pagesizey: m_useSizeOfFirstPic ? 0 : int.Parse(TextHeight.Text),
-				_parallelOnFileLevel: true,
 				_type: m_type,
 				_quality: m_quality
 			);
