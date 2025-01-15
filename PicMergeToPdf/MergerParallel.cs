@@ -1,4 +1,5 @@
 ﻿using iText.IO.Image;
+using SharpCompress;
 using static PicMerge.IMerger;
 
 namespace PicMerge {
@@ -20,28 +21,6 @@ namespace PicMerge {
 		/// </summary>
 		private readonly Action FinishOneImg = finish1img;
 
-		private class Count(int _v) {
-			public int value = _v;
-		}
-		/// <summary>
-		/// 从Process输入的输入文件列表。
-		/// </summary>
-		private readonly List<string> m_files = [];
-		/// <summary>
-		/// 加载结果的队列。
-		/// </summary>
-		private readonly Queue<ImageData?> m_loadedImg = [];
-		/// <summary>
-		/// 已开始运行过的任务 的 计数。
-		/// 用于 每个任务 在最开始 获取 自己该处理哪个文件（m_files[id]）。
-		/// </summary>
-		private readonly Count m_started = new(0);
-		/// <summary>
-		/// 已将结果压入队列的任务 的 计数。
-		/// 用于 每个任务 确定 是否 轮到自己 把结果入队 了，保证 入队顺序 就是 输入的文件顺序。
-		/// </summary>
-		private readonly Count m_loaded = new(0);
-
 		~MergerParallel() {
 			Dispose(false);
 		}
@@ -55,52 +34,34 @@ namespace PicMerge {
 		/// <returns>无法合入的文件的列表</returns>
 		public virtual List<FileResult> Process(string outputfilepath, List<string> files, string? title = null) {
 			List<FileResult> result = [];
-			m_files.AddRange(files);
+			Queue<Task<ImageData?>> tasks = [];
 
-			using PdfTarget pdfTarget = new(outputfilepath, title);
-			/// 按电脑核心数启动load，间隔一段时间加入避免同时IO。
-			for (int i = 0, n = Environment.ProcessorCount; i < n; i++) {
-				LoadAsync();
+			int launchedCnt = 0;
+			/// 按电脑核心数启动load（由于上层发起两个任务，因此减半），间隔一段时间加入避免同时IO。
+			for (int i = 0, n = (Environment.ProcessorCount + 1) / 2 - 1; i < n && launchedCnt < files.Count; i++) {
+				tasks.Enqueue(ParaLoad(files[launchedCnt++]));
 				Thread.Sleep(m_sleepMs);
 			}
 
-			List<ImageData?> imageDatas = [];
-			int imgCnt = 0;
-			while (true) {
-				bool isEmpty = true;
-				lock (m_loadedImg) {
-					if (m_loadedImg.Count > 0) {
-						isEmpty = false;
-						while (m_loadedImg.Count > 0) {
-							imageDatas.Add(m_loadedImg.Dequeue());
-						}
-					}
+			using PdfTarget pdfTarget = new(outputfilepath, title);
+			int landedCnt = 0;
+			while (landedCnt < files.Count) {
+				tasks.Peek().Wait();
+				if (launchedCnt < files.Count)
+					tasks.Enqueue(ParaLoad(files[launchedCnt++]));
+				ImageData? imageData = tasks.Dequeue().Result;
+				/// Add Image.
+				string file = files[landedCnt++];
+				if (imageData == null) {
+					result.Add(new FileResult(0x80020001, file, StrUnsupported));
 				}
-				if (isEmpty) {
-					Thread.Sleep(m_sleepMs);
-					continue;
+				else if (!pdfTarget.AddImage(imageData, ref m_param)) {
+					result.Add(new FileResult(0x80020002, file, StrFailedToAdd));
 				}
-				// Add Image.
-				foreach (var imageData in imageDatas) {
-					string file = files[imgCnt];
-
-					if (imageData == null) {
-						result.Add(new FileResult(0x80020001, file, StrUnsupported));
-					}
-					else if (!pdfTarget.AddImage(imageData, ref m_param)) {
-						result.Add(new FileResult(0x80020002, file, StrFailedToAdd));
-					}
-					else {
-						result.Add(new FileResult(0x1, file));
-					}
-
-					FinishOneImg();
-
-					imgCnt++;
+				else {
+					result.Add(new FileResult(0x1, file));
 				}
-				imageDatas.Clear();
-				if (imgCnt >= files.Count)
-					break;
+				FinishOneImg();
 			}
 
 			return result;
@@ -109,52 +70,8 @@ namespace PicMerge {
 		/// <summary>
 		/// 开启一个新的加载图片任务。
 		/// </summary>
-		private async void LoadAsync() {
-			await Task.Run(LoadOneProc);
-		}
-
-		/// <summary>
-		/// 加载一张图片的任务过程。
-		/// </summary>
-		private void LoadOneProc() {
-			/// 取序号。
-			int id;
-			lock (m_started) {
-				if (m_started.value >= m_files.Count)
-					return;
-				id = m_started.value++;
-			}
-			string file = m_files[id];
-
-			/// 加载并处理。
-			ImageData? imageData = ParaImage(file);
-
-			/// Add loaded data into queue.
-			while (true) {
-				lock (m_loaded) {
-					/// My turn to enqueue.
-					if (id == m_loaded.value) {
-						while (true) {
-							lock (m_loadedImg) {
-								/// Ensure queue is not too large.
-								if (m_loadedImg.Count < Environment.ProcessorCount * 2) {
-									m_loadedImg.Enqueue(imageData);
-									break;
-								}
-							}
-							Thread.Sleep(m_sleepMs);
-						}
-						m_loaded.value++;
-						break;
-					}
-				}
-				Thread.Sleep(m_sleepMs);
-			}
-
-			/// Next Task.
-			LoadAsync();
-
-			return;
+		private Task<ImageData?> ParaLoad(string filepath) {
+			return Task.Run(() => { return ParaImage(filepath); });
 		}
 
 		public void Dispose() {
