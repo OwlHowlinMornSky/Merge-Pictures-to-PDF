@@ -70,15 +70,8 @@ PicCompress::Compressor::~Compressor() {
 }
 
 System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile, System::Int32 type, System::Int32 quality) {
-	cli::array<wchar_t>^ wArray = pathOfInFile->ToCharArray();
-	cli::array<unsigned char, 1>^ arr = System::Text::Encoding::UTF8->GetBytes(wArray);
-
-	int len = arr->Length;
-	char* cstr = new char[len + 2];
-	System::IntPtr pcstr(cstr);
-	System::Runtime::InteropServices::Marshal::Copy(arr, 0, pcstr, len);
-	cstr[len] = 0;
-	cstr[len + 1] = 0;
+	array<Byte>^ arr = System::Text::Encoding::UTF8->GetBytes(pathOfInFile);
+	pin_ptr<Byte> ptr = &arr[0];
 
 	CSI_Parameters parameters = {};
 	parameters.keep_metadata = false;
@@ -91,15 +84,13 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile, Sy
 	CSI_Result res;
 	switch (type) {
 	case 2:
-		res = csi_convert_into(cstr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
+		res = csi_convert_into((char*)ptr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
 		break;
 	default:
-		res = csi_convert_into(cstr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
+		res = csi_convert_into((char*)ptr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
 		break;
 	}
 
-
-	delete[] cstr;
 	if (!res.success) {
 		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
 	}
