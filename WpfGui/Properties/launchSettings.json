@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WpfGui": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "PATH": "$(OHMS_LIB_DIR)libiodine\\v0.17.2-T\\bin;$(PATH)"
+      }
+    }
+  }
+}

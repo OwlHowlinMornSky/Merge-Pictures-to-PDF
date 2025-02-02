@@ -78,8 +78,8 @@ System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile, Sy
 	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
 	parameters.png_quality = quality;
-	parameters.width = 2520;
 	parameters.reduce_by_power_of_2 = true;
+	parameters.short_side_pixels = 2520;
 
 	CSI_Result res;
 	switch (type) {
@@ -117,8 +117,8 @@ System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr hinfile, Syst
 	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
 	parameters.png_quality = quality;
-	parameters.width = 2520;
 	parameters.reduce_by_power_of_2 = true;
+	parameters.short_side_pixels = 2520;
 
 	CSI_Result res;
 	switch (type) {
