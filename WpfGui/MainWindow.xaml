@@ -18,14 +18,12 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="10,0,10,0">
                     <ComboBox x:Name="comboBoxPageSize" Grid.Column="1" SelectionChanged="ComboBox_SelectionChanged">
-                        <ComboBoxItem Content="A4"/>
-                        <ComboBoxItem Content="A5"/>
                         <ComboBoxItem Content="{DynamicResource PageSizePaperCustom}"/>
                     </ComboBox>
                     <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
-                        <TextBox x:Name="textWidth"  HorizontalAlignment="Left" Width="60" IsEnabled="False" VerticalContentAlignment="Center" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="PageSizeTextChanged" />
+                        <TextBox x:Name="textWidth"  MaxLength="24" HorizontalAlignment="Left" Width="60" IsEnabled="False" VerticalContentAlignment="Center" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="PageSizeTextChangedW" />
                         <Label Content="×" VerticalContentAlignment="Center"/>
-                        <TextBox x:Name="textHeight" HorizontalAlignment="Left" Width="60" IsEnabled="False" VerticalContentAlignment="Center" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="PageSizeTextChanged" />
+                        <TextBox x:Name="textHeight" MaxLength="24" HorizontalAlignment="Left" Width="60" IsEnabled="False" VerticalContentAlignment="Center" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="PageSizeTextChangedH" />
                     </StackPanel>
                 </StackPanel>
             </Grid>

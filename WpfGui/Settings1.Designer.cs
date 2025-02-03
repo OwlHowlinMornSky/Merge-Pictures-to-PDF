@@ -157,7 +157,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
         public int PageIsFixed {
             get {
                 return ((int)(this["PageIsFixed"]));
@@ -169,7 +169,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
         public int PagePageType {
             get {
                 return ((int)(this["PagePageType"]));
@@ -182,9 +182,9 @@ namespace WpfGui {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int PageSizeWidth {
+        public float PageSizeWidth {
             get {
-                return ((int)(this["PageSizeWidth"]));
+                return ((float)(this["PageSizeWidth"]));
             }
             set {
                 this["PageSizeWidth"] = value;
@@ -194,9 +194,9 @@ namespace WpfGui {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int PageSizeHeight {
+        public float PageSizeHeight {
             get {
-                return ((int)(this["PageSizeHeight"]));
+                return ((float)(this["PageSizeHeight"]));
             }
             set {
                 this["PageSizeHeight"] = value;
@@ -272,6 +272,42 @@ namespace WpfGui {
             }
             set {
                 this["IOKeepPdfInFolder"] = value;
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("A4,A5,B5")]
+        public string Papers {
+            get {
+                return ((string)(this["Papers"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("595, 842")]
+        public global::System.Drawing.Size PaperA4 {
+            get {
+                return ((global::System.Drawing.Size)(this["PaperA4"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("420, 595")]
+        public global::System.Drawing.Size PaperA5 {
+            get {
+                return ((global::System.Drawing.Size)(this["PaperA5"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("499, 709")]
+        public global::System.Drawing.Size PaperB5 {
+            get {
+                return ((global::System.Drawing.Size)(this["PaperB5"]));
             }
         }
     }

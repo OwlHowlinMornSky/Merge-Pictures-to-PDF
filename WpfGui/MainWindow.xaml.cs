@@ -31,6 +31,13 @@ namespace WpfGui {
 
 			m_processor = new Processor(this, BarSetNum, BarSetFinish); // 不能放上去，因为要用this。
 
+			int index = 0;
+			foreach (string paperType in Settings1.Default.Papers.Split(',')) {
+				comboBoxPageSize.Items.Insert(index++, new ComboBoxItem() {
+					Content = paperType
+				});
+			}
+
 			textWidth.Text = Settings1.Default.PageSizeWidth.ToString();
 			textHeight.Text = Settings1.Default.PageSizeHeight.ToString();
 
@@ -139,16 +146,7 @@ namespace WpfGui {
 		}
 
 		private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			switch ((comboBoxPageSize.SelectedItem as ComboBoxItem)?.Content) {
-			case "A4":
-				textWidth.Text = "595";
-				textHeight.Text = "842";
-				break;
-			case "A5":
-				textWidth.Text = "420";
-				textHeight.Text = "595";
-				break;
-			default:
+			if (comboBoxPageSize.SelectedIndex >= 0 && comboBoxPageSize.SelectedIndex == comboBoxPageSize.Items.Count - 1) {
 				textWidth.IsEnabled = true;
 				textHeight.IsEnabled = true;
 				if (!Started)
@@ -156,6 +154,28 @@ namespace WpfGui {
 				Settings1.Default.PagePageType = comboBoxPageSize.SelectedIndex;
 				return;
 			}
+
+			if (comboBoxPageSize.SelectedItem is not ComboBoxItem comboBox) {
+				MessageBox.Show(this, $"Could not set the page type. ({comboBoxPageSize.SelectedIndex})");
+				return;
+			}
+
+			System.Drawing.Size size;
+			try {
+				var obj = Settings1.Default[$"Paper{comboBox.Content}"];
+				if (obj is not System.Drawing.Size _size) {
+					MessageBox.Show(this, $"Could not load size data of page type \"{comboBox.Content}\".");
+					return;
+				}
+				size = _size;
+			}
+			catch {
+				MessageBox.Show(this, $"Could not load size data of page type \"{comboBox.Content}\".");
+				return;
+			}
+			textWidth.Text = size.Width.ToString();
+			textHeight.Text = size.Height.ToString();
+
 			textWidth.IsEnabled = false;
 			textHeight.IsEnabled = false;
 

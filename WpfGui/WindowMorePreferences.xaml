@@ -25,19 +25,19 @@
                 <CheckBox x:Name="chkBoxResize" Content="{DynamicResource DetailResize}" Checked="ResizeCheckedChanged" Unchecked="ResizeCheckedChanged"/>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxWidth" Content="{DynamicResource DetailPreferredWidth}" VerticalContentAlignment="Center" Checked="ResizeWHCheckedChanged" Unchecked="ResizeWHCheckedChanged"/>
-                    <TextBox x:Name="textBoxWidth" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <TextBox x:Name="textBoxWidth" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxHeight" Content="{DynamicResource DetailPreferredHeight}" VerticalContentAlignment="Center" Checked="ResizeWHCheckedChanged" Unchecked="ResizeWHCheckedChanged"/>
-                    <TextBox x:Name="textBoxHeight" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <TextBox x:Name="textBoxHeight" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxShort" Content="{DynamicResource DetailPreferredShort}" VerticalContentAlignment="Center" Checked="ResizeSIDECheckedChanged" Unchecked="ResizeSIDECheckedChanged"/>
-                    <TextBox x:Name="textBoxShort" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <TextBox x:Name="textBoxShort" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxLong" Content="{DynamicResource DetailPreferredLong}" VerticalContentAlignment="Center" Checked="ResizeSIDECheckedChanged" Unchecked="ResizeSIDECheckedChanged"/>
-                    <TextBox x:Name="textBoxLong" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <TextBox x:Name="textBoxLong" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
                 </StackPanel>
             </StackPanel>
         </GroupBox>
