@@ -21,6 +21,21 @@
     <ProjectReference Include="..\PicMergeToPdf\PicMerge.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Settings1.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings1.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Settings1.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings1.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="COPY /Y $(OHMS_LIB_DIR)\libiodine\v0.17.2-T\bin\libiodine.dll $(OUTDIR)" />
   </Target>
