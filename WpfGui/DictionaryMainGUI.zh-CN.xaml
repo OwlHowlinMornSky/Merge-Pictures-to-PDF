@@ -1,32 +1,19 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                    xmlns:wnd="clr-namespace:System.Windows;assembly=PresentationFramework">
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
     
-    <sys:Double x:Key="WndHeight">300</sys:Double>
-    <sys:Double x:Key="WndWidth">420</sys:Double>
-
     <sys:String x:Key="PageSizeBox">页面尺寸</sys:String>
-    <sys:String x:Key="PageSizeSameWithEach">与每张图片一致</sys:String>
     <sys:String x:Key="PageSizeWidthFixed">固定宽度</sys:String>
-    <sys:String x:Key="PageSizeSizeFixed">固定大小</sys:String>
-    <sys:String x:Key="PageSizeUseFirstImage">使用第一张图片的尺寸数据</sys:String>
-    <sys:String x:Key="PageSizeWidth">宽度</sys:String>
-    <sys:String x:Key="PageSizeHeight">高度</sys:String>
+    <sys:String x:Key="PageSizeHeightFixed">固定高度</sys:String>
+    <sys:String x:Key="PageSizePaperCustom">自定义</sys:String>
 
     <sys:String x:Key="IOBox">输入输出</sys:String>
     <sys:String x:Key="IORecursion">递归输入</sys:String>
     <sys:String x:Key="IOKeepStructure">保持结构</sys:String>
     <sys:String x:Key="IOCompress">全部压缩</sys:String>
     <sys:String x:Key="IOStayNoMove">输出到原位</sys:String>
-    <sys:Double x:Key="IOBoxHeight">60</sys:Double>
-    <wnd:Thickness x:Key="IOBoxChk1">10,12,0,0</wnd:Thickness>
-    <wnd:Thickness x:Key="IOBoxChk2">95,12,0,0</wnd:Thickness>
-    <wnd:Thickness x:Key="IOBoxChk3">180,12,0,0</wnd:Thickness>
-    <wnd:Thickness x:Key="IOBoxChk4">265,12,0,0</wnd:Thickness>
 
     <sys:String x:Key="DetailButton">详细设置</sys:String>
-    <wnd:Thickness x:Key="DetailButtonMargin">0,170,10,0</wnd:Thickness>
 
     <sys:String x:Key="Ready">就绪</sys:String>
     <sys:String x:Key="HaveFinishedPercent">已完成 {0:F2}%</sys:String>
@@ -39,4 +26,15 @@
     <sys:String x:Key="CannotMerge">以下文件无法加入“{0}”：</sys:String>
     <sys:String x:Key="ChooseDestinationDir">选择输出位置</sys:String>
 
+    <sys:String x:Key="DetailTitle">更多选项</sys:String>
+    <sys:String x:Key="DetailCompressType">压缩目标格式</sys:String>
+    <sys:String x:Key="DetailCompressKeepType">保持原格式</sys:String>
+    <sys:String x:Key="DetailCompressQuality">压缩质量</sys:String>
+    <sys:String x:Key="DetailResizeWhenCompress">压缩时改变图片大小</sys:String>
+    <sys:String x:Key="DetailResize">改变大小</sys:String>
+    <sys:String x:Key="DetailPreferredWidth">期望宽度</sys:String>
+    <sys:String x:Key="DetailPreferredHeight">期望高度</sys:String>
+    <sys:String x:Key="DetailPreferredShort">短边长度</sys:String>
+    <sys:String x:Key="DetailPreferredLong">长边长度</sys:String>
+    
 </ResourceDictionary>
