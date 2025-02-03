@@ -1,5 +1,4 @@
 ﻿using iText.IO.Image;
-using SharpCompress;
 using static PicMerge.IMerger;
 
 namespace PicMerge {

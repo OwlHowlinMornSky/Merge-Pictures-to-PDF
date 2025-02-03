@@ -12,13 +12,18 @@ namespace PicMerge {
 		internal const long MapFileSize = 0x04000000;
 
 		internal struct Parameters(
-			int _pageSizeType = 2, int _pagesizex = 0, int _pagesizey = 0,
-			bool _compress = true, int _type = 1, int _quality = 80
+			int _pageType, int _pagesizex, int _pagesizey,
+			bool _compress, int _type, int _quality,
+			bool _resize,
+			int _width,
+			int _height,
+			int _shortSide,
+			int _longSide
 		) {
 			/// <summary>
 			/// 页面大小类型。
 			/// </summary>
-			public readonly int pageSizeType = _pageSizeType;
+			public readonly int pageType = _pageType;
 			/// <summary>
 			/// 页面大小宽。使用第一张图片的尺寸时需要修改，所以不能只读。
 			/// </summary>
@@ -34,6 +39,11 @@ namespace PicMerge {
 
 			public int compressType = _type;
 			public int compressQuality = _quality;
+			public bool resize = _resize;
+			public int width = _width;
+			public int height = _height;
+			public int shortSide = _shortSide;
+			public int longSide = _longSide;
 		}
 
 		public readonly struct FileResult(uint _c, string _file, string _desc = "Success.") {
@@ -67,7 +77,7 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="parallel">是否文件级并行</param>
 		/// <param name="finish1img">完成一个文件的回调</param>
-		/// <param name="pageSizeType">页面大小类型</param>
+		/// <param name="pageType">页面大小类型</param>
 		/// <param name="pagesizex">页面大小宽</param>
 		/// <param name="pagesizey">页面大小高</param>
 		/// <param name="compress">是否压缩所有图片</param>
@@ -75,27 +85,38 @@ namespace PicMerge {
 		public static IMerger Create(
 			bool parallel,
 			Action finish1img,
-			int pageSizeType,
+			int pageType,
 			int pagesizex,
 			int pagesizey,
 			bool compress,
 			int type,
-			int quality
+			int quality,
+			bool resize,
+			int width,
+			int height,
+			int shortSide,
+			int longSide
 		) {
-			return parallel ?
-				new MergerParallel(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality)) :
-				new MergerSerial(finish1img, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
+			var p = new Parameters(pageType, pagesizex, pagesizey, compress, type, quality, resize, width, height, shortSide, longSide);
+			return parallel ? new MergerParallel(finish1img, p) : new MergerSerial(finish1img, p);
 		}
 
 		public static IMerger CreateArchiveConverter(
 			bool keepStruct,
-			int pageSizeType,
+			int pageType,
 			int pagesizex,
 			int pagesizey,
 			bool compress,
 			int type,
-			int quality) {
-			return new MergerArchive(keepStruct, new Parameters(pageSizeType, pagesizex, pagesizey, compress, type, quality));
+			int quality,
+			bool resize,
+			int width,
+			int height,
+			int shortSide,
+			int longSide
+		) {
+			var p = new Parameters(pageType, pagesizex, pagesizey, compress, type, quality, resize, width, height, shortSide, longSide);
+			return new MergerArchive(keepStruct, p);
 		}
 
 		/// <summary>
