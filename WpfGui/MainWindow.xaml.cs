@@ -101,9 +101,12 @@ namespace WpfGui {
 		private void TextNum_PreviewKeyDown(object sender, KeyEventArgs e) {
 			bool isNum = e.Key >= Key.D0 && e.Key <= Key.D9;
 			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
-			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right || e.Key == Key.Decimal;
+			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
 			if (isNum || isNumPad || isControl) {
 				return;
+			}
+			if (e.Key == Key.Decimal && sender is TextBox box && !box.Text.Contains('.')) {
+				return; // 允许有一个小数点。
 			}
 			e.Handled = true;
 		}
@@ -161,9 +164,12 @@ namespace WpfGui {
 			Settings1.Default.PagePageType = comboBoxPageSize.SelectedIndex;
 		}
 
-		private void PageSizeTextChanged(object sender, TextChangedEventArgs e) {
-			Settings1.Default.PageSizeWidth = int.TryParse(textWidth.Text, out int res) ? res : 0;
-			Settings1.Default.PageSizeHeight = int.TryParse(textHeight.Text, out res) ? res : 0;
+		private void PageSizeTextChangedW(object sender, TextChangedEventArgs e) {
+			Settings1.Default.PageSizeWidth = float.TryParse(textWidth.Text, out float res) ? res : 0;
+		}
+
+		private void PageSizeTextChangedH(object sender, TextChangedEventArgs e) {
+			Settings1.Default.PageSizeHeight = float.TryParse(textHeight.Text, out float res) ? res : 0;
 		}
 
 		private void IoCheckedChanged(object sender, RoutedEventArgs e) {

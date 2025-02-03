@@ -17,15 +17,15 @@ namespace WpfGui {
 			int _height,
 			int _shortSide,
 			int _longSide,
-			bool _recursion = true,
-			bool _keepStruct = true,
-			bool _stayNoMove = false,
-			bool _compress = true,
-			int _pageFixedType = 2,
-			int _pagesizex = 0,
-			int _pagesizey = 0,
-			int _type = 1,
-			int _quality = 80
+			bool _recursion,
+			bool _keepStruct,
+			bool _stayNoMove,
+			bool _compress,
+			int _pageFixedType,
+			float _pagesizex,
+			float _pagesizey,
+			int _type,
+			int _quality
 		) {
 			/// <summary>
 			/// 页面大小类型，详见MainWindow。
@@ -34,11 +34,11 @@ namespace WpfGui {
 			/// <summary>
 			/// 页面大小宽，详见MainWindow。
 			/// </summary>
-			public int pagesizex = _pagesizex;
+			public float pagesizex = _pagesizex;
 			/// <summary>
 			/// 页面大小高，详见MainWindow。
 			/// </summary>
-			public int pagesizey = _pagesizey;
+			public float pagesizey = _pagesizey;
 
 			/// <summary>
 			/// 递归输入文件夹。

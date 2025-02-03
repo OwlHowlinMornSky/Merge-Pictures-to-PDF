@@ -28,13 +28,13 @@ namespace WpfGui {
 			chkBoxLong.IsChecked = Settings1.Default.CompressResizeLong;
 
 			if (Settings1.Default.CompressResizeWidthValue == 0)
-				Settings1.Default.CompressResizeWidthValue = Settings1.Default.PageSizeWidth * 4;
+				Settings1.Default.CompressResizeWidthValue = (int)(Settings1.Default.PageSizeWidth * 4);
 			if (Settings1.Default.CompressResizeHeightValue == 0)
-				Settings1.Default.CompressResizeHeightValue = Settings1.Default.PageSizeHeight * 4;
+				Settings1.Default.CompressResizeHeightValue = (int)(Settings1.Default.PageSizeHeight * 4);
 			if (Settings1.Default.CompressResizeShortValue == 0)
-				Settings1.Default.CompressResizeShortValue = Settings1.Default.PageSizeWidth * 4;
+				Settings1.Default.CompressResizeShortValue = (int)(Settings1.Default.PageSizeWidth * 4);
 			if (Settings1.Default.CompressResizeLongValue == 0)
-				Settings1.Default.CompressResizeLongValue = Settings1.Default.PageSizeHeight * 4;
+				Settings1.Default.CompressResizeLongValue = (int)(Settings1.Default.PageSizeHeight * 4);
 			textBoxWidth.Text = Settings1.Default.CompressResizeWidthValue.ToString();
 			textBoxHeight.Text = Settings1.Default.CompressResizeHeightValue.ToString();
 			textBoxShort.Text = Settings1.Default.CompressResizeShortValue.ToString();
@@ -65,7 +65,7 @@ namespace WpfGui {
 		private void TextNum_PreviewKeyDown(object sender, KeyEventArgs e) {
 			bool isNum = e.Key >= Key.D0 && e.Key <= Key.D9;
 			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
-			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right || e.Key == Key.Decimal;
+			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
 			if (isNum || isNumPad || isControl) {
 				return;
 			}
