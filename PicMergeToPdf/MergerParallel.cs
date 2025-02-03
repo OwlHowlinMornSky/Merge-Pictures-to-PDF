@@ -54,7 +54,7 @@ namespace PicMerge {
 				if (imageData == null) {
 					result.Add(new FileResult(0x80020001, file, StrUnsupported));
 				}
-				else if (!pdfTarget.AddImage(imageData, ref m_param)) {
+				else if (!pdfTarget.AddImage(imageData, in m_param)) {
 					result.Add(new FileResult(0x80020002, file, StrFailedToAdd));
 				}
 				else {

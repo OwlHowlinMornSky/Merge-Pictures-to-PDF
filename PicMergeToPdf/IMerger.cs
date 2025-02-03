@@ -12,13 +12,9 @@ namespace PicMerge {
 		internal const long MapFileSize = 0x04000000;
 
 		internal struct Parameters(
-			int _pageType, int _pagesizex, int _pagesizey,
+			int _pageType, float _pagesizex, float _pagesizey,
 			bool _compress, int _type, int _quality,
-			bool _resize,
-			int _width,
-			int _height,
-			int _shortSide,
-			int _longSide
+			bool _resize, int _width, int _height, int _shortSide, int _longSide
 		) {
 			/// <summary>
 			/// 页面大小类型。
@@ -86,8 +82,8 @@ namespace PicMerge {
 			bool parallel,
 			Action finish1img,
 			int pageType,
-			int pagesizex,
-			int pagesizey,
+			float pagesizex,
+			float pagesizey,
 			bool compress,
 			int type,
 			int quality,
@@ -104,8 +100,8 @@ namespace PicMerge {
 		public static IMerger CreateArchiveConverter(
 			bool keepStruct,
 			int pageType,
-			int pagesizex,
-			int pagesizey,
+			float pagesizex,
+			float pagesizey,
 			bool compress,
 			int type,
 			int quality,
@@ -124,7 +120,7 @@ namespace PicMerge {
 		/// 该方法会 递归地创建链条上的所有目录。例如传入 C:\DirA\DirB\DirC，而 DirA 不存在，
 		/// 那么该方法会创建 DirA、DirB、DirC 使输入路径可用。
 		/// </summary>
-		/// <param name="path">要求的目录路径</param>
+		/// <param name="dirpath">要求的目录路径</param>
 		/// <exception cref="DirectoryNotFoundException">无法完成任务</exception>
 		internal static void EnsureFolderExisting(string dirpath) {
 			if (Directory.Exists(dirpath))

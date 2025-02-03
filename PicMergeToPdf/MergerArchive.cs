@@ -138,7 +138,7 @@ namespace PicMerge {
 			}
 			tuple.Item2.Insert(index, curImgName);
 
-			if (!pdfTarget.AddImage(imageData, ref m_param, index)) {
+			if (!pdfTarget.AddImage(imageData, in m_param, index)) {
 				m_result.Add(new FileResult(0x80030006, imgKey, StrFailedToAdd));
 				return;
 			}

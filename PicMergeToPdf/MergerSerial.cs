@@ -55,7 +55,7 @@ namespace PicMerge {
 				}
 
 				/// 再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出pdf。
-				if (pdfTarget.AddImage(imageData, ref m_param)) {
+				if (pdfTarget.AddImage(imageData, in m_param)) {
 					result.Add(new FileResult(0x1, files[i]));
 				}
 				else {
@@ -71,7 +71,7 @@ namespace PicMerge {
 					if (imageData == null) {
 						result.Add(new FileResult(0x80010003, file, StrUnsupported));
 					}
-					else if (!pdfTarget.AddImage(imageData, ref m_param)) {
+					else if (!pdfTarget.AddImage(imageData, in m_param)) {
 						result.Add(new FileResult(0x80010004, file, StrFailedToAdd));
 					}
 					else {
