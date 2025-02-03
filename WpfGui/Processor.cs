@@ -12,16 +12,34 @@ namespace WpfGui {
 	internal partial class Processor(Window guiMain, Action<int, int> setBarNum, Action setBarFinish) {
 
 		internal struct Parameters(
+			bool _resize,
+			int _width,
+			int _height,
+			int _shortSide,
+			int _longSide,
 			bool _recursion = true,
 			bool _keepStruct = true,
 			bool _stayNoMove = false,
 			bool _compress = true,
-			int _pageSizeType = 2,
+			int _pageFixedType = 2,
 			int _pagesizex = 0,
 			int _pagesizey = 0,
 			int _type = 1,
 			int _quality = 80
 		) {
+			/// <summary>
+			/// 页面大小类型，详见MainWindow。
+			/// </summary>
+			public int pageFixedType = _pageFixedType;
+			/// <summary>
+			/// 页面大小宽，详见MainWindow。
+			/// </summary>
+			public int pagesizex = _pagesizex;
+			/// <summary>
+			/// 页面大小高，详见MainWindow。
+			/// </summary>
+			public int pagesizey = _pagesizey;
+
 			/// <summary>
 			/// 递归输入文件夹。
 			/// </summary>
@@ -39,17 +57,10 @@ namespace WpfGui {
 			/// </summary>
 			public bool stayNoMove = _stayNoMove;
 			/// <summary>
-			/// 页面大小类型，详见MainWindow。
+			/// 把合成的PDF放在和图片同样的目录级别中。即设为true时，不把PDF放在目录并排位置。
 			/// </summary>
-			public int pageSizeType = _pageSizeType;
-			/// <summary>
-			/// 页面大小宽，详见MainWindow。
-			/// </summary>
-			public int pagesizex = _pagesizex;
-			/// <summary>
-			/// 页面大小高，详见MainWindow。
-			/// </summary>
-			public int pagesizey = _pagesizey;
+			public bool keepPdfInFolder = false;
+
 			/// <summary>
 			/// 压缩图片的目标类型（目前仅支持jpg=_和png=2）
 			/// </summary>
@@ -58,10 +69,11 @@ namespace WpfGui {
 			/// 压缩质量。ImageSharp的PNG使用压缩等级，但在Merger将[0, 100]映射到[0, 9]，因此本属性范围就为[0, 100]。
 			/// </summary>
 			public int compressQuality = _quality;
-			/// <summary>
-			/// 把合成的PDF放在和图片同样的目录级别中。即设为true时，不把PDF放在目录并排位置。
-			/// </summary>
-			public bool keepPdfInFolder = false;
+			public bool resize = _resize;
+			public int width = _width;
+			public int height = _height;
+			public int shortSide = _shortSide;
+			public int longSide = _longSide;
 		}
 
 		private struct TaskInputData(TaskInputData.Type _type, List<string> _files) {
@@ -369,12 +381,18 @@ namespace WpfGui {
 			using PicMerge.IMerger merger = PicMerge.IMerger.Create(
 				true,
 				CallbackFinishOneImgFile,
-				m_param.pageSizeType,
+				m_param.pageFixedType,
 				m_param.pagesizex,
 				m_param.pagesizey,
 				m_param.compress,
 				m_param.compressType,
-				m_param.compressQuality
+				m_param.compressQuality,
+
+				m_param.resize,
+				m_param.width,
+				m_param.height,
+				m_param.shortSide,
+				m_param.longSide
 			);
 			List<PicMerge.IMerger.FileResult> result = await merger.ProcessAsync(outputPath, files, title);
 			CallbackFinishAllImgFile();
@@ -384,12 +402,18 @@ namespace WpfGui {
 		private async Task ProcessArchiveAsync(string filePath, string outputPath) {
 			using var merger = PicMerge.IMerger.CreateArchiveConverter(
 				m_param.keepStruct,
-				m_param.pageSizeType,
+				m_param.pageFixedType,
 				m_param.pagesizex,
 				m_param.pagesizey,
 				m_param.compress,
 				m_param.compressType,
-				m_param.compressQuality
+				m_param.compressQuality,
+
+				m_param.resize,
+				m_param.width,
+				m_param.height,
+				m_param.shortSide,
+				m_param.longSide
 			);
 			List<PicMerge.IMerger.FileResult> failed = await merger.ProcessAsync(outputPath, [filePath]);
 			CallbackFinishOneImgFile();
