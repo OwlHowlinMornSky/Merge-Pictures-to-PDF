@@ -36,5 +36,6 @@
     <sys:String x:Key="DetailPreferredHeight">期望高度</sys:String>
     <sys:String x:Key="DetailPreferredShort">短边长度</sys:String>
     <sys:String x:Key="DetailPreferredLong">长边长度</sys:String>
+    <sys:String x:Key="DetailResizePow2">按2的幂次缩小</sys:String>
     
 </ResourceDictionary>
