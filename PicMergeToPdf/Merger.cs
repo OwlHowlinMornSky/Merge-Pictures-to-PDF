@@ -6,16 +6,12 @@ using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 
 namespace PicMerge {
-	internal class Merger(Parameters param) {
+	internal class Merger(ImageParam ip) {
 
 		protected string StrUnsupported = "Unsupported type.";
 		protected string StrFailedToAdd = "Failed to add into pdf.";
 
-
-		/// <summary>
-		/// 合并之参数。使用第一张图片的尺寸时需要修改，所以不能只读。
-		/// </summary>
-		protected Parameters m_param = param;
+		protected readonly ImageParam m_param = ip;
 
 		/// <summary>
 		/// 用于文件并行方法之加载。

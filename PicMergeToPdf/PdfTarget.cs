@@ -58,7 +58,7 @@ namespace PicMerge {
 		/// <param name="imageData">图片数据</param>
 		/// <param name="pdfDocument">PDF文件数据</param>
 		/// <returns>是否成功</returns>
-		internal bool AddImage(in ImageData imageData, in IMerger.Parameters param, int index = -1) {
+		internal bool AddImage(in ImageData imageData, in PageParam param, int index = -1) {
 			index++;
 			bool fixedWidth = (param.pageType & 1) != 0 && param.pagesizex > 10;
 			bool fixedHeight = (param.pageType & 2) != 0 && param.pagesizey > 10;

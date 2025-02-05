@@ -257,16 +257,18 @@ namespace WpfGui {
 				return;
 			}
 			BarSetNum(0, 1);
-			Processor.Parameters param = new(
-				_pageFixedType: Settings1.Default.PageIsFixed,
-				_pagesizex: Settings1.Default.PageSizeWidth,
-				_pagesizey: Settings1.Default.PageSizeHeight,
-
+			IOParam ioParam = new(
 				_recursion: Settings1.Default.IORecurse,
 				_keepStruct: Settings1.Default.IOKeepStruct,
+				_stayNoMove: Settings1.Default.IONoMove
+			);
+			PicMerge.PageParam pageParam = new(
+				_pageType: Settings1.Default.PageIsFixed,
+				_pagesizex: Settings1.Default.PageSizeWidth,
+				_pagesizey: Settings1.Default.PageSizeHeight
+			);
+			PicMerge.ImageParam imageParam = new(
 				_compress: Settings1.Default.IOCompress,
-				_stayNoMove: Settings1.Default.IONoMove,
-
 				_type: Settings1.Default.CompressType,
 				_quality: Settings1.Default.CompressQuality,
 				_resize: Settings1.Default.CompressResize,
@@ -275,7 +277,7 @@ namespace WpfGui {
 				_shortSide: Settings1.Default.CompressResizeShort ? Settings1.Default.CompressResizeShortValue : 0,
 				_longSide: Settings1.Default.CompressResizeLong ? Settings1.Default.CompressResizeLongValue : 0
 			);
-			if (m_processor.Start(paths, param) == false) {
+			if (m_processor.Start(paths, pageParam, imageParam, ioParam) == false) {
 				Task.Run(() => {
 					App.Current.Dispatcher.Invoke(() => {
 						MessageBox.Show(

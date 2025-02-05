@@ -9,7 +9,9 @@ namespace PicMerge {
 	/// <param name="finish1img">完成一个文件的回调</param>
 	/// <param name="param">参数</param>
 	/// <err frag="0x8002" ack="0003"></err>
-	internal class MergerParallel(Action finish1img, Parameters param) : Merger(param), IMerger {
+	internal class MergerParallel(Action finish1img, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
+
+		private readonly PageParam m_pp = pp;
 
 		/// <summary>
 		/// 多任务协作时，任务中sleep的 默认 毫秒数。
@@ -54,7 +56,7 @@ namespace PicMerge {
 				if (imageData == null) {
 					result.Add(new FileResult(0x80020001, file, StrUnsupported));
 				}
-				else if (!pdfTarget.AddImage(imageData, in m_param)) {
+				else if (!pdfTarget.AddImage(imageData, in m_pp)) {
 					result.Add(new FileResult(0x80020002, file, StrFailedToAdd));
 				}
 				else {

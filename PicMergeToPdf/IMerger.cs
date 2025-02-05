@@ -1,5 +1,57 @@
 ﻿
 namespace PicMerge {
+	public readonly struct PageParam(
+		int _pageType, float _pagesizex, float _pagesizey
+	) {
+		/// <summary>
+		/// Describs whice sides is fixed. It can be a "bit-or" combination of followings:
+		/// 0x1: width fixed.
+		/// 0x2: height fixed.
+		/// </summary>
+		public readonly int pageType = _pageType;
+		public readonly float pagesizex = _pagesizex;
+		public readonly float pagesizey = _pagesizey;
+	}
+	public readonly struct ImageParam(
+		bool _compress, int _type, int _quality,
+		bool _resize, int _width, int _height, int _shortSide, int _longSide
+	) {
+		/// <summary>
+		/// Try compress any image or not.
+		/// </summary>
+		public readonly bool compress = _compress;
+		/// <summary>
+		/// Compress target image format.
+		/// 0 = NoChange, 1=jpg, 2=png.
+		/// </summary>
+		public readonly int compressType = _type;
+		/// <summary>
+		/// Compress quality. From 0 to 100.
+		/// If target format is PNG, this will automatically be mapped from 0~100 into 0~9.
+		/// </summary>
+		public readonly int compressQuality = _quality;
+		/// <summary>
+		/// Resize image. Magnify is not allowed.
+		/// </summary>
+		public readonly bool resize = _resize;
+		/// <summary>
+		/// Preferred width of result.
+		/// </summary>
+		public readonly int width = _width;
+		/// <summary>
+		/// Preferred height of result.
+		/// </summary>
+		public readonly int height = _height;
+		/// <summary>
+		/// Preferred length of short side of result.
+		/// </summary>
+		public readonly int shortSide = _shortSide;
+		/// <summary>
+		/// Preferred length of long side of result.
+		/// </summary>
+		public readonly int longSide = _longSide;
+	}
+
 	/// <summary>
 	/// 合成器接口
 	/// 目前，合成器构造一个只能运行一次。
@@ -10,37 +62,6 @@ namespace PicMerge {
 		/// 内存映射文件设定的最大大小。
 		/// </summary>
 		internal const long MapFileSize = 0x04000000;
-
-		internal struct Parameters(
-			int _pageType, float _pagesizex, float _pagesizey,
-			bool _compress, int _type, int _quality,
-			bool _resize, int _width, int _height, int _shortSide, int _longSide
-		) {
-			/// <summary>
-			/// 页面大小类型。
-			/// </summary>
-			public readonly int pageType = _pageType;
-			/// <summary>
-			/// 页面大小宽。使用第一张图片的尺寸时需要修改，所以不能只读。
-			/// </summary>
-			public float pagesizex = _pagesizex;
-			/// <summary>
-			/// 页面大小高。使用第一张图片的尺寸时需要修改，所以不能只读。
-			/// </summary>
-			public float pagesizey = _pagesizey;
-			/// <summary>
-			/// 是否压缩所有图片。
-			/// </summary>
-			public readonly bool compress = _compress;
-
-			public int compressType = _type;
-			public int compressQuality = _quality;
-			public bool resize = _resize;
-			public int width = _width;
-			public int height = _height;
-			public int shortSide = _shortSide;
-			public int longSide = _longSide;
-		}
 
 		public readonly struct FileResult(uint _c, string _file, string _desc = "Success.") {
 			public readonly uint code = _c;
@@ -73,46 +94,24 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="parallel">是否文件级并行</param>
 		/// <param name="finish1img">完成一个文件的回调</param>
-		/// <param name="pageType">页面大小类型</param>
-		/// <param name="pagesizex">页面大小宽</param>
-		/// <param name="pagesizey">页面大小高</param>
-		/// <param name="compress">是否压缩所有图片</param>
+		/// <param name="pp"></param>
+		/// <param name="ip"></param>
 		/// <returns>创建的实例</returns>
 		public static IMerger Create(
 			bool parallel,
 			Action finish1img,
-			int pageType,
-			float pagesizex,
-			float pagesizey,
-			bool compress,
-			int type,
-			int quality,
-			bool resize,
-			int width,
-			int height,
-			int shortSide,
-			int longSide
+			PageParam pp,
+			ImageParam ip
 		) {
-			var p = new Parameters(pageType, pagesizex, pagesizey, compress, type, quality, resize, width, height, shortSide, longSide);
-			return parallel ? new MergerParallel(finish1img, p) : new MergerSerial(finish1img, p);
+			return parallel ? new MergerParallel(finish1img, pp, ip) : new MergerSerial(finish1img, pp, ip);
 		}
 
 		public static IMerger CreateArchiveConverter(
 			bool keepStruct,
-			int pageType,
-			float pagesizex,
-			float pagesizey,
-			bool compress,
-			int type,
-			int quality,
-			bool resize,
-			int width,
-			int height,
-			int shortSide,
-			int longSide
+			PageParam pp,
+			ImageParam ip
 		) {
-			var p = new Parameters(pageType, pagesizex, pagesizey, compress, type, quality, resize, width, height, shortSide, longSide);
-			return new MergerArchive(keepStruct, p);
+			return new MergerArchive(keepStruct, pp, ip);
 		}
 
 		/// <summary>
