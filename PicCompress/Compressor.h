@@ -35,7 +35,8 @@ public:
 		int width,
 		int height,
 		int shortSide,
-		int longSide
+		int longSide,
+		bool reduceBtPowOf2
 	);
 
 private:

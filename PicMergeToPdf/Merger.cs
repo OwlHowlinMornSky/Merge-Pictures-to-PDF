@@ -68,7 +68,8 @@ namespace PicMerge {
 					int len = compt.Compressor.CompressFrom(
 						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
 						m_param.format, m_param.quality,
-						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide
+						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
+						m_param.reduceByPowOf2
 					);
 					using var mapstream = compt.ViewStream;
 					using BinaryReader br = new(mapstream);
@@ -184,7 +185,8 @@ namespace PicMerge {
 					int len = compt.Compressor.CompressFrom(
 						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
 						m_param.format, m_param.quality,
-						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide
+						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
+						m_param.reduceByPowOf2
 					);
 					using var mapstream = compt.ViewStream;
 					using BinaryReader br = new(mapstream);

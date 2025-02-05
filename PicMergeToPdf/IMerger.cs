@@ -22,7 +22,8 @@ namespace PicMerge {
 	}
 	public readonly struct ImageParam(
 		bool _compress, int _format, int _quality,
-		bool _resize, int _width, int _height, int _shortSide, int _longSide
+		bool _resize, int _width, int _height, int _shortSide, int _longSide,
+		bool _reduceBy2
 	) {
 		/// <summary>
 		/// Try compress any image or not.
@@ -58,6 +59,13 @@ namespace PicMerge {
 		/// Preferred length of long side of result.
 		/// </summary>
 		public readonly int longSide = _longSide;
+		/// <summary>
+		/// When reducing image, let the scale be power of 2.
+		/// Reducing is goning on until each measure is not great than your preferred value.
+		/// For example:
+		/// (1400, 600) -> (700, 300) -> (350, 150) ...
+		/// </summary>
+		public readonly bool reduceByPowOf2 = _reduceBy2;
 	}
 
 	/// <summary>

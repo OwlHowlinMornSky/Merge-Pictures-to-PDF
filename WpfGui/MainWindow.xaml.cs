@@ -275,7 +275,8 @@ namespace WpfGui {
 				_width: Settings1.Default.CompressResizeWidth ? Settings1.Default.CompressResizeWidthValue : 0,
 				_height: Settings1.Default.CompressResizeHeight ? Settings1.Default.CompressResizeHeightValue : 0,
 				_shortSide: Settings1.Default.CompressResizeShort ? Settings1.Default.CompressResizeShortValue : 0,
-				_longSide: Settings1.Default.CompressResizeLong ? Settings1.Default.CompressResizeLongValue : 0
+				_longSide: Settings1.Default.CompressResizeLong ? Settings1.Default.CompressResizeLongValue : 0,
+				_reduceBy2: Settings1.Default.CompressResizeReduceByPow2
 			);
 			if (m_processor.Start(paths, pageParam, imageParam, ioParam) == false) {
 				Task.Run(() => {

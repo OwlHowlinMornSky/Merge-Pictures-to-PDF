@@ -94,7 +94,8 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 	int width,
 	int height,
 	int shortSide,
-	int longSide
+	int longSide,
+	bool reduceBtPowOf2
 ) {
 	if ((HANDLE)hinfile == NULL || iFileLen < 1) {
 		throw gcnew ArgumentException("Invalid Input Maping File.");
@@ -118,7 +119,7 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 		parameters.height = height;
 		parameters.short_side_pixels = shortSide;
 		parameters.long_size_pixels = longSide;
-		parameters.reduce_by_power_of_2 = true;
+		parameters.reduce_by_power_of_2 = reduceBtPowOf2;
 		parameters.allow_magnify = false;
 	}
 

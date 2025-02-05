@@ -77,5 +77,8 @@
     <Setting Name="PaperB5" Type="System.Drawing.Size" Scope="Application">
       <Value Profile="(Default)">499, 709</Value>
     </Setting>
+    <Setting Name="CompressResizeReduceByPow2" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

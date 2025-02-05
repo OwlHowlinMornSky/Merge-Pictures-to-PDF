@@ -21,6 +21,7 @@ namespace WpfGui {
 			sliderQuality.Value = double.Clamp(Settings1.Default.CompressQuality, 0, 100);
 
 			chkBoxResize.IsChecked = Settings1.Default.CompressResize;
+			chkBoxPow2.IsChecked = Settings1.Default.CompressResizeReduceByPow2;
 
 			chkBoxWidth.IsChecked = Settings1.Default.CompressResizeWidth;
 			chkBoxHeight.IsChecked = Settings1.Default.CompressResizeHeight;
@@ -86,6 +87,7 @@ namespace WpfGui {
 			if (!Started)
 				return;
 			Settings1.Default.CompressResize = chkBoxResize.IsChecked == true;
+			Settings1.Default.CompressResizeReduceByPow2 = chkBoxPow2.IsChecked == true;
 		}
 
 		private bool m_isCheckChanging = false;

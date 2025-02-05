@@ -310,5 +310,17 @@ namespace WpfGui {
                 return ((global::System.Drawing.Size)(this["PaperB5"]));
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool CompressResizeReduceByPow2 {
+            get {
+                return ((bool)(this["CompressResizeReduceByPow2"]));
+            }
+            set {
+                this["CompressResizeReduceByPow2"] = value;
+            }
+        }
     }
 }
