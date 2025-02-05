@@ -67,7 +67,7 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					int len = compt.Compressor.CompressFrom(
 						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
-						m_param.compressType, m_param.compressQuality,
+						m_param.format, m_param.quality,
 						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide
 					);
 					using var mapstream = compt.ViewStream;
@@ -88,9 +88,9 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					using Image image = Image.Load(instream);
 					using MemoryStream imgSt = new();
-					switch (m_param.compressType) {
+					switch (m_param.format) {
 					case 2: {
-						int quality = 10 - m_param.compressQuality / 10;
+						int quality = 10 - m_param.quality / 10;
 						PngEncoder encoder = new() {
 							SkipMetadata = true,
 							ColorType = PngColorType.Rgb,
@@ -115,7 +115,7 @@ namespace PicMerge {
 						JpegEncoder encoder = new() {
 							SkipMetadata = true,
 							ColorType = JpegEncodingColor.Rgb,
-							Quality = m_param.compressQuality,
+							Quality = m_param.quality,
 							Interleaved = false
 						};
 						image.SaveAsJpeg(imgSt, encoder);
@@ -183,7 +183,7 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					int len = compt.Compressor.CompressFrom(
 						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
-						m_param.compressType, m_param.compressQuality,
+						m_param.format, m_param.quality,
 						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide
 					);
 					using var mapstream = compt.ViewStream;
@@ -200,9 +200,9 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					using Image image = Image.Load(instream);
 					using MemoryStream imgSt = new();
-					switch (m_param.compressType) {
+					switch (m_param.format) {
 					case 2: {
-						int quality = 10 - m_param.compressQuality / 10;
+						int quality = 10 - m_param.quality / 10;
 						PngEncoder encoder = new() {
 							SkipMetadata = true,
 							ColorType = PngColorType.Rgb,
@@ -227,7 +227,7 @@ namespace PicMerge {
 						JpegEncoder encoder = new() {
 							SkipMetadata = true,
 							ColorType = JpegEncodingColor.Rgb,
-							Quality = m_param.compressQuality,
+							Quality = m_param.quality,
 							Interleaved = false
 						};
 						image.SaveAsJpeg(imgSt, encoder);

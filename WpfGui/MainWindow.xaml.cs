@@ -263,13 +263,13 @@ namespace WpfGui {
 				_stayNoMove: Settings1.Default.IONoMove
 			);
 			PicMerge.PageParam pageParam = new(
-				_pageType: Settings1.Default.PageIsFixed,
-				_pagesizex: Settings1.Default.PageSizeWidth,
-				_pagesizey: Settings1.Default.PageSizeHeight
+				_fixedType: Settings1.Default.PageIsFixed,
+				_width: Settings1.Default.PageSizeWidth,
+				_height: Settings1.Default.PageSizeHeight
 			);
 			PicMerge.ImageParam imageParam = new(
 				_compress: Settings1.Default.IOCompress,
-				_type: Settings1.Default.CompressType,
+				_format: Settings1.Default.CompressType,
 				_quality: Settings1.Default.CompressQuality,
 				_resize: Settings1.Default.CompressResize,
 				_width: Settings1.Default.CompressResizeWidth ? Settings1.Default.CompressResizeWidthValue : 0,

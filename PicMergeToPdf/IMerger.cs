@@ -1,19 +1,27 @@
 ﻿
 namespace PicMerge {
 	public readonly struct PageParam(
-		int _pageType, float _pagesizex, float _pagesizey
+		int _fixedType, float _width, float _height
 	) {
 		/// <summary>
 		/// Describs whice sides is fixed. It can be a "bit-or" combination of followings:
 		/// 0x1: width fixed.
 		/// 0x2: height fixed.
 		/// </summary>
-		public readonly int pageType = _pageType;
-		public readonly float pagesizex = _pagesizex;
-		public readonly float pagesizey = _pagesizey;
+		public readonly int fixedType = _fixedType;
+		/// <summary>
+		/// This is used when width is fixed.
+		/// If this is less than 10, "width fixed" is disabled.
+		/// </summary>
+		public readonly float width = _width;
+		/// <summary>
+		/// This is used when height is fixed.
+		/// If this is less than 10, "height fixed" is disabled.
+		/// </summary>
+		public readonly float height = _height;
 	}
 	public readonly struct ImageParam(
-		bool _compress, int _type, int _quality,
+		bool _compress, int _format, int _quality,
 		bool _resize, int _width, int _height, int _shortSide, int _longSide
 	) {
 		/// <summary>
@@ -24,12 +32,12 @@ namespace PicMerge {
 		/// Compress target image format.
 		/// 0 = NoChange, 1=jpg, 2=png.
 		/// </summary>
-		public readonly int compressType = _type;
+		public readonly int format = _format;
 		/// <summary>
 		/// Compress quality. From 0 to 100.
 		/// If target format is PNG, this will automatically be mapped from 0~100 into 0~9.
 		/// </summary>
-		public readonly int compressQuality = _quality;
+		public readonly int quality = _quality;
 		/// <summary>
 		/// Resize image. Magnify is not allowed.
 		/// </summary>

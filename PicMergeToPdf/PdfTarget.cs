@@ -60,8 +60,8 @@ namespace PicMerge {
 		/// <returns>是否成功</returns>
 		internal bool AddImage(in ImageData imageData, in PageParam param, int index = -1) {
 			index++;
-			bool fixedWidth = (param.pageType & 1) != 0 && param.pagesizex > 10;
-			bool fixedHeight = (param.pageType & 2) != 0 && param.pagesizey > 10;
+			bool fixedWidth = (param.fixedType & 1) != 0 && param.width >= 10;
+			bool fixedHeight = (param.fixedType & 2) != 0 && param.height >= 10;
 			try {
 				PageSize pageSize;
 				PageSize imageSize;
@@ -69,21 +69,21 @@ namespace PicMerge {
 				float height = imageData.GetHeight();
 
 				if (fixedWidth && fixedHeight) { // 固定大小
-					pageSize = new(param.pagesizex, param.pagesizey);
+					pageSize = new(param.width, param.height);
 					float r = float.Min(
-						1.0f * param.pagesizex / width,
-						1.0f * param.pagesizey / height
+						1.0f * param.width / width,
+						1.0f * param.height / height
 					);
 					imageSize = new(width * r, height * r);
 					imageSize.SetX((pageSize.GetWidth() - imageSize.GetWidth()) / 2.0f);
 					imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
 				}
 				else if (fixedWidth) { // 固定宽度
-					imageSize = new(param.pagesizex, param.pagesizex / width * height);
+					imageSize = new(param.width, param.width / width * height);
 					pageSize = imageSize;
 				}
 				else if (fixedHeight) { // 固定高度
-					imageSize = new(param.pagesizey / height * width, param.pagesizey);
+					imageSize = new(param.height / height * width, param.height);
 					pageSize = imageSize;
 				}
 				else { // 与图片大小一致
