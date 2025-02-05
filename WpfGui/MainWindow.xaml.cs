@@ -188,10 +188,10 @@ namespace WpfGui {
 		private void IoCheckedChanged(object sender, RoutedEventArgs e) {
 			if (!Started)
 				return;
-			Settings1.Default.IORecurse = chkBoxRecursion.IsChecked == true;
-			Settings1.Default.IOKeepStruct = chkBoxKeepStructure.IsChecked == true;
-			Settings1.Default.IOCompress = chkBoxCompressAll.IsChecked == true;
-			Settings1.Default.IONoMove = chkBoxStayNoMove.IsChecked == true;
+			Settings1.Default.IORecurse = chkBoxRecursion.IsChecked ?? false;
+			Settings1.Default.IOKeepStruct = chkBoxKeepStructure.IsChecked ?? false;
+			Settings1.Default.IOCompress = chkBoxCompressAll.IsChecked ?? false;
+			Settings1.Default.IONoMove = chkBoxStayNoMove.IsChecked ?? false;
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e) {
