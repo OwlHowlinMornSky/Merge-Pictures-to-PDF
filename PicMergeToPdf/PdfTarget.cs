@@ -60,8 +60,8 @@ namespace PicMerge {
 		/// <returns>是否成功</returns>
 		internal bool AddImage(in ImageData imageData, in PageParam param, int index = -1) {
 			index++;
-			bool fixedWidth = (param.fixedType & 1) != 0 && param.width >= 10;
-			bool fixedHeight = (param.fixedType & 2) != 0 && param.height >= 10;
+			bool fixedWidth = (param.fixedType & PageParam.FixedType.WidthFixed) != 0 && param.width >= 10;
+			bool fixedHeight = (param.fixedType & PageParam.FixedType.HeightFixed) != 0 && param.height >= 10;
 			try {
 				PageSize pageSize;
 				PageSize imageSize;

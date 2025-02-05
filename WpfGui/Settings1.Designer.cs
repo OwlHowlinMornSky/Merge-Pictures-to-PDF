@@ -157,13 +157,13 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
-        public int PageFixedType {
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool PageFixedHeight {
             get {
-                return ((int)(this["PageFixedType"]));
+                return ((bool)(this["PageFixedHeight"]));
             }
             set {
-                this["PageFixedType"] = value;
+                this["PageFixedHeight"] = value;
             }
         }
         
@@ -320,6 +320,18 @@ namespace WpfGui {
             }
             set {
                 this["CompressResizeReduceByPow2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool PageFixedWidth {
+            get {
+                return ((bool)(this["PageFixedWidth"]));
+            }
+            set {
+                this["PageFixedWidth"] = value;
             }
         }
     }

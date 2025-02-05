@@ -1,14 +1,19 @@
 ﻿
 namespace PicMerge {
 	public readonly struct PageParam(
-		int _fixedType, float _width, float _height
+		PageParam.FixedType _fixedType, float _width, float _height
 	) {
+		[Flags]
+		public enum FixedType {
+			WidthFixed = 1,
+			HeightFixed = 2
+		}
 		/// <summary>
 		/// Describs whice sides is fixed. It can be a "bit-or" combination of followings:
 		/// 0x1: width fixed.
 		/// 0x2: height fixed.
 		/// </summary>
-		public readonly int fixedType = _fixedType;
+		public readonly FixedType fixedType = _fixedType;
 		/// <summary>
 		/// This is used when width is fixed.
 		/// If this is less than 10, "width fixed" is disabled.

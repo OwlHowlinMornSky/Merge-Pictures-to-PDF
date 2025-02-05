@@ -35,8 +35,8 @@
     <Setting Name="CompressResizeLongValue" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="PageFixedType" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">1</Value>
+    <Setting Name="PageFixedHeight" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="PagePageType" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">2</Value>
@@ -79,6 +79,9 @@
     </Setting>
     <Setting Name="CompressResizeReduceByPow2" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="PageFixedWidth" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>
 </SettingsFile>

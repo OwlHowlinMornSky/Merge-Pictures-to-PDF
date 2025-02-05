@@ -44,9 +44,8 @@ namespace WpfGui {
 			Settings1.Default.PagePageType = int.Clamp(Settings1.Default.PagePageType, 0, comboBoxPageSize.Items.Count - 1);
 			comboBoxPageSize.SelectedIndex = Settings1.Default.PagePageType;
 
-			Settings1.Default.PageFixedType &= 3;
-			radioBtnFixedWidth.IsChecked = (Settings1.Default.PageFixedType & 1) != 0;
-			bool val = (Settings1.Default.PageFixedType & 2) != 0;
+			radioBtnFixedWidth.IsChecked = Settings1.Default.PageFixedWidth;
+			bool val = Settings1.Default.PageFixedHeight;
 			radioBtnFixedHeight.IsChecked = !val;
 			radioBtnFixedHeight.IsChecked = val; // This is to trigger event.
 
@@ -122,14 +121,7 @@ namespace WpfGui {
 		/// 页面尺寸类型的单选框 改变 的 通知。用来确定m_pageSizeType。
 		/// </summary>
 		private void BtnPageSize_Changed(object sender, RoutedEventArgs e) {
-			int sizeType = 0;
-
-			if (radioBtnFixedWidth.IsChecked == true)
-				sizeType |= 1;
-			if (radioBtnFixedHeight.IsChecked == true)
-				sizeType |= 2;
-
-			comboBoxPageSize.IsEnabled = sizeType != 0;
+			comboBoxPageSize.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
 			if (comboBoxPageSize.IsEnabled && comboBoxPageSize.SelectedIndex == comboBoxPageSize.Items.Count - 1) {
 				textWidth.IsEnabled = true;
 				textHeight.IsEnabled = true;
@@ -142,7 +134,8 @@ namespace WpfGui {
 			if (!Started)
 				return;
 
-			Settings1.Default.PageFixedType = sizeType;
+			Settings1.Default.PageFixedWidth = radioBtnFixedWidth.IsChecked ?? false;
+			Settings1.Default.PageFixedHeight = radioBtnFixedHeight.IsChecked ?? false;
 		}
 
 		private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
@@ -263,7 +256,9 @@ namespace WpfGui {
 				_stayNoMove: Settings1.Default.IONoMove
 			);
 			PicMerge.PageParam pageParam = new(
-				_fixedType: Settings1.Default.PageFixedType,
+				_fixedType:
+				(Settings1.Default.PageFixedHeight ? PicMerge.PageParam.FixedType.HeightFixed : 0) |
+				(Settings1.Default.PageFixedWidth ? PicMerge.PageParam.FixedType.WidthFixed : 0),
 				_width: Settings1.Default.PageSizeWidth,
 				_height: Settings1.Default.PageSizeHeight
 			);
