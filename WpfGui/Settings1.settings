@@ -2,7 +2,7 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="WpfGui" GeneratedClassName="Settings1">
   <Profiles />
   <Settings>
-    <Setting Name="CompressType" Type="System.Int32" Scope="User">
+    <Setting Name="CompressFormat" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="CompressQuality" Type="System.Int32" Scope="User">

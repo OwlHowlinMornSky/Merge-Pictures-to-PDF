@@ -16,7 +16,7 @@ namespace WpfGui {
 			gpBoxDebug.Visibility = Visibility.Hidden;
 #endif
 
-			comboBoxCompressType.SelectedIndex = int.Clamp(Settings1.Default.CompressType, 0, comboBoxCompressType.Items.Count - 1);
+			comboBoxCompressType.SelectedIndex = int.Clamp(Settings1.Default.CompressFormat, 0, comboBoxCompressType.Items.Count - 1);
 
 			sliderQuality.Value = double.Clamp(Settings1.Default.CompressQuality, 0, 100);
 
@@ -51,7 +51,7 @@ namespace WpfGui {
 				MessageBox.Show(this, $"Failed to set compression type ({(comboBoxCompressType.SelectedItem as ComboBoxItem)?.Content}). Default is used no change.", Title);
 				comboBoxCompressType.SelectedIndex = 0;
 			}
-			Settings1.Default.CompressType = comboBoxCompressType.SelectedIndex;
+			Settings1.Default.CompressFormat = comboBoxCompressType.SelectedIndex;
 		}
 
 		private void SliderQuality_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {

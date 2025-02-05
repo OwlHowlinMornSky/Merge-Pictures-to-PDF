@@ -26,12 +26,12 @@ namespace WpfGui {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
-        public int CompressType {
+        public int CompressFormat {
             get {
-                return ((int)(this["CompressType"]));
+                return ((int)(this["CompressFormat"]));
             }
             set {
-                this["CompressType"] = value;
+                this["CompressFormat"] = value;
             }
         }
         
