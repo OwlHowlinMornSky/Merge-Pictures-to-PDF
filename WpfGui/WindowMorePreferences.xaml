@@ -39,7 +39,7 @@
                     <CheckBox x:Name="chkBoxLong" Content="{DynamicResource DetailPreferredLong}" VerticalContentAlignment="Center" Checked="ResizeSIDECheckedChanged" Unchecked="ResizeSIDECheckedChanged"/>
                     <TextBox x:Name="textBoxLong" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
                 </StackPanel>
-                <CheckBox x:Name="chkBoxPow2" Content="{DynamicResource DetailResizePow2}" ToolTip="1" Checked="ResizeCheckedChanged" Unchecked="ResizeCheckedChanged"/>
+                <CheckBox x:Name="chkBoxPow2" Content="{DynamicResource DetailResizePow2}" ToolTip="{DynamicResource DetailResizePow2Tip}" Checked="ResizeCheckedChanged" Unchecked="ResizeCheckedChanged"/>
             </StackPanel>
         </GroupBox>
         <GroupBox x:Name="gpBoxDebug" Header="Debug">
