@@ -1,32 +1,20 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                    xmlns:wnd="clr-namespace:System.Windows;assembly=PresentationFramework">
-
-    <sys:Double x:Key="WndHeight">300</sys:Double>
-    <sys:Double x:Key="WndWidth">420</sys:Double>
+                    xml:space="preserve">
 
     <sys:String x:Key="PageSizeBox">Page Size</sys:String>
-    <sys:String x:Key="PageSizeSameWithEach">Same with each image</sys:String>
     <sys:String x:Key="PageSizeWidthFixed">Fixed width</sys:String>
-    <sys:String x:Key="PageSizeSizeFixed">Fixed size</sys:String>
-    <sys:String x:Key="PageSizeUseFirstImage">As first image's</sys:String>
-    <sys:String x:Key="PageSizeWidth">Width</sys:String>
-    <sys:String x:Key="PageSizeHeight">Height</sys:String>
-    
+    <sys:String x:Key="PageSizeHeightFixed">Fixed height</sys:String>
+    <sys:String x:Key="PageSizePaperCustom">Custom</sys:String>
+
     <sys:String x:Key="IOBox">Input/Output</sys:String>
     <sys:String x:Key="IORecursion">Recurse input folder</sys:String>
     <sys:String x:Key="IOKeepStructure">Keep folder structure</sys:String>
     <sys:String x:Key="IOCompress">Compress every image</sys:String>
     <sys:String x:Key="IOStayNoMove">Output to same folder as input</sys:String>
-    <sys:Double x:Key="IOBoxHeight">80</sys:Double>
-    <wnd:Thickness x:Key="IOBoxChk1">10,10,0,0</wnd:Thickness>
-    <wnd:Thickness x:Key="IOBoxChk2">180,10,0,0</wnd:Thickness>
-    <wnd:Thickness x:Key="IOBoxChk3">10,30,0,0</wnd:Thickness>
-    <wnd:Thickness x:Key="IOBoxChk4">180,30,0,0</wnd:Thickness>
 
     <sys:String x:Key="DetailButton">More Preferences</sys:String>
-    <wnd:Thickness x:Key="DetailButtonMargin">0,190,10,0</wnd:Thickness>
 
     <sys:String x:Key="Ready">Ready</sys:String>
     <sys:String x:Key="HaveFinishedPercent">{0:F2}% finished</sys:String>
@@ -39,4 +27,20 @@
     <sys:String x:Key="CannotMerge">File(s) below cannot be merged into “{0}”:</sys:String>
     <sys:String x:Key="ChooseDestinationDir">Choose output place</sys:String>
 
+    <sys:String x:Key="DetailTitle">More Preferences</sys:String>
+    <sys:String x:Key="DetailCompressType">Compress Target Type</sys:String>
+    <sys:String x:Key="DetailCompressKeepType">Keep Original Type</sys:String>
+    <sys:String x:Key="DetailCompressQuality">Compress Quality</sys:String>
+    <sys:String x:Key="DetailResizeWhenCompress">Resize when compressing</sys:String>
+    <sys:String x:Key="DetailResize">Resize</sys:String>
+    <sys:String x:Key="DetailPreferredWidth">Preferred Width</sys:String>
+    <sys:String x:Key="DetailPreferredHeight">Preferred Height</sys:String>
+    <sys:String x:Key="DetailPreferredShort">Short Side Length</sys:String>
+    <sys:String x:Key="DetailPreferredLong">Long Side Length</sys:String>
+    <sys:String x:Key="DetailResizePow2">Reduce by Power of 2</sys:String>
+
+    <sys:String x:Key="DetailResizePow2Tip"
+>When reducing image, let the scale be power of 2.
+Reducing is goning on until each measure is not great than your preferred value.</sys:String>
+    
 </ResourceDictionary>

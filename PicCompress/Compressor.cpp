@@ -9,6 +9,22 @@
 
 namespace {
 
+class MapView {
+public:
+	MapView(HANDLE hfilemapping) {
+		m_view = MapViewOfFile((HANDLE)hfilemapping, FILE_MAP_READ, 0, 0, 0);
+	}
+	~MapView() {
+		if (m_view)
+			UnmapViewOfFile(m_view);
+	}
+	void* GetView() {
+		return m_view;
+	}
+private:
+	void* m_view;
+};
+
 LPVOID WinCheckError(LPCWSTR lpszFunction) noexcept {
 	LPVOID lpMsgBuf = NULL;
 	LPVOID lpDisplayBuf = NULL;
@@ -69,51 +85,23 @@ PicCompress::Compressor::~Compressor() {
 	}
 }
 
-System::Int32 PicCompress::Compressor::Compress(System::String^ pathOfInFile, System::Int32 type, System::Int32 quality) {
-	cli::array<wchar_t>^ wArray = pathOfInFile->ToCharArray();
-	cli::array<unsigned char, 1>^ arr = System::Text::Encoding::UTF8->GetBytes(wArray);
-
-	int len = arr->Length;
-	char* cstr = new char[len + 2];
-	System::IntPtr pcstr(cstr);
-	System::Runtime::InteropServices::Marshal::Copy(arr, 0, pcstr, len);
-	cstr[len] = 0;
-	cstr[len + 1] = 0;
-
-	CSI_Parameters parameters = {};
-	parameters.keep_metadata = false;
-	parameters.jpeg_quality = quality;
-	parameters.jpeg_progressive = true;
-	parameters.png_quality = quality;
-	parameters.width = 2520;
-	parameters.reduce_by_power_of_2 = true;
-
-	CSI_Result res;
-	switch (type) {
-	case 2:
-		res = csi_convert_into(cstr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
-		break;
-	default:
-		res = csi_convert_into(cstr, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
-		break;
-	}
-
-
-	delete[] cstr;
-	if (!res.success) {
-		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
-	}
-	if (res.code < 1 || res.code > 2147483600ull) {
-		throw gcnew InsufficientMemoryException();
-	}
-	return (System::Int32)res.code;
-}
-
-System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr hinfile, System::Int64 iFileLen, System::Int32 type, System::Int32 quality) {
+System::Int32 PicCompress::Compressor::CompressFrom(
+	System::IntPtr hinfile,
+	System::Int64 iFileLen,
+	System::Int32 targetType,
+	System::Int32 quality,
+	bool resize,
+	int width,
+	int height,
+	int shortSide,
+	int longSide,
+	bool reduceBtPowOf2
+) {
 	if ((HANDLE)hinfile == NULL || iFileLen < 1) {
 		throw gcnew ArgumentException("Invalid Input Maping File.");
 	}
-	void* inview = MapViewOfFile((HANDLE)hinfile, FILE_MAP_READ, 0, 0, 0);
+	::MapView input_file_view((HANDLE)hinfile);
+	void* inview = input_file_view.GetView();
 	if (nullptr == inview) {
 		LPVOID description = ::WinCheckError(L"Failed to Map Input View");
 		auto ex = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
@@ -126,31 +114,35 @@ System::Int32 PicCompress::Compressor::CompressFrom(System::IntPtr hinfile, Syst
 	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
 	parameters.png_quality = quality;
-	parameters.width = 2520;
-	parameters.reduce_by_power_of_2 = true;
+	if (resize) {
+		parameters.width = width;
+		parameters.height = height;
+		parameters.short_side_pixels = shortSide;
+		parameters.long_size_pixels = longSide;
+		parameters.reduce_by_power_of_2 = reduceBtPowOf2;
+		parameters.allow_magnify = false;
+	}
 
 	CSI_Result res;
-	switch (type) {
+	switch (targetType) {
+	case 0:
+		res = csi_compress_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, &parameters);
+		break;
+	case 1:
+		res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
+		break;
 	case 2:
 		res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
 		break;
 	default:
-		res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
-		break;
-	}
-
-	if (0 == UnmapViewOfFile(inview)) {
-		LPVOID description = ::WinCheckError(L"Failed to Unmap Input View");
-		auto ex = gcnew InvalidOperationException(gcnew System::String((LPWSTR)description));
-		LocalFree(description);
-		throw ex;
+		throw gcnew System::ArgumentException(String::Format("Unknown target type: {0}", targetType));
 	}
 
 	if (!res.success) {
 		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
 	}
 	if (res.code < 1 || res.code > 2147483600ull) {
-		throw gcnew InsufficientMemoryException();
+		throw gcnew InsufficientMemoryException(String::Format("Code: {0}", res.code));
 	}
 	return (System::Int32)res.code;
 }

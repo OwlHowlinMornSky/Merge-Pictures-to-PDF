@@ -6,16 +6,12 @@ using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 
 namespace PicMerge {
-	internal class Merger(Parameters param) {
+	internal class Merger(ImageParam ip) {
 
 		protected string StrUnsupported = "Unsupported type.";
 		protected string StrFailedToAdd = "Failed to add into pdf.";
 
-
-		/// <summary>
-		/// 合并之参数。使用第一张图片的尺寸时需要修改，所以不能只读。
-		/// </summary>
-		protected Parameters m_param = param;
+		protected readonly ImageParam m_param = ip;
 
 		/// <summary>
 		/// 用于文件并行方法之加载。
@@ -71,7 +67,9 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					int len = compt.Compressor.CompressFrom(
 						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
-						m_param.compressType, m_param.compressQuality
+						m_param.format, m_param.quality,
+						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
+						m_param.reduceByPowOf2
 					);
 					using var mapstream = compt.ViewStream;
 					using BinaryReader br = new(mapstream);
@@ -91,9 +89,9 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					using Image image = Image.Load(instream);
 					using MemoryStream imgSt = new();
-					switch (m_param.compressType) {
+					switch (m_param.format) {
 					case 2: {
-						int quality = 10 - m_param.compressQuality / 10;
+						int quality = 10 - m_param.quality / 10;
 						PngEncoder encoder = new() {
 							SkipMetadata = true,
 							ColorType = PngColorType.Rgb,
@@ -118,7 +116,7 @@ namespace PicMerge {
 						JpegEncoder encoder = new() {
 							SkipMetadata = true,
 							ColorType = JpegEncodingColor.Rgb,
-							Quality = m_param.compressQuality,
+							Quality = m_param.quality,
 							Interleaved = false
 						};
 						image.SaveAsJpeg(imgSt, encoder);
@@ -186,7 +184,9 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					int len = compt.Compressor.CompressFrom(
 						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
-						m_param.compressType, m_param.compressQuality
+						m_param.format, m_param.quality,
+						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
+						m_param.reduceByPowOf2
 					);
 					using var mapstream = compt.ViewStream;
 					using BinaryReader br = new(mapstream);
@@ -202,9 +202,9 @@ namespace PicMerge {
 					instream.Seek(0, SeekOrigin.Begin);
 					using Image image = Image.Load(instream);
 					using MemoryStream imgSt = new();
-					switch (m_param.compressType) {
+					switch (m_param.format) {
 					case 2: {
-						int quality = 10 - m_param.compressQuality / 10;
+						int quality = 10 - m_param.quality / 10;
 						PngEncoder encoder = new() {
 							SkipMetadata = true,
 							ColorType = PngColorType.Rgb,
@@ -229,7 +229,7 @@ namespace PicMerge {
 						JpegEncoder encoder = new() {
 							SkipMetadata = true,
 							ColorType = JpegEncodingColor.Rgb,
-							Quality = m_param.compressQuality,
+							Quality = m_param.quality,
 							Interleaved = false
 						};
 						image.SaveAsJpeg(imgSt, encoder);

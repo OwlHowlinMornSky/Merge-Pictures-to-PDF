@@ -15,7 +15,9 @@ namespace PicMerge {
 	/// <param name="_keepStruct">保持压缩包内结构</param>
 	/// <param name="param">参数</param>
 	/// <err frag="0x8003" ack="0008"></err>
-	internal partial class MergerArchive(bool _keepStruct, Parameters param) : Merger(param), IMerger {
+	internal partial class MergerArchive(bool _keepStruct, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
+
+		private readonly PageParam m_pp = pp;
 
 		private readonly bool m_keepStruct = _keepStruct;
 
@@ -138,7 +140,7 @@ namespace PicMerge {
 			}
 			tuple.Item2.Insert(index, curImgName);
 
-			if (!pdfTarget.AddImage(imageData, ref m_param, index)) {
+			if (!pdfTarget.AddImage(imageData, in m_pp, index)) {
 				m_result.Add(new FileResult(0x80030006, imgKey, StrFailedToAdd));
 				return;
 			}

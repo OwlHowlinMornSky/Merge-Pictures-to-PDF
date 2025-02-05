@@ -9,7 +9,9 @@ namespace PicMerge {
 	/// <param name="finish1img">完成一个文件的回调</param>
 	/// <param name="param">参数</param>
 	/// <err frag="0x8001" ack="0006"></err>
-	internal class MergerSerial(Action finish1img, Parameters param) : Merger(param), IMerger {
+	internal class MergerSerial(Action finish1img, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
+
+		private readonly PageParam m_pp = pp;
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
@@ -55,7 +57,7 @@ namespace PicMerge {
 				}
 
 				/// 再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出pdf。
-				if (pdfTarget.AddImage(imageData, ref m_param)) {
+				if (pdfTarget.AddImage(imageData, in m_pp)) {
 					result.Add(new FileResult(0x1, files[i]));
 				}
 				else {
@@ -71,7 +73,7 @@ namespace PicMerge {
 					if (imageData == null) {
 						result.Add(new FileResult(0x80010003, file, StrUnsupported));
 					}
-					else if (!pdfTarget.AddImage(imageData, ref m_param)) {
+					else if (!pdfTarget.AddImage(imageData, in m_pp)) {
 						result.Add(new FileResult(0x80010004, file, StrFailedToAdd));
 					}
 					else {

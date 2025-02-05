@@ -58,43 +58,39 @@ namespace PicMerge {
 		/// <param name="imageData">图片数据</param>
 		/// <param name="pdfDocument">PDF文件数据</param>
 		/// <returns>是否成功</returns>
-		internal bool AddImage(ImageData imageData, ref IMerger.Parameters param, int index = -1) {
+		internal bool AddImage(in ImageData imageData, in PageParam param, int index = -1) {
 			index++;
+			bool fixedWidth = (param.fixedType & 1) != 0 && param.width >= 10;
+			bool fixedHeight = (param.fixedType & 2) != 0 && param.height >= 10;
 			try {
 				PageSize pageSize;
 				PageSize imageSize;
 				float width = imageData.GetWidth();
 				float height = imageData.GetHeight();
-				switch (param.pageSizeType) {
-				default:
-				case 1: // 与图片大小一致
-					imageSize = new(width, height);
-					pageSize = imageSize;
-					break;
-				case 2: // 固定宽度
-					if (param.pagesizex == 0) {
-						param.pagesizex = width;
-					}
-					imageSize = new(param.pagesizex, param.pagesizex / width * height);
-					pageSize = imageSize;
-					break;
-				case 3: // 固定大小
-					if (param.pagesizex == 0 || param.pagesizey == 0) {
-						param.pagesizex = width;
-						param.pagesizey = height;
-					}
-					pageSize = new(param.pagesizex, param.pagesizey);
+
+				if (fixedWidth && fixedHeight) { // 固定大小
+					pageSize = new(param.width, param.height);
 					float r = float.Min(
-					1.0f * param.pagesizex / width,
-					1.0f * param.pagesizey / height
-				);
+						1.0f * param.width / width,
+						1.0f * param.height / height
+					);
 					imageSize = new(width * r, height * r);
 					imageSize.SetX((pageSize.GetWidth() - imageSize.GetWidth()) / 2.0f);
 					imageSize.SetY((pageSize.GetHeight() - imageSize.GetHeight()) / 2.0f);
-					break;
 				}
-				pageSize.SetWidth(pageSize.GetWidth());
-				pageSize.SetHeight(pageSize.GetHeight());
+				else if (fixedWidth) { // 固定宽度
+					imageSize = new(param.width, param.width / width * height);
+					pageSize = imageSize;
+				}
+				else if (fixedHeight) { // 固定高度
+					imageSize = new(param.height / height * width, param.height);
+					pageSize = imageSize;
+				}
+				else { // 与图片大小一致
+					imageSize = new(width, height);
+					pageSize = imageSize;
+				}
+
 				PdfPage page = (index < 1 || index > Document.GetNumberOfPages()) ? Document.AddNewPage(pageSize) : Document.AddNewPage(index, pageSize);
 				PdfCanvas canvas = new(page);
 				canvas.AddImageFittedIntoRectangle(imageData, imageSize, false);
