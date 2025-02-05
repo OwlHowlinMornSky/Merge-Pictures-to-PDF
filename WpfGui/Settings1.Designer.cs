@@ -133,7 +133,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2520")]
+        [global::System.Configuration.DefaultSettingValueAttribute("2160")]
         public int CompressResizeShortValue {
             get {
                 return ((int)(this["CompressResizeShortValue"]));
@@ -313,7 +313,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool CompressResizeReduceByPow2 {
             get {
                 return ((bool)(this["CompressResizeReduceByPow2"]));

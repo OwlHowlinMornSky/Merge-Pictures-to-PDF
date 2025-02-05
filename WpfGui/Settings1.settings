@@ -30,7 +30,7 @@
       <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="CompressResizeShortValue" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">2520</Value>
+      <Value Profile="(Default)">2160</Value>
     </Setting>
     <Setting Name="CompressResizeLongValue" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
@@ -78,7 +78,7 @@
       <Value Profile="(Default)">499, 709</Value>
     </Setting>
     <Setting Name="CompressResizeReduceByPow2" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>
 </SettingsFile>
