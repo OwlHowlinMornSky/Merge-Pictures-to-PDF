@@ -35,7 +35,7 @@
     <Setting Name="CompressResizeLongValue" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="PageIsFixed" Type="System.Int32" Scope="User">
+    <Setting Name="PageFixedType" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="PagePageType" Type="System.Int32" Scope="User">

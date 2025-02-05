@@ -44,9 +44,9 @@ namespace WpfGui {
 			Settings1.Default.PagePageType = int.Clamp(Settings1.Default.PagePageType, 0, comboBoxPageSize.Items.Count - 1);
 			comboBoxPageSize.SelectedIndex = Settings1.Default.PagePageType;
 
-			Settings1.Default.PageIsFixed &= 3;
-			radioBtnFixedWidth.IsChecked = (Settings1.Default.PageIsFixed & 1) != 0;
-			bool val = (Settings1.Default.PageIsFixed & 2) != 0;
+			Settings1.Default.PageFixedType &= 3;
+			radioBtnFixedWidth.IsChecked = (Settings1.Default.PageFixedType & 1) != 0;
+			bool val = (Settings1.Default.PageFixedType & 2) != 0;
 			radioBtnFixedHeight.IsChecked = !val;
 			radioBtnFixedHeight.IsChecked = val; // This is to trigger event.
 
@@ -142,7 +142,7 @@ namespace WpfGui {
 			if (!Started)
 				return;
 
-			Settings1.Default.PageIsFixed = sizeType;
+			Settings1.Default.PageFixedType = sizeType;
 		}
 
 		private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
@@ -263,7 +263,7 @@ namespace WpfGui {
 				_stayNoMove: Settings1.Default.IONoMove
 			);
 			PicMerge.PageParam pageParam = new(
-				_fixedType: Settings1.Default.PageIsFixed,
+				_fixedType: Settings1.Default.PageFixedType,
 				_width: Settings1.Default.PageSizeWidth,
 				_height: Settings1.Default.PageSizeHeight
 			);

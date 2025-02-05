@@ -158,12 +158,12 @@ namespace WpfGui {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
-        public int PageIsFixed {
+        public int PageFixedType {
             get {
-                return ((int)(this["PageIsFixed"]));
+                return ((int)(this["PageFixedType"]));
             }
             set {
-                this["PageIsFixed"] = value;
+                this["PageFixedType"] = value;
             }
         }
         
