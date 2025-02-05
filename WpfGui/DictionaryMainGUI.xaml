@@ -42,5 +42,9 @@
     <sys:String x:Key="DetailResizePow2Tip"
 >When reducing image, let the scale be power of 2.
 Reducing is goning on until each measure is not great than your preferred value.</sys:String>
+    <sys:String x:Key="PageDpiTip"
+>This is used to scale the page, not the image.
+The default value is 72.
+The greater this value, the smaller the pdf pages.</sys:String>
     
 </ResourceDictionary>

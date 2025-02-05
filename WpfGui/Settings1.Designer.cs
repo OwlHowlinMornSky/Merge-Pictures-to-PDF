@@ -334,5 +334,17 @@ namespace WpfGui {
                 this["PageFixedWidth"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public uint PageDpi {
+            get {
+                return ((uint)(this["PageDpi"]));
+            }
+            set {
+                this["PageDpi"] = value;
+            }
+        }
     }
 }

@@ -40,6 +40,7 @@ namespace WpfGui {
 
 			textWidth.Text = Settings1.Default.PageSizeWidth.ToString();
 			textHeight.Text = Settings1.Default.PageSizeHeight.ToString();
+			textDpi.Text = Settings1.Default.PageDpi.ToString();
 
 			Settings1.Default.PagePageType = int.Clamp(Settings1.Default.PagePageType, 0, comboBoxPageSize.Items.Count - 1);
 			comboBoxPageSize.SelectedIndex = Settings1.Default.PagePageType;
@@ -109,10 +110,23 @@ namespace WpfGui {
 			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
 			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
 			if (isNum || isNumPad || isControl) {
+				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
 				return;
 			}
 			if (e.Key == Key.Decimal && sender is TextBox box && !box.Text.Contains('.')) {
+				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
 				return; // 允许有一个小数点。
+			}
+			e.Handled = true;
+		}
+
+		private void TextNum_PreviewKeyDown_Int(object sender, KeyEventArgs e) {
+			bool isNum = e.Key >= Key.D0 && e.Key <= Key.D9;
+			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
+			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
+			if (isNum || isNumPad || isControl) {
+				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
+				return;
 			}
 			e.Handled = true;
 		}
@@ -122,14 +136,8 @@ namespace WpfGui {
 		/// </summary>
 		private void BtnPageSize_Changed(object sender, RoutedEventArgs e) {
 			comboBoxPageSize.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
-			if (comboBoxPageSize.IsEnabled && comboBoxPageSize.SelectedIndex == comboBoxPageSize.Items.Count - 1) {
-				textWidth.IsEnabled = true;
-				textHeight.IsEnabled = true;
-			}
-			else {
-				textWidth.IsEnabled = false;
-				textHeight.IsEnabled = false;
-			}
+			textWidth.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
+			textHeight.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
 
 			if (!Started)
 				return;
@@ -139,38 +147,29 @@ namespace WpfGui {
 		}
 
 		private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			if (comboBoxPageSize.SelectedIndex >= 0 && comboBoxPageSize.SelectedIndex == comboBoxPageSize.Items.Count - 1) {
-				textWidth.IsEnabled = true;
-				textHeight.IsEnabled = true;
-				if (!Started)
-					return;
-				Settings1.Default.PagePageType = comboBoxPageSize.SelectedIndex;
-				return;
-			}
-
-			if (comboBoxPageSize.SelectedItem is not ComboBoxItem comboBox) {
+			if (comboBoxPageSize.SelectedItem is not ComboBoxItem boxItem) {
 				MessageBox.Show(this, $"Could not set the page type. ({comboBoxPageSize.SelectedIndex})");
 				return;
 			}
 
-			System.Drawing.Size size;
-			try {
-				var obj = Settings1.Default[$"Paper{comboBox.Content}"];
-				if (obj is not System.Drawing.Size _size) {
-					MessageBox.Show(this, $"Could not load size data of page type \"{comboBox.Content}\".");
+			if (comboBoxPageSize.SelectedIndex < comboBoxPageSize.Items.Count - 1) {
+				System.Drawing.Size size;
+				try {
+					var obj = Settings1.Default[$"Paper{boxItem.Content}"];
+					if (obj is not System.Drawing.Size _size) {
+						MessageBox.Show(this, $"Could not load size data of page type \"{boxItem.Content}\".");
+						return;
+					}
+					size = _size;
+				}
+				catch {
+					MessageBox.Show(this, $"Could not load size data of page type \"{boxItem.Content}\".");
 					return;
 				}
-				size = _size;
+				textWidth.Text = size.Width.ToString();
+				textHeight.Text = size.Height.ToString();
+				textDpi.Text = "72";
 			}
-			catch {
-				MessageBox.Show(this, $"Could not load size data of page type \"{comboBox.Content}\".");
-				return;
-			}
-			textWidth.Text = size.Width.ToString();
-			textHeight.Text = size.Height.ToString();
-
-			textWidth.IsEnabled = false;
-			textHeight.IsEnabled = false;
 
 			if (!Started)
 				return;
@@ -183,6 +182,10 @@ namespace WpfGui {
 
 		private void PageSizeTextChangedH(object sender, TextChangedEventArgs e) {
 			Settings1.Default.PageSizeHeight = float.TryParse(textHeight.Text, out float res) ? res : 0;
+		}
+
+		private void PageDpiTextChanged(object sender, TextChangedEventArgs e) {
+			Settings1.Default.PageDpi = uint.TryParse(textDpi.Text, out uint res) ? res : 0;
 		}
 
 		private void IoCheckedChanged(object sender, RoutedEventArgs e) {
@@ -260,7 +263,8 @@ namespace WpfGui {
 				(Settings1.Default.PageFixedHeight ? PicMerge.PageParam.FixedType.HeightFixed : 0) |
 				(Settings1.Default.PageFixedWidth ? PicMerge.PageParam.FixedType.WidthFixed : 0),
 				_width: Settings1.Default.PageSizeWidth,
-				_height: Settings1.Default.PageSizeHeight
+				_height: Settings1.Default.PageSizeHeight,
+				_dpi: Settings1.Default.PageDpi
 			);
 			PicMerge.ImageParam imageParam = new(
 				_compress: Settings1.Default.IOCompress,

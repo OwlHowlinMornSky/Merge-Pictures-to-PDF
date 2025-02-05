@@ -42,5 +42,9 @@
     <sys:String x:Key="DetailResizePow2Tip"
 >缩小图片时，保持缩放比例为2的幂。
 缩小到图片各个尺寸满足设置的值为止。</sys:String>
+    <sys:String x:Key="PageDpiTip"
+>该参数用来缩放 PDF 页面。
+默认值为 72。
+值越大，PDF 页面越小。</sys:String>
 
 </ResourceDictionary>

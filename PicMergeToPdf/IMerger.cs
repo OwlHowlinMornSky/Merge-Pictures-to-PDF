@@ -1,7 +1,7 @@
 ﻿
 namespace PicMerge {
 	public readonly struct PageParam(
-		PageParam.FixedType _fixedType, float _width, float _height
+		PageParam.FixedType _fixedType, float _width, float _height, uint _dpi
 	) {
 		[Flags]
 		public enum FixedType {
@@ -24,6 +24,11 @@ namespace PicMerge {
 		/// If this is less than 10, "height fixed" is disabled.
 		/// </summary>
 		public readonly float height = _height;
+		/// <summary>
+		/// It is used to scale page.
+		/// The greater the page smaller.
+		/// </summary>
+		public readonly uint dpi = _dpi;
 	}
 	public readonly struct ImageParam(
 		bool _compress, int _format, int _quality,
