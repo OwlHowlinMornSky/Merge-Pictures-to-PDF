@@ -180,16 +180,11 @@ namespace PicMerge {
 						}).Count();
 					}
 					if (archiveCnt == files.Count) { // 只有压缩文件
-						files.Sort(StrCmpLogicalW);
-						foreach (string archivePath in files) {
-							waitings.Enqueue(new TaskInputData(TaskInputData.Type.Archive, [archivePath]));
-						}
-						if (m_haveFailedFiles) {
-							PopBoxWarning(Logger.FilePath);
-						}
-						return;
+						waitings.Enqueue(new TaskInputData(TaskInputData.Type.Archive, files));
 					}
-					waitings.Enqueue(new TaskInputData(TaskInputData.Type.FileNotArchive, files));
+					else {
+						waitings.Enqueue(new TaskInputData(TaskInputData.Type.FileNotArchive, files));
+					}
 				}
 			}
 			/// 正常情况下的处理。不考虑压缩文件。
@@ -245,11 +240,10 @@ namespace PicMerge {
 				break;
 			}
 			case TaskInputData.Type.Archive: {
-				string archivePath = data.files[0];
-				string outdir = Path.ChangeExtension(archivePath, "[Merged]");
+				string outdir = "";
 				if (!m_param.stayNoMove)
-					outdir = Path.Combine(m_param.destinationPath, Path.GetFileName(outdir));
-				ProcessArchive(archivePath, outdir);
+					outdir = m_param.destinationPath;
+				ProcessArchive(data.files, outdir);
 				break;
 			}
 			default:
@@ -289,14 +283,16 @@ namespace PicMerge {
 			CheckResultListFailed(title ?? outputPath, ref result);
 		}
 
-		private void ProcessArchive(string filePath, string outputPath) {
+		private void ProcessArchive(List<string> files, string outputPath) {
+			files.Sort(StrCmpLogicalW);
 			using var merger = IMerger.CreateArchiveConverter(
+				CallbackFinishOneImgFile,
+				m_param.stayNoMove,
 				m_param.keepStruct,
 				m_internalParam.pp,
 				m_internalParam.ip
 			);
-			List<IMerger.FileResult> failed = merger.Process(outputPath, [filePath]);
-			CallbackFinishOneImgFile();
+			List<IMerger.FileResult> failed = merger.Process(outputPath, files);
 			CallbackFinishAllImgFile();
 			CheckResultListFailed(outputPath, ref failed);
 		}

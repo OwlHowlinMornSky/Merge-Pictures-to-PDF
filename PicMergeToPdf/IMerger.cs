@@ -55,11 +55,13 @@ namespace PicMerge {
 		}
 
 		public static IMerger CreateArchiveConverter(
+			Action finish1img,
+			bool stayNoMove,
 			bool keepStruct,
 			PageParam pp,
 			ImageParam ip
 		) {
-			return new MergerArchive(keepStruct, pp, ip);
+			return new MergerArchive(finish1img, stayNoMove, keepStruct, pp, ip);
 		}
 
 		/// <summary>
