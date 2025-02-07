@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.IO;
+using PicMerge;
 
 namespace WpfGui {
 	/// <summary>
@@ -68,7 +69,7 @@ namespace WpfGui {
 			lock (m_lockBar) {
 				double ratio = 100.0 * i / n;
 				App.Current.Dispatcher.Invoke(() => {
-					labelTotal.Content = string.Format(App.Current.FindResource("HaveFinishedPercent").ToString() ?? "{0:F2}", ratio);
+					labelTotal.Content = string.Format(App.Current.TryFindResource("HaveFinishedPercent").ToString() ?? "{0:F2}", ratio);
 					porgBarTotal.Value = ratio;
 				});
 			}
@@ -80,17 +81,18 @@ namespace WpfGui {
 		private void BarSetFinish() {
 			lock (m_lockBar) {
 				App.Current.Dispatcher.Invoke(() => {
-					labelTotal.Content = App.Current.FindResource("Ready").ToString();
+					labelTotal.Content = App.Current.TryFindResource("Ready").ToString();
 					porgBarTotal.Value = 100.0;
 				});
 			}
 		}
 
-		private void PopWarning(string msg) {
+		private void PopWarning(string logPath) {
 			App.Current.Dispatcher.BeginInvoke(() => {
 				MessageBox.Show(
-					this, msg,
-					$"{Title}: {App.Current.FindResource("Warning")}",
+					this,
+					string.Format(App.Current.TryFindResource("CannotProcess") as string ?? "Failed files in log: {0}", logPath),
+					$"{Title}: {App.Current.TryFindResource("Warning")}",
 					MessageBoxButton.OK,
 					MessageBoxImage.Warning
 				);
@@ -234,11 +236,11 @@ namespace WpfGui {
 				return;
 			}
 			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length <= 0) {
-				await PopErrorAsync(App.Current.FindResource("InvalidDrop").ToString() ?? "Error.");
+				await PopErrorAsync(App.Current.TryFindResource("InvalidDrop").ToString() ?? "Error.");
 				return;
 			}
 			if (m_processor.IsRunning()) {
-				await PopErrorAsync(App.Current.FindResource("WaitForCurrentTask").ToString() ?? "Error.");
+				await PopErrorAsync(App.Current.TryFindResource("WaitForCurrentTask").ToString() ?? "Error.");
 				return;
 			}
 			BarSetNum(0, 1);
@@ -278,7 +280,7 @@ namespace WpfGui {
 			);
 			bool succeed = await m_processor.StartAsync(paths, pageParam, imageParam, ioParam);
 			if (!succeed) {
-				await PopErrorAsync(App.Current.FindResource("WaitForCurrentTask").ToString() ?? "Error.");
+				await PopErrorAsync(App.Current.TryFindResource("WaitForCurrentTask").ToString() ?? "Error.");
 			}
 			return;
 		}
@@ -290,7 +292,7 @@ namespace WpfGui {
 			if (m_processor.IsRunning()) {
 				MessageBox.Show(
 					this,
-					App.Current.FindResource("WaitForCurrentTask").ToString(),
+					App.Current.TryFindResource("WaitForCurrentTask").ToString(),
 					Title,
 					MessageBoxButton.OK,
 					MessageBoxImage.Information
@@ -312,7 +314,7 @@ namespace WpfGui {
 					// Configure open folder dialog box
 					Microsoft.Win32.OpenFolderDialog dialog = new() {
 						Multiselect = false,
-						Title = $"{Title}: {App.Current.FindResource("ChooseDestinationDir").ToString() ?? "output location"}",
+						Title = $"{Title}: {App.Current.TryFindResource("ChooseDestinationDir").ToString() ?? "output location"}",
 						DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
 						InitialDirectory = Path.GetDirectoryName(defpath)
 					};
@@ -333,7 +335,7 @@ namespace WpfGui {
 				App.Current.Dispatcher.Invoke(() => {
 					MessageBox.Show(
 						this, msg,
-						$"{Title}: {App.Current.FindResource("Error")}",
+						$"{Title}: {App.Current.TryFindResource("Error")}",
 						MessageBoxButton.OK,
 						MessageBoxImage.Error
 					);

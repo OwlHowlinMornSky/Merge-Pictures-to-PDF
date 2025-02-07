@@ -1,27 +1,17 @@
-﻿using iText.IO.Image;
-using iText.Kernel.Pdf.Action;
-using System.Runtime.InteropServices;
-using static PicMerge.IMerger;
+﻿using System.Runtime.InteropServices;
 
 namespace PicMerge {
 	/// <summary>
 	/// 介于 图形界面 和 合成器 之间的 处理器。
 	/// </summary>
-	/// <param name="guiMain">对应的界面的窗口</param>
 	/// <param name="setBarNum">设置进度条进度的回调</param>
 	/// <param name="setBarFinish">设置进度条完成的回调</param>
+	/// <param name="warningBox">用于界面弹窗警告的回调</param>
 	public partial class Processor(
 		Action<int, int> setBarNum,
 		Action setBarFinish,
 		Action<string> warningBox
-		) {
-
-		private readonly struct SaveParameters(PicMerge.PageParam _pp, PicMerge.ImageParam _ip) {
-			public readonly PicMerge.PageParam pp = _pp;
-			public readonly PicMerge.ImageParam ip = _ip;
-		}
-		private SaveParameters m_internalParam;
-
+	) {
 		private struct TaskInputData(TaskInputData.Type _type, List<string> _files) {
 			public enum Type : byte {
 				None = 0,
@@ -37,6 +27,13 @@ namespace PicMerge {
 			public int value = _v;
 		}
 
+		private readonly struct SaveParameters(PageParam _pp, ImageParam _ip) {
+			public readonly PageParam pp = _pp;
+			public readonly ImageParam ip = _ip;
+		}
+		private SaveParameters m_internalParam;
+		private IOParam m_param;
+
 		/// <summary>
 		/// 修改进度条进度 的 回调。
 		/// </summary>
@@ -50,10 +47,8 @@ namespace PicMerge {
 		/// </summary>
 		private readonly Action<string> PopBoxWarning = warningBox;
 
-		private IOParam m_param;
-
 		/// <summary>
-		/// 防止多个线程同时start的锁。
+		/// 防止多次start的锁。
 		/// </summary>
 		private readonly Count m_lockForRunning = new(0);
 
@@ -65,6 +60,11 @@ namespace PicMerge {
 		/// 报告完成的图片计数。
 		/// </summary>
 		private readonly Count m_finishedImg = new(0);
+
+		/// <summary>
+		/// 任务过程中是否处理到报错。
+		/// </summary>
+		private bool m_haveFailedFiles = false;
 
 		/// <summary>
 		/// 用于子任务报告完成一张图片 的 回调目标。
@@ -116,7 +116,9 @@ namespace PicMerge {
 			}
 			m_param = param;
 			m_internalParam = new(pp, ip);
+			Logger.Init();
 			await Task.Run(() => { Process(paths); });
+			Logger.Reset();
 			lock (m_lockForRunning) {
 				m_lockForRunning.value = 0;
 			}
@@ -128,7 +130,6 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="paths">要处理的文件/文件夹</param>
 		private void Process(string[] paths) {
-			bool onlyArchive = false;
 			Queue<TaskInputData> waitings = [];
 			{
 				/// 拖放进入的文件列表 通常 只 包括 文件与文件夹。零散文件 即 直接被拖入的文件。
@@ -154,13 +155,12 @@ namespace PicMerge {
 
 				/// 准备子任务。
 				/// 报告无法处理的列表。
+				m_haveFailedFiles = false;
 				if (unknown.Count > 0) {
-					string msg = App.Current.FindResource("CannotProcess").ToString() ?? "Cannot process:";
 					foreach (string str in unknown) {
-						msg += "\r\n";
-						msg += str;
+						Logger.Log($"[Cannot Process] \"{str}\".");
 					}
-					PopBoxWarning(msg);
+					m_haveFailedFiles = true;
 				}
 				/// 文件夹。
 				if (directories.Count > 0) {
@@ -184,28 +184,20 @@ namespace PicMerge {
 						foreach (string archivePath in files) {
 							waitings.Enqueue(new TaskInputData(TaskInputData.Type.Archive, [archivePath]));
 						}
-						onlyArchive = true;
+						if (m_haveFailedFiles) {
+							PopBoxWarning(Logger.FilePath);
+						}
+						return;
 					}
-					else {
-						waitings.Enqueue(new TaskInputData(TaskInputData.Type.FileNotArchive, files));
-					}
+					waitings.Enqueue(new TaskInputData(TaskInputData.Type.FileNotArchive, files));
 				}
 			}
-			{
-				int totalCnt = waitings.Count;
-				Queue<Task> tasks = [];
-				/// 文件级并行，并发2个子任务，避免1个PDF写入时全部等待。
-				for (int i = 0, n = onlyArchive ? Environment.ProcessorCount : 2; i < n; i++) {
-					if (waitings.Count < 1)
-						break;
-					tasks.Enqueue(Task.Run(() => { ProcessOneItem(waitings.Dequeue()); }));
-				}
-				int landedCnt = 0;
-				while (landedCnt < totalCnt) {
-					tasks.Peek().Wait();
-					if (waitings.Count > 0)
-						tasks.Enqueue(Task.Run(() => { ProcessOneItem(waitings.Dequeue()); }));
-				}
+			/// 正常情况下的处理。不考虑压缩文件。
+			while (waitings.Count > 0) {
+				ProcessOneItem(waitings.Dequeue());
+			}
+			if (m_haveFailedFiles) {
+				PopBoxWarning(Logger.FilePath);
 			}
 		}
 
@@ -371,11 +363,10 @@ namespace PicMerge {
 		private void CheckResultListFailed(string title, ref List<PicMerge.IMerger.FileResult> result) {
 			var failed = result.Where(r => r.code > 0x80000000);
 			if (failed.Any()) {
-				string msg = string.Format(App.Current.FindResource("CannotMerge").ToString() ?? "Failed to merge into {0}:", title);
 				foreach (var str in failed) {
-					msg += $"\r\n<{str.filename}> {str.description}";
+					Logger.Log($"[Cannot Merge] At \"{title}\" from \"{str.filename}\", because \"{str.description}\".");
 				}
-				PopBoxWarning(msg);
+				m_haveFailedFiles = true;
 			}
 		}
 

@@ -104,6 +104,4 @@ namespace PicMerge {
 		/// </summary>
 		public readonly bool reduceByPowOf2 = _reduceBy2;
 	}
-
-
 }

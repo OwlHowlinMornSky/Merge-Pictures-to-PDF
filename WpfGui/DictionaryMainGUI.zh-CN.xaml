@@ -1,7 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                    xml:space="preserve">
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <sys:String x:Key="PageSizeBox">页面尺寸</sys:String>
     <sys:String x:Key="PageSizeWidthFixed">固定宽度</sys:String>
@@ -23,8 +22,10 @@
     <sys:String x:Key="InvalidDrop">拖入的数据不合规。</sys:String>
     <sys:String x:Key="WaitForCurrentTask">请等待当前任务完成。</sys:String>
 
-    <sys:String x:Key="CannotProcess">以下内容无法处理：</sys:String>
-    <sys:String x:Key="CannotMerge">以下文件无法加入“{0}”：</sys:String>
+    <sys:String x:Key="CannotProcess" xml:space="preserve"
+>一些文件无法处理。
+查看日志以了解详情：
+{0}</sys:String>
     <sys:String x:Key="ChooseDestinationDir">选择输出位置</sys:String>
 
     <sys:String x:Key="DetailTitle">更多选项</sys:String>
@@ -39,10 +40,10 @@
     <sys:String x:Key="DetailPreferredLong">长边长度</sys:String>
     <sys:String x:Key="DetailResizePow2">按2的幂次缩小</sys:String>
 
-    <sys:String x:Key="DetailResizePow2Tip"
+    <sys:String x:Key="DetailResizePow2Tip" xml:space="preserve"
 >缩小图片时，保持缩放比例为2的幂。
 缩小到图片各个尺寸满足设置的值为止。</sys:String>
-    <sys:String x:Key="PageDpiTip"
+    <sys:String x:Key="PageDpiTip" xml:space="preserve"
 >该参数用来缩放 PDF 页面。
 默认值为 72。
 值越大，PDF 页面越小。</sys:String>
