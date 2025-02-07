@@ -56,7 +56,8 @@ namespace PicMerge {
 		/// 向 PDF 添加一页图片。
 		/// </summary>
 		/// <param name="imageData">图片数据</param>
-		/// <param name="pdfDocument">PDF文件数据</param>
+		/// <param name="param">页面参数</param>
+		/// <param name="index">图片插入在第几页，从1开始</param>
 		/// <returns>是否成功</returns>
 		internal bool AddImage(in ImageData imageData, in PageParam param, int index = -1) {
 			index++;

@@ -13,7 +13,8 @@ namespace PicMerge {
 	/// 目前，该类构造一个只能运行一次。
 	/// </summary>
 	/// <param name="_keepStruct">保持压缩包内结构</param>
-	/// <param name="param">参数</param>
+	/// <param name="pp">页面参数</param>
+	/// <param name="ip">图片参数</param>
 	/// <err frag="0x8003" ack="0008"></err>
 	internal partial class ArchiveHandler(bool _keepStruct, PageParam pp, ImageParam ip) : Merger(ip), IDisposable {
 
@@ -28,7 +29,7 @@ namespace PicMerge {
 
 		private Dictionary<string, Tuple<PdfTarget, List<string>>> m_pdfs = [];
 
-		private List<FileResult> m_result = [];
+		private readonly List<FileResult> m_result = [];
 
 		private string m_outputDir = "";
 
@@ -42,7 +43,7 @@ namespace PicMerge {
 		/// 合并文件。内部串行并行由具体对象决定。
 		/// </summary>
 		/// <param name="outputfilepath">输出文件路径</param>
-		/// <param name="files">输入文件的列表</param>
+		/// <param name="file">输入文件</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
 		public virtual List<FileResult> Process(string outputfilepath, string file, string? title = null) {

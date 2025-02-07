@@ -7,7 +7,8 @@ namespace PicMerge {
 	/// 目前，该类构造一个只能运行一次。
 	/// </summary>
 	/// <param name="finish1img">完成一个文件的回调</param>
-	/// <param name="param">参数</param>
+	/// <param name="pp">页面参数</param>
+	/// <param name="ip">图片参数</param>
 	/// <err frag="0x8002" ack="0003"></err>
 	internal class MergerParallel(Action finish1img, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
 
