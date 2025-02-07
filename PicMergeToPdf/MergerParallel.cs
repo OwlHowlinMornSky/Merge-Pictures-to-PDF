@@ -38,8 +38,8 @@ namespace PicMerge {
 			Queue<Task<ImageData?>> tasks = [];
 
 			int launchedCnt = 0;
-			/// 按电脑核心数启动load（由于上层发起两个任务，因此减半），间隔一段时间加入避免同时IO。
-			for (int i = 0, n = Environment.ProcessorCount / 2; i < n && launchedCnt < files.Count; i++) {
+			/// 按电脑核心数启动load，间隔一段时间加入避免同时IO。
+			for (int i = 0, n = int.Max(Environment.ProcessorCount - 1, 1); i < n && launchedCnt < files.Count; i++) {
 				tasks.Enqueue(ParaLoad(files[launchedCnt++]));
 				Thread.Sleep(m_sleepMs);
 			}
