@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.IO;
 
 namespace WpfGui {
 	/// <summary>
@@ -18,7 +19,7 @@ namespace WpfGui {
 		/// <summary>
 		/// 处理拖入数据 的 对象。
 		/// </summary>
-		private readonly Processor m_processor;
+		private readonly PicMerge.Processor m_processor;
 
 		public MainWindow() {
 			if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase)) {
@@ -29,7 +30,7 @@ namespace WpfGui {
 			}
 			InitializeComponent();
 
-			m_processor = new Processor(this, BarSetNum, BarSetFinish); // 不能放上去，因为要用this。
+			m_processor = new PicMerge.Processor(BarSetNum, BarSetFinish, PopWarning);
 
 			int index = 0;
 			foreach (string paperType in Settings1.Default.Papers.Split(',')) {
@@ -83,6 +84,17 @@ namespace WpfGui {
 					porgBarTotal.Value = 100.0;
 				});
 			}
+		}
+
+		private void PopWarning(string msg) {
+			App.Current.Dispatcher.BeginInvoke(() => {
+				MessageBox.Show(
+					this, msg,
+					$"{Title}: {App.Current.FindResource("Warning")}",
+					MessageBoxButton.OK,
+					MessageBoxImage.Warning
+				);
+			});
 		}
 
 		/// <summary>
@@ -216,47 +228,34 @@ namespace WpfGui {
 		/// <summary>
 		/// 拖放的通知。只接收文件。交予Processor处理。不能 同时有两次拖放在处理。
 		/// </summary>
-		private void Window_Drop(object sender, DragEventArgs e) {
+		private async void Window_Drop(object sender, DragEventArgs e) {
 			Activate();
 			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
 				return;
 			}
-			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths) {
-				Task.Run(() => {
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(
-							this,
-							App.Current.FindResource("InvalidDrop").ToString(),
-							$"{Title}: {App.Current.FindResource("Error")}",
-							MessageBoxButton.OK,
-							MessageBoxImage.Error
-						);
-					});
-				});
+			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length <= 0) {
+				await PopErrorAsync(App.Current.FindResource("InvalidDrop").ToString() ?? "Error.");
 				return;
 			}
 			if (m_processor.IsRunning()) {
-				Task.Run(() => {
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(
-							this,
-							App.Current.FindResource("WaitForCurrentTask").ToString(),
-							$"{Title}: {App.Current.FindResource("Error")}",
-							MessageBoxButton.OK,
-							MessageBoxImage.Error
-						);
-					});
-				});
-				return;
-			}
-			if (paths.Length <= 0) {
+				await PopErrorAsync(App.Current.FindResource("WaitForCurrentTask").ToString() ?? "Error.");
 				return;
 			}
 			BarSetNum(0, 1);
-			IOParam ioParam = new(
+
+			PicMerge.IOParam ioParam;
+			string destDir = "";
+			if (!Settings1.Default.IONoMove) {
+				var res = await AskForDestinationAsync(paths[0]);
+				if (res == null)
+					return;
+				destDir = res;
+			}
+			ioParam = new(
 				_recursion: Settings1.Default.IORecurse,
 				_keepStruct: Settings1.Default.IOKeepStruct,
-				_stayNoMove: Settings1.Default.IONoMove
+				_stayNoMove: Settings1.Default.IONoMove,
+				_targetPath: destDir
 			);
 			PicMerge.PageParam pageParam = new(
 				_fixedType:
@@ -277,18 +276,9 @@ namespace WpfGui {
 				_longSide: Settings1.Default.CompressResizeLong ? Settings1.Default.CompressResizeLongValue : 0,
 				_reduceBy2: Settings1.Default.CompressResizeReduceByPow2
 			);
-			if (m_processor.Start(paths, pageParam, imageParam, ioParam) == false) {
-				Task.Run(() => {
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(
-							this,
-							App.Current.FindResource("WaitForCurrentTask").ToString(),
-							$"{Title}: {App.Current.FindResource("Error")}",
-							MessageBoxButton.OK,
-							MessageBoxImage.Error
-						);
-					});
-				});
+			bool succeed = await m_processor.StartAsync(paths, pageParam, imageParam, ioParam);
+			if (!succeed) {
+				await PopErrorAsync(App.Current.FindResource("WaitForCurrentTask").ToString() ?? "Error.");
 			}
 			return;
 		}
@@ -308,6 +298,47 @@ namespace WpfGui {
 				e.Cancel = true;
 			}
 			Settings1.Default.Save();
+		}
+
+		/// <summary>
+		/// 询问目标目录。
+		/// </summary>
+		/// <param name="defpath">初始目录</param>
+		/// <returns>选择的目录，或者 null 表示取消</returns>
+		private async Task<string?> AskForDestinationAsync(string defpath) {
+			return await Task.Run(() => {
+				string? res = null;
+				App.Current.Dispatcher.Invoke(() => {
+					// Configure open folder dialog box
+					Microsoft.Win32.OpenFolderDialog dialog = new() {
+						Multiselect = false,
+						Title = $"{Title}: {App.Current.FindResource("ChooseDestinationDir").ToString() ?? "output location"}",
+						DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+						InitialDirectory = Path.GetDirectoryName(defpath)
+					};
+
+					// Show open folder dialog box
+					// Process open folder dialog box results
+					if (dialog.ShowDialog(this) == true) {
+						// Get the selected folder
+						res = dialog.FolderName;
+					}
+				});
+				return res;
+			});
+		}
+
+		private async Task PopErrorAsync(string msg) {
+			await Task.Run(() => {
+				App.Current.Dispatcher.Invoke(() => {
+					MessageBox.Show(
+						this, msg,
+						$"{Title}: {App.Current.FindResource("Error")}",
+						MessageBoxButton.OK,
+						MessageBoxImage.Error
+					);
+				});
+			});
 		}
 	}
 }
