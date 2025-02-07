@@ -356,11 +356,11 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="title">内定标题</param>
 		/// <param name="result">结果列表</param>
-		private void CheckResultListFailed(string title, ref List<PicMerge.IMerger.FileResult> result) {
+		private void CheckResultListFailed(string title, ref List<IMerger.FileResult> result) {
 			var failed = result.Where(r => r.code > 0x80000000);
 			if (failed.Any()) {
 				foreach (var str in failed) {
-					Logger.Log($"[Cannot Merge] At \"{title}\" from \"{str.filename}\", because \"{str.description}\".");
+					Logger.Log($"[Cannot Merge] At \"{title}\" from \"{str.filename}\", because \"{str.description}\" (Code: {str.code:X}).");
 				}
 				m_haveFailedFiles = true;
 			}
