@@ -4,17 +4,6 @@ using namespace System;
 
 namespace PicCompress {
 
-public ref struct CompressParam {
-	int targetFormat;
-	int quality;
-	bool resize;
-	int width;
-	int height;
-	int shortSide;
-	int longSide;
-	bool reduceBtPowOf2;
-};
-
 /**
  * @brief 图片压缩器。
  */
@@ -29,9 +18,16 @@ public:
 	 * @return 已写入输出文件 之 大小（字节）。
 	 */
 	static System::Int32 Compress(
-		[Runtime::InteropServices::InAttribute] array<Byte>^% input,
+		[Runtime::InteropServices::InAttribute]array<Byte>^% input,
 		array<Byte>^% output,
-		CompressParam param
+		int targetFormat,
+		int quality,
+		bool resize,
+		int width,
+		int height,
+		int shortSide,
+		int longSide,
+		bool reduceBtPowOf2
 	);
 };
 
