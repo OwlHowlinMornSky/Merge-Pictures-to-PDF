@@ -18,11 +18,13 @@ namespace PicMerge {
 		}
 
 		internal static Type CheckType(Stream file) {
-			Type res = Type.Unknown;
-
 			BinaryReader br = new(file);
-
 			var b = br.ReadBytes(8);
+			return CheckType(b);
+		}
+
+		internal static Type CheckType(byte[] b) {
+			Type res = Type.Unknown;
 
 			if (b[0] == 0xFF && b[1] == 0xD8) {
 				res = Type.JPEG;

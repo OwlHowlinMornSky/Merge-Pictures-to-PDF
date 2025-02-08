@@ -67,7 +67,7 @@ namespace PicMerge {
 		/// <param name="inFile">欲加载之文件</param>
 		/// <param name="compt">压缩器</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private ImageData? LoadImageInMemory_Compress(FileType.Type type, ref byte[] inbuffer) {
+		protected ImageData? LoadImageInMemory_Compress(FileType.Type type, ref byte[] inbuffer) {
 			ImageData? imageData;
 			switch (type) {
 			case FileType.Type.JPEG: // CSI, Img#, Direct.
@@ -153,7 +153,7 @@ namespace PicMerge {
 		/// <param name="inFile">欲加载之文件</param>
 		/// <param name="compt">压缩器</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private ImageData? LoadImageInMemory_Direct(FileType.Type type, ref byte[] inbuffer) {
+		protected ImageData? LoadImageInMemory_Direct(FileType.Type type, ref byte[] inbuffer) {
 			ImageData? imageData;
 			switch (type) {
 			case FileType.Type.JPEG: // CSI, Img#, Direct.

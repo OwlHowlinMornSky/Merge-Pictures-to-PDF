@@ -17,17 +17,17 @@ namespace PicMerge {
 		/// <summary>
 		/// 合并文件。内部串行并行由具体对象决定。
 		/// </summary>
-		/// <param name="outputfilepath">输出文件路径</param>
+		/// <param name="destnationDir">输出文件路径</param>
 		/// <param name="files">输入文件的列表</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public virtual List<FileResult> Process(string outputfilepath, List<string> files, string? title = null) {
+		public virtual List<FileResult> Process(string destnationDir, List<string> files, string? title = null) {
 			List<FileResult> res = [];
 			int launchedCnt = 0;
 
 			List<Task<List<FileResult>>> tasks = [];
 			for (int i = 0, n = int.Max(Environment.ProcessorCount - 1, 1); i < n && launchedCnt < files.Count; ++i) {
-				tasks.Add(ProcessOneArchiveAsync(files[launchedCnt++], outputfilepath));
+				tasks.Add(ProcessOneArchiveAsync(files[launchedCnt++], destnationDir));
 			}
 
 			int landedCnt = 0;
@@ -35,7 +35,7 @@ namespace PicMerge {
 				int index = Task.WaitAny([.. tasks]);
 				Task<List<FileResult>> finishedTask = tasks[index];
 				if (launchedCnt < files.Count)
-					tasks[index] = ProcessOneArchiveAsync(files[launchedCnt++], outputfilepath);
+					tasks[index] = ProcessOneArchiveAsync(files[launchedCnt++], destnationDir);
 				var finishedRes = finishedTask.Result;
 				res.AddRange(finishedRes);
 				landedCnt++;
@@ -45,16 +45,17 @@ namespace PicMerge {
 			return res;
 		}
 
-		public Task<List<FileResult>> ProcessOneArchiveAsync(string archivePath, string outputfilepath) {
-			return Task.Run(() => { return ProcessOneArchive(archivePath, outputfilepath); });
+		public Task<List<FileResult>> ProcessOneArchiveAsync(string archivePath, string destDir) {
+			return Task.Run(() => { return ProcessOneArchive(archivePath, destDir); });
 		}
 
-		public List<FileResult> ProcessOneArchive(string archivePath, string outputfilepath) {
+		public List<FileResult> ProcessOneArchive(string archivePath, string destDir) {
 			string outdir = Path.ChangeExtension(archivePath, "[Merged]");
 			if (!m_stayNomove)
-				outdir = Path.Combine(outputfilepath, Path.GetFileName(outdir));
+				outdir = Path.Combine(destDir, Path.GetFileName(outdir));
+			EnsureFolderExisting(outdir);
 			ArchiveHandler handler = new(m_keepStruct, m_pp, m_ip);
-			return handler.Process(archivePath, outdir);
+			return handler.Process(outdir, archivePath);
 		}
 	}
 }

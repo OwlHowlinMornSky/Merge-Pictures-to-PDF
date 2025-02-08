@@ -2,6 +2,7 @@
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
+using System.Buffers;
 using System.Runtime.InteropServices;
 using static PicMerge.IMerger;
 
@@ -35,7 +36,7 @@ namespace PicMerge {
 		/// <param name="file">输入文件</param>
 		/// <param name="title">内定标题</param>
 		/// <returns>无法合入的文件的列表</returns>
-		public virtual List<FileResult> Process(string outputfilepath, string file, string? title = null) {
+		public virtual List<FileResult> Process(string outputfilepath, string file) {
 			m_archivePath = file;
 			m_outputDir = outputfilepath;
 			try {
@@ -60,9 +61,8 @@ namespace PicMerge {
 					}
 					string imgKey = entry.Key;
 
-					using EntryStream entryStream = reader.OpenEntryStream();
 					prevTask?.Wait();
-					prevTask = CompressAndAddAsync(outputfilepath, imgKey, entryStream);
+					prevTask = CompressAndAddAsync(outputfilepath, imgKey, reader.OpenEntryStream(), entry.Size);
 				}
 				prevTask?.Wait();
 
@@ -78,54 +78,87 @@ namespace PicMerge {
 			return m_result;
 		}
 
-		private async Task CompressAndAddAsync(string? title, string imgKey, Stream imgMapFile) {
-			ImageData? imageData = await Task.Run(() => { return ReadImage(imgMapFile); });
-			if (imageData == null) {
-				m_result.Add(new FileResult(0x80030004, imgKey, StrUnsupported));
-				return;
-			}
-
-			string imgDirChain = Path.GetDirectoryName(imgKey) ?? "";
-
-			if (!m_pdfs.ContainsKey(imgDirChain)) {
-				string pdfDir = Path.Combine(m_outputDir, imgDirChain);
-				string pdfName;
-				if (string.IsNullOrEmpty(imgDirChain)) {
-					pdfName = "FilesAtRoot";
+		private async Task CompressAndAddAsync(string? title, string imgKey, EntryStream imgFileStream, long imgSize) {
+			try {
+				ImageData? imageData = await Task.Run(() => { return ReadImageWithOutLock(imgFileStream, imgSize); });
+				if (imageData == null) {
+					m_result.Add(new FileResult(0x80030004, imgKey, StrUnsupported));
+					return;
 				}
-				else {
-					pdfName = Path.GetFileName(imgDirChain);
-					pdfDir = Path.GetDirectoryName(pdfDir) ?? pdfDir;
+
+				string imgDirChain = Path.GetDirectoryName(imgKey) ?? "";
+
+				if (!m_pdfs.ContainsKey(imgDirChain)) {
+					string pdfDir = Path.Combine(m_outputDir, imgDirChain);
+					string pdfName;
+					if (string.IsNullOrEmpty(imgDirChain)) {
+						pdfName = "FilesAtRoot";
+					}
+					else {
+						pdfName = Path.GetFileName(imgDirChain);
+						pdfDir = Path.GetDirectoryName(pdfDir) ?? pdfDir;
+					}
+					if (!m_keepStruct)
+						pdfDir = m_outputDir;
+					string pdfPath = EnumFileName(pdfDir, pdfName, ".pdf");
+					EnsureFileCanExsist(pdfPath);
+					m_pdfs.Add(imgDirChain, Tuple.Create<PdfTarget, List<string>>(new PdfTarget(pdfPath, Path.Combine(title ?? Path.GetFileNameWithoutExtension(m_archivePath), imgDirChain)), []));
 				}
-				if (!m_keepStruct)
-					pdfDir = m_outputDir;
-				string pdfPath = EnumFileName(pdfDir, pdfName, ".pdf");
-				EnsureFileCanExsist(pdfPath);
-				m_pdfs.Add(imgDirChain, Tuple.Create<PdfTarget, List<string>>(new PdfTarget(pdfPath, Path.Combine(title ?? Path.GetFileNameWithoutExtension(m_archivePath), imgDirChain)), []));
-			}
-			if (!m_pdfs.TryGetValue(imgDirChain, out var tuple) || tuple == null) {
-				m_result.Add(new FileResult(0x80030005, imgKey, "Unable to open target PDF file."));
-				return;
-			}
-			var pdfTarget = tuple.Item1;
-			var imageNames = tuple.Item2;
-			string curImgName = Path.GetFileName(imgKey);
+				if (!m_pdfs.TryGetValue(imgDirChain, out var tuple) || tuple == null) {
+					m_result.Add(new FileResult(0x80030005, imgKey, "Unable to open target PDF file."));
+					return;
+				}
+				var pdfTarget = tuple.Item1;
+				var imageNames = tuple.Item2;
+				string curImgName = Path.GetFileName(imgKey);
 
-			int index = imageNames.Count;
-			for (; index > 0; index--) {
-				var imageName = imageNames[index - 1];
-				if (StrCmpLogicalW(imageName, curImgName) <= 0) {
-					break;
+				int index = imageNames.Count;
+				for (; index > 0; index--) {
+					var imageName = imageNames[index - 1];
+					if (StrCmpLogicalW(imageName, curImgName) <= 0) {
+						break;
+					}
+				}
+				tuple.Item2.Insert(index, curImgName);
+
+				if (!pdfTarget.AddImage(imageData, in m_pp, index)) {
+					m_result.Add(new FileResult(0x80030006, imgKey, StrFailedToAdd));
+					return;
+				}
+
+				m_result.Add(new FileResult(0x1, imgKey));
+			}
+			finally {
+				imgFileStream.Dispose();
+			}
+		}
+
+		/// <summary>
+		/// Use for process archive files.
+		/// </summary>
+		internal ImageData? ReadImageWithOutLock(Stream instream, long length) {
+			try {
+				if (length > int.MaxValue || length < 8) {
+					return null;
+				}
+				FileType.Type type;
+				byte[]? inbuffer = null;
+				try {
+					inbuffer = ArrayPool<byte>.Shared.Rent((int)length);
+					instream.ReadExactly(inbuffer, 0, (int)length);
+					type = FileType.CheckType(inbuffer);
+					return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
+				}
+				finally {
+					if (inbuffer != null) {
+						ArrayPool<byte>.Shared.Return(inbuffer);
+					}
 				}
 			}
-			tuple.Item2.Insert(index, curImgName);
-
-			if (!pdfTarget.AddImage(imageData, in m_pp, index)) {
-				m_result.Add(new FileResult(0x80030006, imgKey, StrFailedToAdd));
-				return;
+			catch (Exception ex) {
+				Logger.Log($"Fuck: {ex.Message}, {ex.StackTrace}");
+				return null;
 			}
-
-			m_result.Add(new FileResult(0x1, imgKey));
 		}
 
 		[LibraryImport("Shlwapi.dll", EntryPoint = "StrCmpLogicalW", StringMarshalling = StringMarshalling.Utf16)]

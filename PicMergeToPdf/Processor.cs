@@ -240,10 +240,7 @@ namespace PicMerge {
 				break;
 			}
 			case TaskInputData.Type.Archive: {
-				string outdir = "";
-				if (!m_param.stayNoMove)
-					outdir = m_param.destinationPath;
-				ProcessArchive(data.files, outdir);
+				ProcessArchive(data.files);
 				break;
 			}
 			default:
@@ -283,7 +280,7 @@ namespace PicMerge {
 			CheckResultListFailed(title ?? outputPath, ref result);
 		}
 
-		private void ProcessArchive(List<string> files, string outputPath) {
+		private void ProcessArchive(List<string> files) {
 			files.Sort(StrCmpLogicalW);
 			IMerger merger = IMerger.CreateArchiveConverter(
 				CallbackFinishOneImgFile,
@@ -292,9 +289,9 @@ namespace PicMerge {
 				m_internalParam.pp,
 				m_internalParam.ip
 			);
-			List<IMerger.FileResult> failed = merger.Process(outputPath, files);
+			List<IMerger.FileResult> failed = merger.Process(m_param.destinationPath, files);
 			CallbackFinishAllImgFile();
-			CheckResultListFailed(outputPath, ref failed);
+			CheckResultListFailed(m_param.destinationPath, ref failed);
 		}
 
 		/// <summary>
