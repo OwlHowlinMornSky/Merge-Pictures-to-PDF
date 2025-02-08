@@ -1,9 +1,7 @@
 ﻿using iText.IO.Image;
-using SharpCompress;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
-using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using static PicMerge.IMerger;
 

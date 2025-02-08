@@ -1,5 +1,4 @@
 ﻿using iText.IO.Image;
-using System.Diagnostics;
 using static PicMerge.IMerger;
 
 namespace PicMerge {

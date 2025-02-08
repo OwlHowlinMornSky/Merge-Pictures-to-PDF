@@ -46,8 +46,8 @@ namespace PicMerge {
 
 		private class LogFile : IDisposable {
 			//private string m_path;
-			private FileStream m_file;
-			private StreamWriter m_writer;
+			private readonly FileStream m_file;
+			private readonly StreamWriter m_writer;
 
 			public LogFile(string path) {
 				//m_path = path;
