@@ -8,7 +8,8 @@ PicCompress::Compressor::Compressor(System::IntPtr houtfile, System::Int64 oFile
 		throw gcnew InvalidOperationException("Invalid Output Mapping File.");
 	}
 	m_viewOfOutFile = new MapView(houtfile.ToPointer(), true);
-	if (nullptr == m_viewOfOutFile->GetView()) {
+	m_view = m_viewOfOutFile->GetView();
+	if (nullptr == m_view) {
 		LocalString description = ::WinCheckError(L"Failed to Map Output View");
 		auto ex = gcnew InvalidOperationException(gcnew System::String(description.GetString()));
 		throw ex;
@@ -17,6 +18,7 @@ PicCompress::Compressor::Compressor(System::IntPtr houtfile, System::Int64 oFile
 }
 
 PicCompress::Compressor::~Compressor() {
+	m_view = nullptr;
 	delete m_viewOfOutFile;
 	m_viewOfOutFile = nullptr;
 }
@@ -61,13 +63,13 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 	CSI_Result res;
 	switch (targetType) {
 	case 0:
-		res = csi_compress_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, &parameters);
+		res = csi_compress_fromto(inview, iFileLen, m_view, m_oFileMaxLen, &parameters);
 		break;
 	case 1:
-		res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
+		res = csi_convert_fromto(inview, iFileLen, m_view, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
 		break;
 	case 2:
-		res = csi_convert_fromto(inview, iFileLen, m_viewOfOutFile, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
+		res = csi_convert_fromto(inview, iFileLen, m_view, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
 		break;
 	default:
 		throw gcnew System::ArgumentException(String::Format("Unknown target type: {0}", targetType));
