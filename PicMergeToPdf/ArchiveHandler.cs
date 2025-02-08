@@ -156,7 +156,7 @@ namespace PicMerge {
 				}
 			}
 			catch (Exception ex) {
-				Logger.Log($"Fuck: {ex.Message}, {ex.StackTrace}");
+				Logger.Log($"[Archive Exception]: {ex.Message}, {ex.StackTrace}.");
 				return null;
 			}
 		}

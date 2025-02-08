@@ -24,7 +24,8 @@ namespace PicMerge {
 				using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
 				return ReadImage(inputStream);
 			}
-			catch {
+			catch (Exception ex) {
+				Logger.Log($"[LoadImage Exception]: {ex.Message}, {ex.StackTrace}.");
 				return null;
 			}
 		}
@@ -56,7 +57,8 @@ namespace PicMerge {
 					}
 				}
 			}
-			catch {
+			catch (Exception ex) {
+				Logger.Log($"[ReadImage Exception]: {ex.Message}, {ex.StackTrace}.");
 				return null;
 			}
 		}
@@ -79,8 +81,8 @@ namespace PicMerge {
 					byte[] outbuffer = GetCompressedImageData(ref inbuffer);
 					imageData = ImageDataFactory.Create(outbuffer);
 				}
-				catch (Exception) {
-					imageData = null;
+				catch (Exception ex) {
+					Logger.Log($"[Iodine Exception]: {ex.Message}, {ex.StackTrace}.");
 					goto case FileType.Type.GIF;
 				}
 				break;
@@ -127,7 +129,8 @@ namespace PicMerge {
 					imageData = ImageDataFactory.Create(imgSt.ToArray());
 					imgSt.Close();
 				}
-				catch (Exception) {
+				catch (Exception ex) {
+					Logger.Log($"[ImageSharp Exception]: {ex.Message}, {ex.StackTrace}.");
 					imageData = null;
 				}
 				if (type == FileType.Type.WEBP)
@@ -136,7 +139,8 @@ namespace PicMerge {
 				try {
 					imageData = ImageDataFactory.Create(inbuffer);
 				}
-				catch (Exception) {
+				catch (Exception ex) {
+					Logger.Log($"[iText Exception]: {ex.Message}, {ex.StackTrace}.");
 					imageData = null;
 				}
 				break;
@@ -165,8 +169,8 @@ namespace PicMerge {
 				try {
 					imageData = ImageDataFactory.Create(inbuffer);
 				}
-				catch (Exception) {
-					imageData = null;
+				catch (Exception ex) {
+					Logger.Log($"[iText Exception]: {ex.Message}, {ex.StackTrace}.");
 					goto case FileType.Type.WEBP;
 				}
 				break;
@@ -176,7 +180,8 @@ namespace PicMerge {
 					byte[] outbuffer = GetCompressedImageData(ref inbuffer);
 					imageData = ImageDataFactory.Create(outbuffer);
 				}
-				catch (Exception) {
+				catch (Exception ex) {
+					Logger.Log($"[Iodine Exception]: {ex.Message}, {ex.StackTrace}.");
 					imageData = null;
 				}
 				/// 尝试利用 ImageSharp 压缩
@@ -220,7 +225,8 @@ namespace PicMerge {
 					imageData = ImageDataFactory.Create(imgSt.ToArray());
 					imgSt.Close();
 				}
-				catch (Exception) {
+				catch (Exception ex) {
+					Logger.Log($"[ImageSharp Exception]: {ex.Message}, {ex.StackTrace}.");
 					imageData = null;
 				}
 				break;
