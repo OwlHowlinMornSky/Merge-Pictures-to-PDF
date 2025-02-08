@@ -1,8 +1,8 @@
 ﻿using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.IO;
 
 namespace WpfGui {
 	/// <summary>
