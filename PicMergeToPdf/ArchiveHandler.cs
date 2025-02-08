@@ -62,15 +62,9 @@ namespace PicMerge {
 					}
 					string imgKey = entry.Key;
 
-					MemoryMappedFile imgMapFile = MemoryMappedFile.CreateNew(null, MapFileSize, MemoryMappedFileAccess.ReadWrite);
-					using (MemoryMappedViewStream imgView = imgMapFile.CreateViewStream()) {
 					using EntryStream entryStream = reader.OpenEntryStream();
-						imgView.Seek(0, SeekOrigin.Begin);
-						entryStream.TransferTo(imgView);
-						entryStream.Close();
-					}
 					prevTask?.Wait();
-					prevTask = CompressAndAddAsync(outputfilepath, imgKey, imgMapFile);
+					prevTask = CompressAndAddAsync(outputfilepath, imgKey, entryStream);
 				}
 				prevTask?.Wait();
 
@@ -86,9 +80,8 @@ namespace PicMerge {
 			return m_result;
 		}
 
-		private async Task CompressAndAddAsync(string? title, string imgKey, MemoryMappedFile imgMapFile) {
-			using CompressTarget compressTarget = new();
-			ImageData? imageData = await Task.Run(() => { return ReadImage(imgMapFile, compressTarget); });
+		private async Task CompressAndAddAsync(string? title, string imgKey, Stream imgMapFile) {
+			ImageData? imageData = await Task.Run(() => { return ReadImage(imgMapFile); });
 			if (imageData == null) {
 				m_result.Add(new FileResult(0x80030004, imgKey, StrUnsupported));
 				return;

@@ -69,7 +69,7 @@ namespace PicMerge {
 		/// 开启一个新的加载图片任务。
 		/// </summary>
 		private Task<ImageData?> ParaLoad(string filepath) {
-			return Task.Run(() => { return ParaImage(filepath); });
+			return Task.Run(() => { return LoadImage(filepath); });
 		}
 	}
 }
