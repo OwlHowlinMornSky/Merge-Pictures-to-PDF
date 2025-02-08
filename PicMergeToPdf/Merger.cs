@@ -12,34 +12,53 @@ namespace PicMerge {
 		protected string StrFailedToAdd = "Failed to add into pdf.";
 
 		protected readonly ImageParam m_param = ip;
+		protected readonly object m_lock = new(); // Used to avoid IO at the same time.
 
 		/// <summary>
 		/// 用于从文件加载图片。
 		/// </summary>
 		/// <param name="filepath">图片文件路径</param>
-		/// <param name="compt">压缩器</param>
 		/// <returns>加载结果</returns>
 		internal ImageData? LoadImage(string filepath) {
-			using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
-			return ReadImage(inputStream);
+			try {
+				using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
+				return ReadImage(inputStream);
+			}
+			catch {
+				return null;
+			}
 		}
 
 		/// <summary>
 		/// 从内存映射文件读取图片。
 		/// </summary>
-		/// <param name="inFile">要读入之图片</param>
-		/// <param name="compt">压缩器</param>
+		/// <param name="instream">要读入之图片之文件流</param>
 		/// <returns>加载结果</returns>
 		internal ImageData? ReadImage(Stream instream) {
-			var type = FileType.CheckType(instream);
-			byte[] inbuffer;
-			if (instream.Length > int.MaxValue || instream.Length < 8) {
+			try {
+				if (instream.Length > int.MaxValue || instream.Length < 8) {
+					return null;
+				}
+				FileType.Type type;
+				byte[]? inbuffer = null;
+				try {
+					lock (m_lock) {
+						type = FileType.CheckType(instream);
+						instream.Seek(0, SeekOrigin.Begin);
+						inbuffer = ArrayPool<byte>.Shared.Rent((int)instream.Length);
+						instream.ReadExactly(inbuffer, 0, (int)instream.Length);
+					}
+					return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
+				}
+				finally {
+					if (inbuffer != null) {
+						ArrayPool<byte>.Shared.Return(inbuffer);
+					}
+				}
+			}
+			catch {
 				return null;
 			}
-			inbuffer = ArrayPool<byte>.Shared.Rent((int)instream.Length);
-			instream.Seek(0, SeekOrigin.Begin);
-			instream.ReadExactly(inbuffer, 0, (int)instream.Length);
-			return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
 		}
 
 		/// <summary>
