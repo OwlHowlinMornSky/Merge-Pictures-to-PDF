@@ -2,6 +2,8 @@
 
 using namespace System;
 
+#include "WinFormat.h"
+
 namespace PicCompress {
 
 /**
@@ -40,7 +42,7 @@ public:
 	);
 
 private:
-	void*          m_viewOfOutFile; // 输出之文件映射。
+	MapView*       m_viewOfOutFile; // 输出之文件映射。
 	System::UInt64 m_oFileMaxLen;   // 输出之最大大小。
 };
 
