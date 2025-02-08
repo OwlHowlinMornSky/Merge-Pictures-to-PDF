@@ -18,7 +18,7 @@ public:
 	 * @return 已写入输出文件 之 大小（字节）。
 	 */
 	static System::Int32 Compress(
-		[Runtime::InteropServices::InAttribute]array<Byte>^% input,
+		array<Byte>^% input,
 		array<Byte>^% output,
 		int targetFormat,
 		int quality,

@@ -29,7 +29,6 @@ namespace PicMerge {
 		public virtual List<FileResult> Process(string outputfilepath, List<string> files, string? title = null) {
 			List<FileResult> result = [];
 			try {
-				using CompressTarget compressTarget = new();
 				using PdfTarget pdfTarget = new(outputfilepath, title);
 
 				/// 先扫到可以处理的文件。
@@ -38,7 +37,7 @@ namespace PicMerge {
 				for (; i < files.Count; ++i) {
 					string file = files[i];
 
-					imageData = LoadImage(file, compressTarget);
+					imageData = LoadImage(file);
 					if (imageData != null) {
 						break;
 					}
@@ -61,7 +60,7 @@ namespace PicMerge {
 				for (++i; i < files.Count; ++i) {
 					string file = files[i];
 
-					imageData = LoadImage(file, compressTarget);
+					imageData = LoadImage(file);
 
 					if (imageData == null) {
 						result.Add(new FileResult(0x80010003, file, StrUnsupported));

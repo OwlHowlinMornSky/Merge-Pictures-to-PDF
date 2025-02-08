@@ -2,6 +2,7 @@
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
+using System.Buffers;
 using System.IO.MemoryMappedFiles;
 using static PicMerge.IMerger;
 
@@ -14,25 +15,14 @@ namespace PicMerge {
 		protected readonly ImageParam m_param = ip;
 
 		/// <summary>
-		/// 用于文件并行方法之加载。
-		/// </summary>
-		/// <param name="filepath">图片文件路径</param>
-		/// <returns>加载结果</returns>
-		internal  ImageData? ParaImage(string filepath) {
-			using CompressTarget compt = new();
-			return LoadImage(filepath, compt);
-		}
-
-		/// <summary>
 		/// 用于从文件加载图片。
 		/// </summary>
 		/// <param name="filepath">图片文件路径</param>
 		/// <param name="compt">压缩器</param>
 		/// <returns>加载结果</returns>
-		internal ImageData? LoadImage(string filepath, CompressTarget compt) {
+		internal ImageData? LoadImage(string filepath) {
 			using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
-			using MemoryMappedFile inFile = MemoryMappedFile.CreateFromFile(inputStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
-			return ReadImage(inFile, compt);
+			return ReadImage(inputStream);
 		}
 
 		/// <summary>
@@ -41,8 +31,16 @@ namespace PicMerge {
 		/// <param name="inFile">要读入之图片</param>
 		/// <param name="compt">压缩器</param>
 		/// <returns>加载结果</returns>
-		internal ImageData? ReadImage(MemoryMappedFile inFile, CompressTarget compt) {
-			return m_param.compress ? LoadImageInMemory_Compress(inFile, compt) : LoadImageInMemory_Direct(inFile, compt);
+		internal ImageData? ReadImage(Stream instream) {
+			var type = FileType.CheckType(instream);
+			byte[] inbuffer;
+			if (instream.Length > int.MaxValue || instream.Length < 8) {
+				return null;
+			}
+			inbuffer = ArrayPool<byte>.Shared.Rent((int)instream.Length);
+			instream.Seek(0, SeekOrigin.Begin);
+			instream.ReadExactly(inbuffer, 0, (int)instream.Length);
+			return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
 		}
 
 		/// <summary>
@@ -51,12 +49,8 @@ namespace PicMerge {
 		/// <param name="inFile">欲加载之文件</param>
 		/// <param name="compt">压缩器</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private ImageData? LoadImageInMemory_Compress(MemoryMappedFile inFile, CompressTarget compt) {
+		private ImageData? LoadImageInMemory_Compress(FileType.Type type, ref byte[] inbuffer) {
 			ImageData? imageData = null;
-			using var instream = inFile.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
-
-			var type = FileType.CheckType(instream);
-
 			switch (type) {
 			case FileType.Type.JPEG: // CSI, Img#, Direct.
 			case FileType.Type.PNG:  // CSI, Img#, Direct.
@@ -64,18 +58,8 @@ namespace PicMerge {
 			case FileType.Type.WEBP: // CSI, Img#.
 				/// 尝试利用 Caesium-Iodine 压缩
 				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					int len = compt.Compressor.CompressFrom(
-						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
-						m_param.format, m_param.quality,
-						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
-						m_param.reduceByPowOf2
-					);
-					using var mapstream = compt.ViewStream;
-					using BinaryReader br = new(mapstream);
-					imageData = ImageDataFactory.Create(br.ReadBytes(len));
-					br.Close();
-					mapstream.Close();
+					byte[] outbuffer = GetCompressedImageData(ref inbuffer);
+					imageData = ImageDataFactory.Create(outbuffer);
 				}
 				catch (Exception) {
 					imageData = null;
@@ -86,8 +70,7 @@ namespace PicMerge {
 			case FileType.Type.GIF:  // Img#, Direct.
 				/// 尝试利用 ImageSharp 压缩
 				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					using Image image = Image.Load(instream);
+					using Image image = Image.Load(inbuffer);
 					using MemoryStream imgSt = new();
 					switch (m_param.format) {
 					case 2: {
@@ -133,9 +116,7 @@ namespace PicMerge {
 					break;
 				/// 尝试 直接加载
 				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					using BinaryReader br = new(instream);
-					imageData = ImageDataFactory.Create(br.ReadBytes((int)instream.Length));
+					imageData = ImageDataFactory.Create(inbuffer);
 				}
 				catch (Exception) {
 					imageData = null;
@@ -154,13 +135,8 @@ namespace PicMerge {
 		/// <param name="inFile">欲加载之文件</param>
 		/// <param name="compt">压缩器</param>
 		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		private ImageData? LoadImageInMemory_Direct(MemoryMappedFile inFile, CompressTarget compt) {
+		private ImageData? LoadImageInMemory_Direct(FileType.Type type, ref byte[] inbuffer) {
 			ImageData? imageData = null;
-
-			using var instream = inFile.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
-
-			var type = FileType.CheckType(instream);
-
 			switch (type) {
 			case FileType.Type.JPEG: // CSI, Img#, Direct.
 			case FileType.Type.PNG:  // CSI, Img#, Direct.
@@ -169,9 +145,7 @@ namespace PicMerge {
 			case FileType.Type.GIF:  // Img#, Direct.
 				/// 尝试 直接加载
 				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					using BinaryReader br = new(instream);
-					imageData = ImageDataFactory.Create(br.ReadBytes((int)instream.Length));
+					imageData = ImageDataFactory.Create(inbuffer);
 				}
 				catch (Exception) {
 					imageData = null;
@@ -181,26 +155,15 @@ namespace PicMerge {
 			case FileType.Type.WEBP: // CSI, Img#.
 				/// 尝试利用 Caesium-Iodine 压缩
 				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					int len = compt.Compressor.CompressFrom(
-						inFile.SafeMemoryMappedFileHandle.DangerousGetHandle(), instream.Length,
-						m_param.format, m_param.quality,
-						m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
-						m_param.reduceByPowOf2
-					);
-					using var mapstream = compt.ViewStream;
-					using BinaryReader br = new(mapstream);
-					imageData = ImageDataFactory.Create(br.ReadBytes(len));
-					br.Close();
-					mapstream.Close();
+					byte[] outbuffer = GetCompressedImageData(ref inbuffer);
+					imageData = ImageDataFactory.Create(outbuffer);
 				}
 				catch (Exception) {
 					imageData = null;
 				}
 				/// 尝试利用 ImageSharp 压缩
 				try {
-					instream.Seek(0, SeekOrigin.Begin);
-					using Image image = Image.Load(instream);
+					using Image image = Image.Load(inbuffer);
 					using MemoryStream imgSt = new();
 					switch (m_param.format) {
 					case 2: {
@@ -248,6 +211,23 @@ namespace PicMerge {
 				break;
 			}
 			return imageData;
+		}
+
+		private byte[] GetCompressedImageData(ref byte[] input) {
+			byte[] tempOutBuffer = ArrayPool<byte>.Shared.Rent(MapFileSize);
+			try {
+				int len = PicCompress.BufferCompressor.Compress(
+					ref input, ref tempOutBuffer,
+					m_param.format, m_param.quality,
+					m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
+					m_param.reduceByPowOf2
+				);
+				ReadOnlySpan<byte> tempSpan = new(tempOutBuffer, 0, len);
+				return tempSpan.ToArray();
+			}
+			finally {
+				ArrayPool<byte>.Shared.Return(tempOutBuffer);
+			}
 		}
 	}
 }
