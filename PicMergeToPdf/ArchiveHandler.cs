@@ -62,7 +62,7 @@ namespace PicMerge {
 					string imgKey = entry.Key;
 
 					prevTask?.Wait();
-					prevTask = CompressAndAddAsync(outputfilepath, imgKey, reader.OpenEntryStream(), entry.Size);
+					prevTask = CompressAndAddAsync(imgKey, reader.OpenEntryStream(), entry.Size);
 				}
 				prevTask?.Wait();
 
@@ -78,7 +78,7 @@ namespace PicMerge {
 			return m_result;
 		}
 
-		private async Task CompressAndAddAsync(string? title, string imgKey, EntryStream imgFileStream, long imgSize) {
+		private async Task CompressAndAddAsync(string imgKey, EntryStream imgFileStream, long imgSize) {
 			try {
 				ImageData? imageData = await Task.Run(() => { return ReadImageWithOutLock(imgFileStream, imgSize); });
 				if (imageData == null) {
@@ -102,7 +102,7 @@ namespace PicMerge {
 						pdfDir = m_outputDir;
 					string pdfPath = EnumFileName(pdfDir, pdfName, ".pdf");
 					EnsureFileCanExsist(pdfPath);
-					m_pdfs.Add(imgDirChain, Tuple.Create<PdfTarget, List<string>>(new PdfTarget(pdfPath, Path.Combine(title ?? Path.GetFileNameWithoutExtension(m_archivePath), imgDirChain)), []));
+					m_pdfs.Add(imgDirChain, Tuple.Create<PdfTarget, List<string>>(new PdfTarget(pdfPath, Path.Combine(Path.GetFileNameWithoutExtension(m_archivePath), imgDirChain)), []));
 				}
 				if (!m_pdfs.TryGetValue(imgDirChain, out var tuple) || tuple == null) {
 					m_result.Add(new FileResult(0x80030005, imgKey, "Unable to open target PDF file."));
