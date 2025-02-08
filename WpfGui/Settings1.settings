@@ -2,7 +2,7 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="WpfGui" GeneratedClassName="Settings1">
   <Profiles />
   <Settings>
-    <Setting Name="CompressType" Type="System.Int32" Scope="User">
+    <Setting Name="CompressFormat" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="CompressQuality" Type="System.Int32" Scope="User">
@@ -35,8 +35,8 @@
     <Setting Name="CompressResizeLongValue" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="PageFixedType" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">1</Value>
+    <Setting Name="PageFixedHeight" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="PagePageType" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">2</Value>
@@ -79,6 +79,12 @@
     </Setting>
     <Setting Name="CompressResizeReduceByPow2" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="PageFixedWidth" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="PageDpi" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">0</Value>
     </Setting>
   </Settings>
 </SettingsFile>

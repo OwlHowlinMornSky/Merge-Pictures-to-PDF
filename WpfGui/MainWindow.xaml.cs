@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -18,7 +19,7 @@ namespace WpfGui {
 		/// <summary>
 		/// 处理拖入数据 的 对象。
 		/// </summary>
-		private readonly Processor m_processor;
+		private readonly PicMerge.Processor m_processor;
 
 		public MainWindow() {
 			if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase)) {
@@ -29,7 +30,7 @@ namespace WpfGui {
 			}
 			InitializeComponent();
 
-			m_processor = new Processor(this, BarSetNum, BarSetFinish); // 不能放上去，因为要用this。
+			m_processor = new PicMerge.Processor(BarSetNum, BarSetFinish, PopWarning);
 
 			int index = 0;
 			foreach (string paperType in Settings1.Default.Papers.Split(',')) {
@@ -40,13 +41,13 @@ namespace WpfGui {
 
 			textWidth.Text = Settings1.Default.PageSizeWidth.ToString();
 			textHeight.Text = Settings1.Default.PageSizeHeight.ToString();
+			textDpi.Text = Settings1.Default.PageDpi.ToString();
 
 			Settings1.Default.PagePageType = int.Clamp(Settings1.Default.PagePageType, 0, comboBoxPageSize.Items.Count - 1);
 			comboBoxPageSize.SelectedIndex = Settings1.Default.PagePageType;
 
-			Settings1.Default.PageFixedType &= 3;
-			radioBtnFixedWidth.IsChecked = (Settings1.Default.PageFixedType & 1) != 0;
-			bool val = (Settings1.Default.PageFixedType & 2) != 0;
+			radioBtnFixedWidth.IsChecked = Settings1.Default.PageFixedWidth;
+			bool val = Settings1.Default.PageFixedHeight;
 			radioBtnFixedHeight.IsChecked = !val;
 			radioBtnFixedHeight.IsChecked = val; // This is to trigger event.
 
@@ -67,7 +68,7 @@ namespace WpfGui {
 			lock (m_lockBar) {
 				double ratio = 100.0 * i / n;
 				App.Current.Dispatcher.Invoke(() => {
-					labelTotal.Content = string.Format(App.Current.FindResource("HaveFinishedPercent").ToString() ?? "{0:F2}", ratio);
+					labelTotal.Content = string.Format(App.Current.TryFindResource("HaveFinishedPercent").ToString() ?? "{0:F2}", ratio);
 					porgBarTotal.Value = ratio;
 				});
 			}
@@ -79,10 +80,22 @@ namespace WpfGui {
 		private void BarSetFinish() {
 			lock (m_lockBar) {
 				App.Current.Dispatcher.Invoke(() => {
-					labelTotal.Content = App.Current.FindResource("Ready").ToString();
+					labelTotal.Content = App.Current.TryFindResource("Ready").ToString();
 					porgBarTotal.Value = 100.0;
 				});
 			}
+		}
+
+		private void PopWarning(string logPath) {
+			App.Current.Dispatcher.BeginInvoke(() => {
+				MessageBox.Show(
+					this,
+					string.Format(App.Current.TryFindResource("CannotProcess") as string ?? "Failed files in log: {0}", logPath),
+					$"{Title}: {App.Current.TryFindResource("Warning")}",
+					MessageBoxButton.OK,
+					MessageBoxImage.Warning
+				);
+			});
 		}
 
 		/// <summary>
@@ -110,10 +123,23 @@ namespace WpfGui {
 			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
 			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
 			if (isNum || isNumPad || isControl) {
+				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
 				return;
 			}
 			if (e.Key == Key.Decimal && sender is TextBox box && !box.Text.Contains('.')) {
+				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
 				return; // 允许有一个小数点。
+			}
+			e.Handled = true;
+		}
+
+		private void TextNum_PreviewKeyDown_Int(object sender, KeyEventArgs e) {
+			bool isNum = e.Key >= Key.D0 && e.Key <= Key.D9;
+			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
+			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
+			if (isNum || isNumPad || isControl) {
+				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
+				return;
 			}
 			e.Handled = true;
 		}
@@ -122,62 +148,41 @@ namespace WpfGui {
 		/// 页面尺寸类型的单选框 改变 的 通知。用来确定m_pageSizeType。
 		/// </summary>
 		private void BtnPageSize_Changed(object sender, RoutedEventArgs e) {
-			int sizeType = 0;
-
-			if (radioBtnFixedWidth.IsChecked == true)
-				sizeType |= 1;
-			if (radioBtnFixedHeight.IsChecked == true)
-				sizeType |= 2;
-
-			comboBoxPageSize.IsEnabled = sizeType != 0;
-			if (comboBoxPageSize.IsEnabled && comboBoxPageSize.SelectedIndex == comboBoxPageSize.Items.Count - 1) {
-				textWidth.IsEnabled = true;
-				textHeight.IsEnabled = true;
-			}
-			else {
-				textWidth.IsEnabled = false;
-				textHeight.IsEnabled = false;
-			}
+			comboBoxPageSize.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
+			textWidth.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
+			textHeight.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
 
 			if (!Started)
 				return;
 
-			Settings1.Default.PageFixedType = sizeType;
+			Settings1.Default.PageFixedWidth = radioBtnFixedWidth.IsChecked ?? false;
+			Settings1.Default.PageFixedHeight = radioBtnFixedHeight.IsChecked ?? false;
 		}
 
 		private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			if (comboBoxPageSize.SelectedIndex >= 0 && comboBoxPageSize.SelectedIndex == comboBoxPageSize.Items.Count - 1) {
-				textWidth.IsEnabled = true;
-				textHeight.IsEnabled = true;
-				if (!Started)
-					return;
-				Settings1.Default.PagePageType = comboBoxPageSize.SelectedIndex;
-				return;
-			}
-
-			if (comboBoxPageSize.SelectedItem is not ComboBoxItem comboBox) {
+			if (comboBoxPageSize.SelectedItem is not ComboBoxItem boxItem) {
 				MessageBox.Show(this, $"Could not set the page type. ({comboBoxPageSize.SelectedIndex})");
 				return;
 			}
 
-			System.Drawing.Size size;
-			try {
-				var obj = Settings1.Default[$"Paper{comboBox.Content}"];
-				if (obj is not System.Drawing.Size _size) {
-					MessageBox.Show(this, $"Could not load size data of page type \"{comboBox.Content}\".");
+			if (comboBoxPageSize.SelectedIndex < comboBoxPageSize.Items.Count - 1) {
+				System.Drawing.Size size;
+				try {
+					var obj = Settings1.Default[$"Paper{boxItem.Content}"];
+					if (obj is not System.Drawing.Size _size) {
+						MessageBox.Show(this, $"Could not load size data of page type \"{boxItem.Content}\".");
+						return;
+					}
+					size = _size;
+				}
+				catch {
+					MessageBox.Show(this, $"Could not load size data of page type \"{boxItem.Content}\".");
 					return;
 				}
-				size = _size;
+				textWidth.Text = size.Width.ToString();
+				textHeight.Text = size.Height.ToString();
+				textDpi.Text = "72";
 			}
-			catch {
-				MessageBox.Show(this, $"Could not load size data of page type \"{comboBox.Content}\".");
-				return;
-			}
-			textWidth.Text = size.Width.ToString();
-			textHeight.Text = size.Height.ToString();
-
-			textWidth.IsEnabled = false;
-			textHeight.IsEnabled = false;
 
 			if (!Started)
 				return;
@@ -192,13 +197,17 @@ namespace WpfGui {
 			Settings1.Default.PageSizeHeight = float.TryParse(textHeight.Text, out float res) ? res : 0;
 		}
 
+		private void PageDpiTextChanged(object sender, TextChangedEventArgs e) {
+			Settings1.Default.PageDpi = uint.TryParse(textDpi.Text, out uint res) ? res : 0;
+		}
+
 		private void IoCheckedChanged(object sender, RoutedEventArgs e) {
 			if (!Started)
 				return;
-			Settings1.Default.IORecurse = chkBoxRecursion.IsChecked == true;
-			Settings1.Default.IOKeepStruct = chkBoxKeepStructure.IsChecked == true;
-			Settings1.Default.IOCompress = chkBoxCompressAll.IsChecked == true;
-			Settings1.Default.IONoMove = chkBoxStayNoMove.IsChecked == true;
+			Settings1.Default.IORecurse = chkBoxRecursion.IsChecked ?? false;
+			Settings1.Default.IOKeepStruct = chkBoxKeepStructure.IsChecked ?? false;
+			Settings1.Default.IOCompress = chkBoxCompressAll.IsChecked ?? false;
+			Settings1.Default.IONoMove = chkBoxStayNoMove.IsChecked ?? false;
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e) {
@@ -220,56 +229,46 @@ namespace WpfGui {
 		/// <summary>
 		/// 拖放的通知。只接收文件。交予Processor处理。不能 同时有两次拖放在处理。
 		/// </summary>
-		private void Window_Drop(object sender, DragEventArgs e) {
+		private async void Window_Drop(object sender, DragEventArgs e) {
 			Activate();
 			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
 				return;
 			}
-			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths) {
-				Task.Run(() => {
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(
-							this,
-							App.Current.FindResource("InvalidDrop").ToString(),
-							$"{Title}: {App.Current.FindResource("Error")}",
-							MessageBoxButton.OK,
-							MessageBoxImage.Error
-						);
-					});
-				});
+			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length <= 0) {
+				await PopErrorAsync(App.Current.TryFindResource("InvalidDrop").ToString() ?? "Error.");
 				return;
 			}
 			if (m_processor.IsRunning()) {
-				Task.Run(() => {
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(
-							this,
-							App.Current.FindResource("WaitForCurrentTask").ToString(),
-							$"{Title}: {App.Current.FindResource("Error")}",
-							MessageBoxButton.OK,
-							MessageBoxImage.Error
-						);
-					});
-				});
-				return;
-			}
-			if (paths.Length <= 0) {
+				await PopErrorAsync(App.Current.TryFindResource("WaitForCurrentTask").ToString() ?? "Error.");
 				return;
 			}
 			BarSetNum(0, 1);
-			IOParam ioParam = new(
+
+			PicMerge.IOParam ioParam;
+			string destDir = "";
+			if (!Settings1.Default.IONoMove) {
+				var res = await AskForDestinationAsync(paths[0]);
+				if (res == null)
+					return;
+				destDir = res;
+			}
+			ioParam = new(
 				_recursion: Settings1.Default.IORecurse,
 				_keepStruct: Settings1.Default.IOKeepStruct,
-				_stayNoMove: Settings1.Default.IONoMove
+				_stayNoMove: Settings1.Default.IONoMove,
+				_targetPath: destDir
 			);
 			PicMerge.PageParam pageParam = new(
-				_fixedType: Settings1.Default.PageFixedType,
+				_fixedType:
+				(Settings1.Default.PageFixedHeight ? PicMerge.PageParam.FixedType.HeightFixed : 0) |
+				(Settings1.Default.PageFixedWidth ? PicMerge.PageParam.FixedType.WidthFixed : 0),
 				_width: Settings1.Default.PageSizeWidth,
-				_height: Settings1.Default.PageSizeHeight
+				_height: Settings1.Default.PageSizeHeight,
+				_dpi: Settings1.Default.PageDpi
 			);
 			PicMerge.ImageParam imageParam = new(
 				_compress: Settings1.Default.IOCompress,
-				_format: Settings1.Default.CompressType,
+				_format: Settings1.Default.CompressFormat,
 				_quality: Settings1.Default.CompressQuality,
 				_resize: Settings1.Default.CompressResize,
 				_width: Settings1.Default.CompressResizeWidth ? Settings1.Default.CompressResizeWidthValue : 0,
@@ -278,18 +277,9 @@ namespace WpfGui {
 				_longSide: Settings1.Default.CompressResizeLong ? Settings1.Default.CompressResizeLongValue : 0,
 				_reduceBy2: Settings1.Default.CompressResizeReduceByPow2
 			);
-			if (m_processor.Start(paths, pageParam, imageParam, ioParam) == false) {
-				Task.Run(() => {
-					App.Current.Dispatcher.Invoke(() => {
-						MessageBox.Show(
-							this,
-							App.Current.FindResource("WaitForCurrentTask").ToString(),
-							$"{Title}: {App.Current.FindResource("Error")}",
-							MessageBoxButton.OK,
-							MessageBoxImage.Error
-						);
-					});
-				});
+			bool succeed = await m_processor.StartAsync(paths, pageParam, imageParam, ioParam);
+			if (!succeed) {
+				await PopErrorAsync(App.Current.TryFindResource("WaitForCurrentTask").ToString() ?? "Error.");
 			}
 			return;
 		}
@@ -301,7 +291,7 @@ namespace WpfGui {
 			if (m_processor.IsRunning()) {
 				MessageBox.Show(
 					this,
-					App.Current.FindResource("WaitForCurrentTask").ToString(),
+					App.Current.TryFindResource("WaitForCurrentTask").ToString(),
 					Title,
 					MessageBoxButton.OK,
 					MessageBoxImage.Information
@@ -309,6 +299,47 @@ namespace WpfGui {
 				e.Cancel = true;
 			}
 			Settings1.Default.Save();
+		}
+
+		/// <summary>
+		/// 询问目标目录。
+		/// </summary>
+		/// <param name="defpath">初始目录</param>
+		/// <returns>选择的目录，或者 null 表示取消</returns>
+		private async Task<string?> AskForDestinationAsync(string defpath) {
+			return await Task.Run(() => {
+				string? res = null;
+				App.Current.Dispatcher.Invoke(() => {
+					// Configure open folder dialog box
+					Microsoft.Win32.OpenFolderDialog dialog = new() {
+						Multiselect = false,
+						Title = $"{Title}: {App.Current.TryFindResource("ChooseDestinationDir").ToString() ?? "output location"}",
+						DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+						InitialDirectory = Path.GetDirectoryName(defpath)
+					};
+
+					// Show open folder dialog box
+					// Process open folder dialog box results
+					if (dialog.ShowDialog(this) == true) {
+						// Get the selected folder
+						res = dialog.FolderName;
+					}
+				});
+				return res;
+			});
+		}
+
+		private async Task PopErrorAsync(string msg) {
+			await Task.Run(() => {
+				App.Current.Dispatcher.Invoke(() => {
+					MessageBox.Show(
+						this, msg,
+						$"{Title}: {App.Current.TryFindResource("Error")}",
+						MessageBoxButton.OK,
+						MessageBoxImage.Error
+					);
+				});
+			});
 		}
 	}
 }

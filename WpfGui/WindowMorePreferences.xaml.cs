@@ -16,7 +16,7 @@ namespace WpfGui {
 			gpBoxDebug.Visibility = Visibility.Hidden;
 #endif
 
-			comboBoxCompressType.SelectedIndex = int.Clamp(Settings1.Default.CompressType, 0, comboBoxCompressType.Items.Count - 1);
+			comboBoxCompressType.SelectedIndex = int.Clamp(Settings1.Default.CompressFormat, 0, comboBoxCompressType.Items.Count - 1);
 
 			sliderQuality.Value = double.Clamp(Settings1.Default.CompressQuality, 0, 100);
 
@@ -51,7 +51,7 @@ namespace WpfGui {
 				MessageBox.Show(this, $"Failed to set compression type ({(comboBoxCompressType.SelectedItem as ComboBoxItem)?.Content}). Default is used no change.", Title);
 				comboBoxCompressType.SelectedIndex = 0;
 			}
-			Settings1.Default.CompressType = comboBoxCompressType.SelectedIndex;
+			Settings1.Default.CompressFormat = comboBoxCompressType.SelectedIndex;
 		}
 
 		private void SliderQuality_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
@@ -74,20 +74,20 @@ namespace WpfGui {
 		}
 
 		private void ResizeCheckedChanged(object sender, RoutedEventArgs e) {
-			chkBoxWidth.IsEnabled = chkBoxResize.IsChecked == true;
-			chkBoxHeight.IsEnabled = chkBoxResize.IsChecked == true;
-			chkBoxShort.IsEnabled = chkBoxResize.IsChecked == true;
-			chkBoxLong.IsEnabled = chkBoxResize.IsChecked == true;
+			chkBoxWidth.IsEnabled = chkBoxResize.IsChecked ?? false;
+			chkBoxHeight.IsEnabled = chkBoxResize.IsChecked ?? false;
+			chkBoxShort.IsEnabled = chkBoxResize.IsChecked ?? false;
+			chkBoxLong.IsEnabled = chkBoxResize.IsChecked ?? false;
 
-			textBoxWidth.IsEnabled = chkBoxWidth.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxHeight.IsEnabled = chkBoxHeight.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxShort.IsEnabled = chkBoxShort.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxLong.IsEnabled = chkBoxLong.IsChecked == true && chkBoxResize.IsChecked == true;
+			textBoxWidth.IsEnabled = (chkBoxWidth.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxHeight.IsEnabled = (chkBoxHeight.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxShort.IsEnabled = (chkBoxShort.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxLong.IsEnabled = (chkBoxLong.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
 
 			if (!Started)
 				return;
-			Settings1.Default.CompressResize = chkBoxResize.IsChecked == true;
-			Settings1.Default.CompressResizeReduceByPow2 = chkBoxPow2.IsChecked == true;
+			Settings1.Default.CompressResize = chkBoxResize.IsChecked ?? false;
+			Settings1.Default.CompressResizeReduceByPow2 = chkBoxPow2.IsChecked ?? false;
 		}
 
 		private bool m_isCheckChanging = false;
@@ -96,23 +96,23 @@ namespace WpfGui {
 				return;
 			m_isCheckChanging = true;
 
-			if (chkBoxWidth.IsChecked == true || chkBoxHeight.IsChecked == true) {
+			if ((chkBoxWidth.IsChecked ?? false) || (chkBoxHeight.IsChecked ?? false)) {
 				chkBoxShort.IsChecked = false;
 				chkBoxLong.IsChecked = false;
 			}
 
-			textBoxWidth.IsEnabled = chkBoxWidth.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxHeight.IsEnabled = chkBoxHeight.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxShort.IsEnabled = chkBoxShort.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxLong.IsEnabled = chkBoxLong.IsChecked == true && chkBoxResize.IsChecked == true;
+			textBoxWidth.IsEnabled = (chkBoxWidth.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxHeight.IsEnabled = (chkBoxHeight.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxShort.IsEnabled = (chkBoxShort.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxLong.IsEnabled = (chkBoxLong.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
 
 			m_isCheckChanging = false;
 			if (!Started)
 				return;
-			Settings1.Default.CompressResizeWidth = chkBoxWidth.IsChecked == true;
-			Settings1.Default.CompressResizeHeight = chkBoxHeight.IsChecked == true;
-			Settings1.Default.CompressResizeShort = chkBoxShort.IsChecked == true;
-			Settings1.Default.CompressResizeLong = chkBoxLong.IsChecked == true;
+			Settings1.Default.CompressResizeWidth = chkBoxWidth.IsChecked ?? false;
+			Settings1.Default.CompressResizeHeight = chkBoxHeight.IsChecked ?? false;
+			Settings1.Default.CompressResizeShort = chkBoxShort.IsChecked ?? false;
+			Settings1.Default.CompressResizeLong = chkBoxLong.IsChecked ?? false;
 		}
 
 		private void ResizeSIDECheckedChanged(object sender, RoutedEventArgs e) {
@@ -120,23 +120,23 @@ namespace WpfGui {
 				return;
 			m_isCheckChanging = true;
 
-			if (chkBoxShort.IsChecked == true || chkBoxLong.IsChecked == true) {
+			if ((chkBoxShort.IsChecked ?? false) || (chkBoxLong.IsChecked ?? false)) {
 				chkBoxWidth.IsChecked = false;
 				chkBoxHeight.IsChecked = false;
 			}
 
-			textBoxWidth.IsEnabled = chkBoxWidth.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxHeight.IsEnabled = chkBoxHeight.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxShort.IsEnabled = chkBoxShort.IsChecked == true && chkBoxResize.IsChecked == true;
-			textBoxLong.IsEnabled = chkBoxLong.IsChecked == true && chkBoxResize.IsChecked == true;
+			textBoxWidth.IsEnabled = (chkBoxWidth.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxHeight.IsEnabled = (chkBoxHeight.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxShort.IsEnabled = (chkBoxShort.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
+			textBoxLong.IsEnabled = (chkBoxLong.IsChecked ?? false) && (chkBoxResize.IsChecked ?? false);
 
 			m_isCheckChanging = false;
 			if (!Started)
 				return;
-			Settings1.Default.CompressResizeWidth = chkBoxWidth.IsChecked == true;
-			Settings1.Default.CompressResizeHeight = chkBoxHeight.IsChecked == true;
-			Settings1.Default.CompressResizeShort = chkBoxShort.IsChecked == true;
-			Settings1.Default.CompressResizeLong = chkBoxLong.IsChecked == true;
+			Settings1.Default.CompressResizeWidth = chkBoxWidth.IsChecked ?? false;
+			Settings1.Default.CompressResizeHeight = chkBoxHeight.IsChecked ?? false;
+			Settings1.Default.CompressResizeShort = chkBoxShort.IsChecked ?? false;
+			Settings1.Default.CompressResizeLong = chkBoxLong.IsChecked ?? false;
 		}
 
 		private void ResizeTextChanged(object sender, TextChangedEventArgs e) {

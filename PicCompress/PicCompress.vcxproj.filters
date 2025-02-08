@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Native">
+      <UniqueIdentifier>{5ec9b281-591c-4c7b-86bc-1feb8e01b68c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Compressor.h">
@@ -21,6 +24,12 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="BufferCompressor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="WinFormat.h">
+      <Filter>Native</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Compressor.cpp">
@@ -28,6 +37,12 @@
     </ClCompile>
     <ClCompile Include="AssemblyInfo.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="BufferCompressor.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="WinFormat.cpp">
+      <Filter>Native</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -7,7 +7,8 @@ namespace PicMerge {
 	/// 目前，该类构造一个只能运行一次。
 	/// </summary>
 	/// <param name="finish1img">完成一个文件的回调</param>
-	/// <param name="param">参数</param>
+	/// <param name="pp">页面参数</param>
+	/// <param name="ip">图片参数</param>
 	/// <err frag="0x8001" ack="0006"></err>
 	internal class MergerSerial(Action finish1img, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
 
@@ -17,15 +18,6 @@ namespace PicMerge {
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
 		/// </summary>
 		private readonly Action FinishOneImg = finish1img;
-
-		/// <summary>
-		/// 用于接受压缩结果。
-		/// </summary>
-		private readonly CompressTarget m_compressTarget = new();
-
-		~MergerSerial() {
-			Dispose(false);
-		}
 
 		/// <summary>
 		/// 合并文件。此方法文件级串行，即依次读取并处理图片。
@@ -45,7 +37,7 @@ namespace PicMerge {
 				for (; i < files.Count; ++i) {
 					string file = files[i];
 
-					imageData = LoadImage(file, m_compressTarget);
+					imageData = LoadImage(file);
 					if (imageData != null) {
 						break;
 					}
@@ -68,7 +60,7 @@ namespace PicMerge {
 				for (++i; i < files.Count; ++i) {
 					string file = files[i];
 
-					imageData = LoadImage(file, m_compressTarget);
+					imageData = LoadImage(file);
 
 					if (imageData == null) {
 						result.Add(new FileResult(0x80010003, file, StrUnsupported));
@@ -87,21 +79,6 @@ namespace PicMerge {
 				result.Add(new FileResult(0x80010005, ex.Source ?? "", ex.Message));
 			}
 			return result;
-		}
-
-		public void Dispose() {
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		private bool m_disposed = false;
-		protected virtual void Dispose(bool disposing) {
-			if (m_disposed)
-				return;
-			if (disposing) {
-				m_compressTarget.Dispose();
-			}
-			m_disposed = true;
 		}
 	}
 }
