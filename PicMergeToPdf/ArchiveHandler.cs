@@ -16,28 +16,19 @@ namespace PicMerge {
 	/// <param name="pp">页面参数</param>
 	/// <param name="ip">图片参数</param>
 	/// <err frag="0x8003" ack="0008"></err>
-	internal partial class ArchiveHandler(bool _keepStruct, PageParam pp, ImageParam ip) : Merger(ip), IDisposable {
+	internal partial class ArchiveHandler(bool _keepStruct, PageParam pp, ImageParam ip) : Merger(ip) {
 
 		private readonly PageParam m_pp = pp;
 
 		private readonly bool m_keepStruct = _keepStruct;
 
-		/// <summary>
-		/// 用于接受压缩结果。
-		/// </summary>
-		private readonly CompressTarget m_compressTarget = new();
-
-		private Dictionary<string, Tuple<PdfTarget, List<string>>> m_pdfs = [];
+		private readonly Dictionary<string, Tuple<PdfTarget, List<string>>> m_pdfs = [];
 
 		private readonly List<FileResult> m_result = [];
 
 		private string m_outputDir = "";
 
 		private string m_archivePath = "";
-
-		~ArchiveHandler() {
-			Dispose(false);
-		}
 
 		/// <summary>
 		/// 合并文件。内部串行并行由具体对象决定。
@@ -73,7 +64,7 @@ namespace PicMerge {
 
 					MemoryMappedFile imgMapFile = MemoryMappedFile.CreateNew(null, MapFileSize, MemoryMappedFileAccess.ReadWrite);
 					using (MemoryMappedViewStream imgView = imgMapFile.CreateViewStream()) {
-						using EntryStream entryStream = reader.OpenEntryStream();
+					using EntryStream entryStream = reader.OpenEntryStream();
 						imgView.Seek(0, SeekOrigin.Begin);
 						entryStream.TransferTo(imgView);
 						entryStream.Close();
@@ -96,7 +87,8 @@ namespace PicMerge {
 		}
 
 		private async Task CompressAndAddAsync(string? title, string imgKey, MemoryMappedFile imgMapFile) {
-			ImageData? imageData = await Task.Run(() => { return ReadImage(imgMapFile, m_compressTarget); });
+			using CompressTarget compressTarget = new();
+			ImageData? imageData = await Task.Run(() => { return ReadImage(imgMapFile, compressTarget); });
 			if (imageData == null) {
 				m_result.Add(new FileResult(0x80030004, imgKey, StrUnsupported));
 				return;
@@ -143,23 +135,6 @@ namespace PicMerge {
 			}
 
 			m_result.Add(new FileResult(0x1, imgKey));
-
-			imgMapFile.Dispose();
-		}
-
-		public void Dispose() {
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		private bool m_disposed = false;
-		protected virtual void Dispose(bool disposing) {
-			if (m_disposed)
-				return;
-			if (disposing) {
-				m_compressTarget.Dispose();
-			}
-			m_disposed = true;
 		}
 
 		[LibraryImport("Shlwapi.dll", EntryPoint = "StrCmpLogicalW", StringMarshalling = StringMarshalling.Utf16)]

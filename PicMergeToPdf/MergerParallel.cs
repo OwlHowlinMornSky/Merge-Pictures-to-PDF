@@ -23,10 +23,6 @@ namespace PicMerge {
 		/// </summary>
 		private readonly Action FinishOneImg = finish1img;
 
-		~MergerParallel() {
-			Dispose(false);
-		}
-
 		/// <summary>
 		/// 合并文件。此方法文件级并行，即并发加载处理，再依次加入结果。
 		/// </summary>
@@ -74,18 +70,6 @@ namespace PicMerge {
 		/// </summary>
 		private Task<ImageData?> ParaLoad(string filepath) {
 			return Task.Run(() => { return ParaImage(filepath); });
-		}
-
-		public void Dispose() {
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		private bool m_disposed = false;
-		protected virtual void Dispose(bool disposing) {
-			if (m_disposed)
-				return;
-			m_disposed = true;
 		}
 	}
 }

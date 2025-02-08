@@ -272,7 +272,7 @@ namespace PicMerge {
 		private void ProcessFiles(List<string> files, string outputPath, string? title) {
 			/// 按字符串逻辑排序。资源管理器就是这个顺序，可以使 2.png 排在 10.png 前面，保证图片顺序正确。
 			files.Sort(StrCmpLogicalW);
-			using IMerger merger = IMerger.Create(
+			IMerger merger = IMerger.Create(
 				true,
 				CallbackFinishOneImgFile,
 				m_internalParam.pp,
@@ -285,7 +285,7 @@ namespace PicMerge {
 
 		private void ProcessArchive(List<string> files, string outputPath) {
 			files.Sort(StrCmpLogicalW);
-			using var merger = IMerger.CreateArchiveConverter(
+			IMerger merger = IMerger.CreateArchiveConverter(
 				CallbackFinishOneImgFile,
 				m_param.stayNoMove,
 				m_param.keepStruct,

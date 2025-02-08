@@ -53,23 +53,8 @@ namespace PicMerge {
 			string outdir = Path.ChangeExtension(archivePath, "[Merged]");
 			if (!m_stayNomove)
 				outdir = Path.Combine(outputfilepath, Path.GetFileName(outdir));
-			using ArchiveHandler handler = new(m_keepStruct, m_pp, m_ip);
+			ArchiveHandler handler = new(m_keepStruct, m_pp, m_ip);
 			return handler.Process(archivePath, outdir);
-		}
-
-		~MergerArchive() {
-			Dispose(false);
-		}
-		public void Dispose() {
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		private bool m_disposed = false;
-		protected virtual void Dispose(bool disposing) {
-			if (m_disposed)
-				return;
-			m_disposed = true;
 		}
 	}
 }

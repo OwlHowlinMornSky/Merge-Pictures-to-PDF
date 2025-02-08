@@ -20,15 +20,6 @@ namespace PicMerge {
 		private readonly Action FinishOneImg = finish1img;
 
 		/// <summary>
-		/// 用于接受压缩结果。
-		/// </summary>
-		private readonly CompressTarget m_compressTarget = new();
-
-		~MergerSerial() {
-			Dispose(false);
-		}
-
-		/// <summary>
 		/// 合并文件。此方法文件级串行，即依次读取并处理图片。
 		/// </summary>
 		/// <param name="outputfilepath">输出文件路径</param>
@@ -38,6 +29,7 @@ namespace PicMerge {
 		public virtual List<FileResult> Process(string outputfilepath, List<string> files, string? title = null) {
 			List<FileResult> result = [];
 			try {
+				using CompressTarget compressTarget = new();
 				using PdfTarget pdfTarget = new(outputfilepath, title);
 
 				/// 先扫到可以处理的文件。
@@ -46,7 +38,7 @@ namespace PicMerge {
 				for (; i < files.Count; ++i) {
 					string file = files[i];
 
-					imageData = LoadImage(file, m_compressTarget);
+					imageData = LoadImage(file, compressTarget);
 					if (imageData != null) {
 						break;
 					}
@@ -69,7 +61,7 @@ namespace PicMerge {
 				for (++i; i < files.Count; ++i) {
 					string file = files[i];
 
-					imageData = LoadImage(file, m_compressTarget);
+					imageData = LoadImage(file, compressTarget);
 
 					if (imageData == null) {
 						result.Add(new FileResult(0x80010003, file, StrUnsupported));
@@ -88,21 +80,6 @@ namespace PicMerge {
 				result.Add(new FileResult(0x80010005, ex.Source ?? "", ex.Message));
 			}
 			return result;
-		}
-
-		public void Dispose() {
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		private bool m_disposed = false;
-		protected virtual void Dispose(bool disposing) {
-			if (m_disposed)
-				return;
-			if (disposing) {
-				m_compressTarget.Dispose();
-			}
-			m_disposed = true;
 		}
 	}
 }

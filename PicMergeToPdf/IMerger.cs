@@ -4,7 +4,7 @@ namespace PicMerge {
 	/// 合成器接口
 	/// 目前，合成器构造一个只能运行一次。
 	/// </summary>
-	public interface IMerger : IDisposable {
+	public interface IMerger {
 
 		/// <summary>
 		/// 内存映射文件设定的最大大小。
