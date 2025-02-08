@@ -15,10 +15,6 @@ namespace PicMerge {
 		private readonly PageParam m_pp = pp;
 
 		/// <summary>
-		/// 多任务协作时，任务中sleep的 默认 毫秒数。
-		/// </summary>
-		private const int m_sleepMs = 20;
-		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
 		/// </summary>
 		private readonly Action FinishOneImg = finish1img;
@@ -38,7 +34,7 @@ namespace PicMerge {
 			/// 按电脑核心数启动load，间隔一段时间加入避免同时IO。
 			for (int i = 0, n = int.Max(Environment.ProcessorCount - 1, 1); i < n && launchedCnt < files.Count; i++) {
 				tasks.Enqueue(ParaLoad(files[launchedCnt++]));
-				Thread.Sleep(m_sleepMs);
+				Thread.Sleep(300);
 			}
 
 			using PdfTarget pdfTarget = new(outputfilepath, title);
