@@ -71,6 +71,7 @@ namespace PicMerge {
 				try {
 					byte[] outbuffer = CompressTarget.GetCompressedImageData(ref inbuffer, m_param);
 					imageData = ImageDataFactory.Create(outbuffer);
+					imageData.SetDpi(4096, 4096);
 				}
 				catch (Exception ex) {
 					Logger.Log($"[Iodine Exception]: {ex.Message}, {ex.StackTrace}.");
@@ -83,6 +84,7 @@ namespace PicMerge {
 				try {
 					byte[] outbuffer = CompressTarget.GetImageSharpData(ref inbuffer, m_param);
 					imageData = ImageDataFactory.Create(outbuffer);
+					imageData.SetDpi(4096, 4096);
 				}
 				catch (Exception ex) {
 					Logger.Log($"[ImageSharp Exception]: {ex.Message}, {ex.StackTrace}.");
@@ -134,15 +136,16 @@ namespace PicMerge {
 				try {
 					byte[] outbuffer = CompressTarget.GetCompressedImageData(ref inbuffer, m_param);
 					imageData = ImageDataFactory.Create(outbuffer);
+					imageData.SetDpi(4096, 4096);
 				}
 				catch (Exception ex) {
 					Logger.Log($"[Iodine Exception]: {ex.Message}, {ex.StackTrace}.");
-					imageData = null;
 				}
 				/// 尝试利用 ImageSharp 压缩
 				try {
 					byte[] outbuffer = CompressTarget.GetImageSharpData(ref inbuffer, m_param);
 					imageData = ImageDataFactory.Create(outbuffer);
+					imageData.SetDpi(4096, 4096);
 				}
 				catch (Exception ex) {
 					Logger.Log($"[ImageSharp Exception]: {ex.Message}, {ex.StackTrace}.");
@@ -158,6 +161,7 @@ namespace PicMerge {
 
 		private ImageData CreateWithCheckingResize(ref byte[] inbuffer) {
 			var image = ImageDataFactory.Create(inbuffer);
+			image.SetDpi(4096, 4096);
 
 			if (m_param.resize && (m_param.width > 0 || m_param.height > 0 || m_param.shortSide > 0 || m_param.longSide > 0)) {
 				(float width, float height) = CompressTarget.ComputeDimensionF(
@@ -167,8 +171,9 @@ namespace PicMerge {
 					m_param.reduceByPowOf2
 				);
 				if (!(width > image.GetWidth() || height > image.GetHeight())) {
-					image.SetWidth(width);
-					image.SetHeight(height);
+					float xx = image.GetWidth() / width;
+					float yy = image.GetHeight() / height;
+					image.SetDpi((int)float.Round(4096 * xx), (int)float.Round(4096 * yy));
 				}
 			}
 
