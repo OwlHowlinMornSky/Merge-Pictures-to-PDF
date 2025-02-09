@@ -40,7 +40,8 @@ namespace PicMerge {
 				res = Type.BMP;
 			}
 			else if (b[0] == 'G' && b[1] == 'I' && b[2] == 'F') {
-				res = Type.GIF;
+				//res = Type.GIF;
+				res = Type.Unknown;
 			}
 			else if (b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F') {
 				res = Type.WEBP;
