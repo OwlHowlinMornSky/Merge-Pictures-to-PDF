@@ -1,9 +1,4 @@
 ﻿using iText.IO.Image;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Png;
-using System.Buffers;
-using static PicMerge.IMerger;
 
 namespace PicMerge {
 	internal class Merger(ImageParam ip) {
@@ -74,7 +69,7 @@ namespace PicMerge {
 			case FileType.Type.WEBP: // CSI, Img#.
 				/// 尝试利用 Caesium-Iodine 压缩
 				try {
-					byte[] outbuffer = GetCompressedImageData(ref inbuffer);
+					byte[] outbuffer = CompressTarget.GetCompressedImageData(ref inbuffer, m_param);
 					imageData = ImageDataFactory.Create(outbuffer);
 				}
 				catch (Exception ex) {
@@ -86,44 +81,8 @@ namespace PicMerge {
 			case FileType.Type.GIF:  // Img#, Direct.
 				/// 尝试利用 ImageSharp 压缩
 				try {
-					using Image image = Image.Load(inbuffer);
-					using MemoryStream imgSt = new();
-					switch (m_param.format) {
-					case 2: {
-						int quality = 10 - m_param.quality / 10;
-						PngEncoder encoder = new() {
-							SkipMetadata = true,
-							ColorType = PngColorType.Rgb,
-							CompressionLevel = quality switch {
-								1 => PngCompressionLevel.Level1,
-								2 => PngCompressionLevel.Level2,
-								3 => PngCompressionLevel.Level3,
-								4 => PngCompressionLevel.Level4,
-								5 => PngCompressionLevel.Level5,
-								6 => PngCompressionLevel.Level6,
-								7 => PngCompressionLevel.Level7,
-								8 => PngCompressionLevel.Level8,
-								9 => PngCompressionLevel.Level9,
-								10 => PngCompressionLevel.Level9,
-								_ => PngCompressionLevel.Level0,
-							}
-						};
-						image.SaveAsPng(imgSt, encoder);
-						break;
-					}
-					default: {
-						JpegEncoder encoder = new() {
-							SkipMetadata = true,
-							ColorType = JpegEncodingColor.Rgb,
-							Quality = m_param.quality,
-							Interleaved = false
-						};
-						image.SaveAsJpeg(imgSt, encoder);
-						break;
-					}
-					}
-					imageData = ImageDataFactory.Create(imgSt.ToArray());
-					imgSt.Close();
+					byte[] outbuffer = CompressTarget.GetImageSharpData(ref inbuffer, m_param);
+					imageData = ImageDataFactory.Create(outbuffer);
 				}
 				catch (Exception ex) {
 					Logger.Log($"[ImageSharp Exception]: {ex.Message}, {ex.StackTrace}.");
@@ -133,7 +92,7 @@ namespace PicMerge {
 					break;
 				/// 尝试 直接加载
 				try {
-					imageData = ImageDataFactory.Create(inbuffer);
+					imageData = CreateWithCheckingResize(ref inbuffer);
 				}
 				catch (Exception ex) {
 					Logger.Log($"[iText Exception]: {ex.Message}, {ex.StackTrace}.");
@@ -163,7 +122,7 @@ namespace PicMerge {
 			case FileType.Type.GIF:  // Img#, Direct.
 				/// 尝试 直接加载
 				try {
-					imageData = ImageDataFactory.Create(inbuffer);
+					imageData = CreateWithCheckingResize(ref inbuffer);
 				}
 				catch (Exception ex) {
 					Logger.Log($"[iText Exception]: {ex.Message}, {ex.StackTrace}.");
@@ -173,7 +132,7 @@ namespace PicMerge {
 			case FileType.Type.WEBP: // CSI, Img#.
 				/// 尝试利用 Caesium-Iodine 压缩
 				try {
-					byte[] outbuffer = GetCompressedImageData(ref inbuffer);
+					byte[] outbuffer = CompressTarget.GetCompressedImageData(ref inbuffer, m_param);
 					imageData = ImageDataFactory.Create(outbuffer);
 				}
 				catch (Exception ex) {
@@ -182,44 +141,8 @@ namespace PicMerge {
 				}
 				/// 尝试利用 ImageSharp 压缩
 				try {
-					using Image image = Image.Load(inbuffer);
-					using MemoryStream imgSt = new();
-					switch (m_param.format) {
-					case 2: {
-						int quality = 10 - m_param.quality / 10;
-						PngEncoder encoder = new() {
-							SkipMetadata = true,
-							ColorType = PngColorType.Rgb,
-							CompressionLevel = quality switch {
-								1 => PngCompressionLevel.Level1,
-								2 => PngCompressionLevel.Level2,
-								3 => PngCompressionLevel.Level3,
-								4 => PngCompressionLevel.Level4,
-								5 => PngCompressionLevel.Level5,
-								6 => PngCompressionLevel.Level6,
-								7 => PngCompressionLevel.Level7,
-								8 => PngCompressionLevel.Level8,
-								9 => PngCompressionLevel.Level9,
-								10 => PngCompressionLevel.Level9,
-								_ => PngCompressionLevel.Level0,
-							}
-						};
-						image.SaveAsPng(imgSt, encoder);
-						break;
-					}
-					default: {
-						JpegEncoder encoder = new() {
-							SkipMetadata = true,
-							ColorType = JpegEncodingColor.Rgb,
-							Quality = m_param.quality,
-							Interleaved = false
-						};
-						image.SaveAsJpeg(imgSt, encoder);
-						break;
-					}
-					}
-					imageData = ImageDataFactory.Create(imgSt.ToArray());
-					imgSt.Close();
+					byte[] outbuffer = CompressTarget.GetImageSharpData(ref inbuffer, m_param);
+					imageData = ImageDataFactory.Create(outbuffer);
 				}
 				catch (Exception ex) {
 					Logger.Log($"[ImageSharp Exception]: {ex.Message}, {ex.StackTrace}.");
@@ -233,21 +156,23 @@ namespace PicMerge {
 			return imageData;
 		}
 
-		private byte[] GetCompressedImageData(ref byte[] input) {
-			byte[] tempOutBuffer = ArrayPool<byte>.Shared.Rent(MapFileSize);
-			try {
-				int len = PicCompress.BufferCompressor.Compress(
-					ref input, ref tempOutBuffer,
-					m_param.format, m_param.quality,
-					m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
+		private ImageData CreateWithCheckingResize(ref byte[] inbuffer) {
+			var image = ImageDataFactory.Create(inbuffer);
+
+			if (m_param.resize && (m_param.width > 0 || m_param.height > 0 || m_param.shortSide > 0 || m_param.longSide > 0)) {
+				(float width, float height) = CompressTarget.ComputeDimensionF(
+					image.GetWidth(), image.GetHeight(),
+					m_param.width, m_param.height,
+					m_param.shortSide, m_param.longSide,
 					m_param.reduceByPowOf2
 				);
-				ReadOnlySpan<byte> tempSpan = new(tempOutBuffer, 0, len);
-				return tempSpan.ToArray();
+				if (!(width > image.GetWidth() || height > image.GetHeight())) {
+					image.SetWidth(width);
+					image.SetHeight(height);
+				}
 			}
-			finally {
-				ArrayPool<byte>.Shared.Return(tempOutBuffer, true);
-			}
+
+			return image;
 		}
 	}
 }
