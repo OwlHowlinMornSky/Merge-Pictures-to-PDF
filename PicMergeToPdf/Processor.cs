@@ -119,6 +119,7 @@ namespace PicMerge {
 			Logger.Init();
 			await Task.Run(() => { Process(paths); });
 			Logger.Reset();
+			GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
 			lock (m_lockForRunning) {
 				m_lockForRunning.value = 0;
 			}
