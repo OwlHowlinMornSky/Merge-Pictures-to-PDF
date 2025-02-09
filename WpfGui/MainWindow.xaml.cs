@@ -247,9 +247,14 @@ namespace WpfGui {
 			PicMerge.IOParam ioParam;
 			string destDir = "";
 			if (!Settings1.Default.IONoMove) {
-				var res = await AskForDestinationAsync(paths[0]);
+				var res = await AskForDestinationAsync(
+					string.IsNullOrEmpty(Settings1.Default.PrevSelectTargetPath) ?
+					paths[0] :
+					Settings1.Default.PrevSelectTargetPath
+				);
 				if (res == null)
 					return;
+				Settings1.Default.PrevSelectTargetPath = res;
 				destDir = res;
 			}
 			ioParam = new(
@@ -314,8 +319,7 @@ namespace WpfGui {
 					Microsoft.Win32.OpenFolderDialog dialog = new() {
 						Multiselect = false,
 						Title = $"{Title}: {App.Current.TryFindResource("ChooseDestinationDir").ToString() ?? "output location"}",
-						DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-						InitialDirectory = Path.GetDirectoryName(defpath)
+						InitialDirectory = Directory.Exists(defpath) ? defpath : Path.GetDirectoryName(defpath)
 					};
 
 					// Show open folder dialog box

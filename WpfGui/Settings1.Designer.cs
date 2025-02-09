@@ -346,5 +346,17 @@ namespace WpfGui {
                 this["PageDpi"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PrevSelectTargetPath {
+            get {
+                return ((string)(this["PrevSelectTargetPath"]));
+            }
+            set {
+                this["PrevSelectTargetPath"] = value;
+            }
+        }
     }
 }
