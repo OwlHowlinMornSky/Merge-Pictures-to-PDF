@@ -1,4 +1,5 @@
-﻿
+﻿using System.Buffers;
+
 namespace PicMerge {
 	internal static class FileType {
 
@@ -18,9 +19,15 @@ namespace PicMerge {
 		}
 
 		internal static Type CheckType(Stream file) {
-			BinaryReader br = new(file);
-			var b = br.ReadBytes(8);
-			return CheckType(b);
+			byte[] b = ArrayPool<byte>.Shared.Rent(8);
+			try {
+				if (file.Read(b, 0, 8) != 8)
+					return Type.Unknown;
+				return CheckType(b);
+			}
+			finally {
+				ArrayPool<byte>.Shared.Return(b, true);
+			}
 		}
 
 		internal static Type CheckType(byte[] b) {

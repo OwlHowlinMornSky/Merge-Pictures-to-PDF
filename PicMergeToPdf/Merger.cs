@@ -41,21 +41,17 @@ namespace PicMerge {
 					return null;
 				}
 				FileType.Type type;
-				byte[]? inbuffer = null;
-				try {
-					lock (m_lock) {
-						type = FileType.CheckType(instream);
-						instream.Seek(0, SeekOrigin.Begin);
-						inbuffer = ArrayPool<byte>.Shared.Rent((int)instream.Length);
-						instream.ReadExactly(inbuffer, 0, (int)instream.Length);
+				byte[] inbuffer;
+				lock (m_lock) {
+					type = FileType.CheckType(instream);
+					if (type == FileType.Type.Unknown) {
+						return null;
 					}
-					return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
+					instream.Seek(0, SeekOrigin.Begin);
+					inbuffer = new byte[instream.Length];
+					instream.ReadExactly(inbuffer, 0, (int)instream.Length);
 				}
-				finally {
-					if (inbuffer != null) {
-						ArrayPool<byte>.Shared.Return(inbuffer);
-					}
-				}
+				return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
 			}
 			catch (Exception ex) {
 				Logger.Log($"[ReadImage Exception]: {ex.Message}, {ex.StackTrace}.");
@@ -250,7 +246,7 @@ namespace PicMerge {
 				return tempSpan.ToArray();
 			}
 			finally {
-				ArrayPool<byte>.Shared.Return(tempOutBuffer);
+				ArrayPool<byte>.Shared.Return(tempOutBuffer, true);
 			}
 		}
 	}

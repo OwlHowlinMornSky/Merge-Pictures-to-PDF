@@ -1,4 +1,5 @@
 ﻿using iText.IO.Image;
+using SharpCompress;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -79,58 +80,59 @@ namespace PicMerge {
 		}
 
 		private async Task CompressAndAddAsync(string imgKey, EntryStream imgFileStream, long imgSize) {
+			ImageData? imageData = null;
 			try {
-				ImageData? imageData = await Task.Run(() => { return ReadImageWithOutLock(imgFileStream, imgSize); });
-				if (imageData == null) {
-					m_result.Add(new FileResult(0x80030004, imgKey, StrUnsupported));
-					return;
-				}
-
-				string imgDirChain = Path.GetDirectoryName(imgKey) ?? "";
-
-				if (!m_pdfs.ContainsKey(imgDirChain)) {
-					string pdfDir = Path.Combine(m_outputDir, imgDirChain);
-					string pdfName;
-					if (string.IsNullOrEmpty(imgDirChain)) {
-						pdfName = "FilesAtRoot";
-					}
-					else {
-						pdfName = Path.GetFileName(imgDirChain);
-						pdfDir = Path.GetDirectoryName(pdfDir) ?? pdfDir;
-					}
-					if (!m_keepStruct)
-						pdfDir = m_outputDir;
-					string pdfPath = EnumFileName(pdfDir, pdfName, ".pdf");
-					EnsureFileCanExsist(pdfPath);
-					m_pdfs.Add(imgDirChain, Tuple.Create<PdfTarget, List<string>>(new PdfTarget(pdfPath, Path.Combine(Path.GetFileNameWithoutExtension(m_archivePath), imgDirChain)), []));
-				}
-				if (!m_pdfs.TryGetValue(imgDirChain, out var tuple) || tuple == null) {
-					m_result.Add(new FileResult(0x80030005, imgKey, "Unable to open target PDF file."));
-					return;
-				}
-				var pdfTarget = tuple.Item1;
-				var imageNames = tuple.Item2;
-				string curImgName = Path.GetFileName(imgKey);
-
-				int index = imageNames.Count;
-				for (; index > 0; index--) {
-					var imageName = imageNames[index - 1];
-					if (StrCmpLogicalW(imageName, curImgName) <= 0) {
-						break;
-					}
-				}
-				tuple.Item2.Insert(index, curImgName);
-
-				if (!pdfTarget.AddImage(imageData, in m_pp, index)) {
-					m_result.Add(new FileResult(0x80030006, imgKey, StrFailedToAdd));
-					return;
-				}
-
-				m_result.Add(new FileResult(0x1, imgKey));
+				imageData = await Task.Run(() => { return ReadImageWithOutLock(imgFileStream, imgSize); });
 			}
 			finally {
 				imgFileStream.Dispose();
 			}
+			if (imageData == null) {
+				m_result.Add(new FileResult(0x80030004, imgKey, StrUnsupported));
+				return;
+			}
+
+			string imgDirChain = Path.GetDirectoryName(imgKey) ?? "";
+
+			if (!m_pdfs.ContainsKey(imgDirChain)) {
+				string pdfDir = Path.Combine(m_outputDir, imgDirChain);
+				string pdfName;
+				if (string.IsNullOrEmpty(imgDirChain)) {
+					pdfName = "FilesAtRoot";
+				}
+				else {
+					pdfName = Path.GetFileName(imgDirChain);
+					pdfDir = Path.GetDirectoryName(pdfDir) ?? pdfDir;
+				}
+				if (!m_keepStruct)
+					pdfDir = m_outputDir;
+				string pdfPath = EnumFileName(pdfDir, pdfName, ".pdf");
+				EnsureFileCanExsist(pdfPath);
+				m_pdfs.Add(imgDirChain, Tuple.Create<PdfTarget, List<string>>(new PdfTarget(pdfPath, Path.Combine(Path.GetFileNameWithoutExtension(m_archivePath), imgDirChain)), []));
+			}
+			if (!m_pdfs.TryGetValue(imgDirChain, out var tuple) || tuple == null) {
+				m_result.Add(new FileResult(0x80030005, imgKey, "Unable to open target PDF file."));
+				return;
+			}
+			var pdfTarget = tuple.Item1;
+			var imageNames = tuple.Item2;
+			string curImgName = Path.GetFileName(imgKey);
+
+			int index = imageNames.Count;
+			for (; index > 0; index--) {
+				var imageName = imageNames[index - 1];
+				if (StrCmpLogicalW(imageName, curImgName) <= 0) {
+					break;
+				}
+			}
+			tuple.Item2.Insert(index, curImgName);
+
+			if (!pdfTarget.AddImage(imageData, in m_pp, index)) {
+				m_result.Add(new FileResult(0x80030006, imgKey, StrFailedToAdd));
+				return;
+			}
+
+			m_result.Add(new FileResult(0x1, imgKey));
 		}
 
 		/// <summary>
@@ -141,19 +143,30 @@ namespace PicMerge {
 				if (length > int.MaxValue || length < 8) {
 					return null;
 				}
+
 				FileType.Type type;
-				byte[]? inbuffer = null;
+				byte[] inbuffer = new byte[length];
+				using MemoryStream memoryStream = new(inbuffer, true);
+
+				byte[] b = ArrayPool<byte>.Shared.Rent(8);
 				try {
-					inbuffer = ArrayPool<byte>.Shared.Rent((int)length);
-					instream.ReadExactly(inbuffer, 0, (int)length);
-					type = FileType.CheckType(inbuffer);
-					return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
-				}
-				finally {
-					if (inbuffer != null) {
-						ArrayPool<byte>.Shared.Return(inbuffer);
+					if (instream.Read(b, 0, 8) != 8) {
+						type = FileType.Type.Unknown;
+					}
+					else {
+						type = FileType.CheckType(b);
+						memoryStream.Write(b, 0, b.Length);
 					}
 				}
+				finally {
+					ArrayPool<byte>.Shared.Return(b, true);
+				}
+				if (type == FileType.Type.Unknown) {
+					return null;
+				}
+
+				instream.CopyTo(memoryStream);
+				return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
 			}
 			catch (Exception ex) {
 				Logger.Log($"[Archive Exception]: {ex.Message}, {ex.StackTrace}.");
