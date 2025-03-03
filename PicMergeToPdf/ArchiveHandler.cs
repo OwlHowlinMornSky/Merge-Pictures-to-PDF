@@ -88,6 +88,7 @@ namespace PicMerge {
 				imgFileStream.Dispose();
 			}
 			if (imageData == null) {
+				Logger.Log($"[Archive Failed] In \'{m_archivePath}\', failed to process file \'{imgKey}\'.");
 				m_result.Add(new FileResult(0x80030004, imgKey, StrUnsupported));
 				return;
 			}

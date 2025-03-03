@@ -3,10 +3,17 @@ namespace PicMerge {
 	internal static class Logger {
 
 		private static string m_logFileName = "";
+		private static bool m_used = false;
 
 		public static string FilePath {
 			get {
 				return m_logFileName;
+			}
+		}
+
+		public static bool Used {
+			get {
+				return m_used;
 			}
 		}
 
@@ -24,12 +31,14 @@ namespace PicMerge {
 				path = Path.Combine(dir, time + $"({i}).log");
 			}
 			m_logFileName = path;
+			m_used = false;
 		}
 
 		internal static void Reset() {
 			m_file?.Dispose();
 			m_file = null;
 			m_logFileName = "";
+			m_used = false;
 		}
 
 		internal static void Log(string message) {
@@ -42,6 +51,7 @@ namespace PicMerge {
 				m_file = new(m_logFileName);
 			}
 			m_file.LogString(message);
+			m_used = true;
 		}
 
 		private class LogFile : IDisposable {

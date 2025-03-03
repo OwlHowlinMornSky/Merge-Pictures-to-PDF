@@ -15,14 +15,19 @@ namespace PicMerge {
 		/// <param name="filepath">图片文件路径</param>
 		/// <returns>加载结果</returns>
 		internal ImageData? LoadImage(string filepath) {
+			ImageData? res;
 			try {
 				using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
-				return ReadImage(inputStream);
+				res = ReadImage(inputStream);
 			}
 			catch (Exception ex) {
-				Logger.Log($"[LoadImage Exception]: {ex.Message}, {ex.StackTrace}.");
+				Logger.Log($"[LoadImage Exception]\nPath: \'{filepath}\'\nMessage: {ex.Message}\nAt {ex.StackTrace}.");
 				return null;
 			}
+			if (res == null) {
+				Logger.Log($"[LoadImage Failed] Path: \'{filepath}\'.");
+			}
+			return res;
 		}
 
 		/// <summary>

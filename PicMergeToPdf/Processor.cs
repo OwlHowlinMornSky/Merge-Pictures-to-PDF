@@ -192,7 +192,7 @@ namespace PicMerge {
 			while (waitings.Count > 0) {
 				ProcessOneItem(waitings.Dequeue());
 			}
-			if (m_haveFailedFiles) {
+			if (m_haveFailedFiles || Logger.Used) {
 				PopBoxWarning(Logger.FilePath);
 			}
 		}
