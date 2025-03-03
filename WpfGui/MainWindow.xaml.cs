@@ -246,22 +246,35 @@ namespace WpfGui {
 
 			PicMerge.IOParam ioParam;
 			string destDir = "";
+			string moveDestDir = "";
 			if (!Settings1.Default.IONoMove) {
 				var res = await AskForDestinationAsync(
 					string.IsNullOrEmpty(Settings1.Default.PrevSelectTargetPath) ?
-					paths[0] :
-					Settings1.Default.PrevSelectTargetPath
+					paths[0] : Settings1.Default.PrevSelectTargetPath
 				);
 				if (res == null)
 					return;
 				Settings1.Default.PrevSelectTargetPath = res;
 				destDir = res;
 			}
+			if (Settings1.Default.IOMoveProcessed) {
+				var res = await AskForDestinationAsync(
+					string.IsNullOrEmpty(Settings1.Default.PrevSelectMovePath) ?
+					paths[0] : Settings1.Default.PrevSelectMovePath,
+					true
+				);
+				if (res == null)
+					return;
+				Settings1.Default.PrevSelectMovePath = res;
+				moveDestDir = res;
+			}
 			ioParam = new(
 				_recursion: Settings1.Default.IORecurse,
 				_keepStruct: Settings1.Default.IOKeepStruct,
 				_stayNoMove: Settings1.Default.IONoMove,
-				_targetPath: destDir
+				_targetPath: destDir,
+				_moveProcessed: Settings1.Default.IOMoveProcessed,
+				_moveDest: moveDestDir
 			);
 			PicMerge.PageParam pageParam = new(
 				_fixedType:
@@ -311,14 +324,14 @@ namespace WpfGui {
 		/// </summary>
 		/// <param name="defpath">初始目录</param>
 		/// <returns>选择的目录，或者 null 表示取消</returns>
-		private async Task<string?> AskForDestinationAsync(string defpath) {
+		private async Task<string?> AskForDestinationAsync(string defpath, bool isMoveTo = false) {
 			return await Task.Run(() => {
 				string? res = null;
 				App.Current.Dispatcher.Invoke(() => {
 					// Configure open folder dialog box
 					Microsoft.Win32.OpenFolderDialog dialog = new() {
 						Multiselect = false,
-						Title = $"{Title}: {App.Current.TryFindResource("ChooseDestinationDir").ToString() ?? "output location"}",
+						Title = $"{Title}: {App.Current.TryFindResource(isMoveTo ? "ChooseMoveDestinationDir" : "ChooseDestinationDir").ToString() ?? "output location"}",
 						InitialDirectory = Directory.Exists(defpath) ? defpath : Path.GetDirectoryName(defpath)
 					};
 

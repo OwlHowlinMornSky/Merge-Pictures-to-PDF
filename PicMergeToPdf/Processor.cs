@@ -67,6 +67,11 @@ namespace PicMerge {
 		private bool m_haveFailedFiles = false;
 
 		/// <summary>
+		/// 此次拖放任务的基准目录。
+		/// </summary>
+		private string m_dragBaseDirPath = "";
+
+		/// <summary>
 		/// 用于子任务报告完成一张图片 的 回调目标。
 		/// </summary>
 		private void CallbackFinishOneImgFile() {
@@ -114,6 +119,11 @@ namespace PicMerge {
 			if (!param.stayNoMove && string.IsNullOrEmpty(param.destinationPath)) {
 				return false;
 			}
+			if (param.moveImagesProcessed && string.IsNullOrEmpty(param.moveToPath)) {
+				return false;
+			}
+			if (param.moveImagesProcessed)
+				param.keepPdfInFolder = true;
 			m_param = param;
 			m_internalParam = new(pp, ip);
 			Logger.Init();
@@ -209,7 +219,9 @@ namespace PicMerge {
 				string dstDir;
 
 				if (m_param.stayNoMove) {
-					dstDir = Path.GetDirectoryName(srcDir) ?? srcDir;
+					dstDir = srcDir;
+					if (!m_param.keepPdfInFolder)
+						dstDir = Path.GetDirectoryName(dstDir) ?? dstDir;
 				}
 				else if (m_param.keepStruct) {
 					dstDir = Path.Combine(m_param.destinationPath, relative);
@@ -257,7 +269,7 @@ namespace PicMerge {
 		/// <param name="outputPath">输出文件</param>
 		/// <param name="title">内定标题（不是文件名）</param>
 		private void ProcessOneFolder(string sourceDir, string outputPath, string? title) {
-			List<string> files = Directory.EnumerateFiles(sourceDir).ToList();
+			List<string> files = [.. Directory.EnumerateFiles(sourceDir)];
 			ProcessFiles(files, outputPath, title);
 		}
 
@@ -279,6 +291,20 @@ namespace PicMerge {
 			List<IMerger.FileResult> result = merger.Process(outputPath, files, title);
 			CallbackFinishAllImgFile();
 			CheckResultListFailed(title ?? outputPath, ref result);
+			if (m_param.moveImagesProcessed && !string.IsNullOrEmpty(m_param.moveToPath) && !string.IsNullOrEmpty(m_dragBaseDirPath)) {
+				var succeed = result.Where(r => r.code < 0x80000000);
+				foreach (var info in succeed) {
+					string relative = Path.GetRelativePath(m_dragBaseDirPath, info.filename);
+					string moveDest = Path.Combine(m_param.moveToPath, relative);
+					try {
+						IMerger.EnsureFileCanExsist(moveDest);
+						File.Move(info.filename, moveDest);
+					}
+					catch (Exception ex) {
+						Logger.Log($"[Failed to Move] \'{info.filename}\' to \'{moveDest}\' because \'{ex.Message}\'.");
+					}
+				}
+			}
 		}
 
 		private void ProcessArchive(List<string> files) {
@@ -311,6 +337,7 @@ namespace PicMerge {
 		) {
 			int cnt = 0;
 			List<string> tmpDirs = [];
+			m_dragBaseDirPath = Path.GetDirectoryName(paths[0]) ?? "";
 			foreach (var path in paths) {  // 遍历拖入的路径。
 				if (File.Exists(path)) {   // 是否是文件。
 					files.Add(path);

@@ -161,5 +161,8 @@ namespace WpfGui {
 			MainWindow.ChangeLang(Settings1.Default.Language);
 		}
 
+		private void ChkboxMoveProcessed_CheckedChanged(object sender, RoutedEventArgs e) {
+			Settings1.Default.IOMoveProcessed = chkboxMoveProcessed.IsChecked ?? false;
+		}
 	}
 }

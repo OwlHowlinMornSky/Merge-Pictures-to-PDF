@@ -357,6 +357,30 @@ namespace WpfGui {
             set {
                 this["PrevSelectTargetPath"] = value;
             }
-        }
-    }
+		}
+
+		[global::System.Configuration.UserScopedSettingAttribute()]
+		[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+		[global::System.Configuration.DefaultSettingValueAttribute("")]
+		public string PrevSelectMovePath {
+			get {
+				return ((string)(this["PrevSelectMovePath"]));
+			}
+			set {
+				this["PrevSelectMovePath"] = value;
+			}
+		}
+
+		[global::System.Configuration.UserScopedSettingAttribute()]
+		[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+		[global::System.Configuration.DefaultSettingValueAttribute("False")]
+		public bool IOMoveProcessed {
+			get {
+				return ((bool)(this["IOMoveProcessed"]));
+			}
+			set {
+				this["IOMoveProcessed"] = value;
+			}
+		}
+	}
 }

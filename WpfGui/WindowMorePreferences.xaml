@@ -8,11 +8,14 @@
         Title="{DynamicResource DetailTitle}" ResizeMode="NoResize" SizeToContent="WidthAndHeight" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Closing="Window_Closing">
     <StackPanel Margin="10,10" MinWidth="300">
         <GroupBox Header="{DynamicResource DetailCompressType}" Margin="0,0,0,0">
-            <ComboBox x:Name="comboBoxCompressType" Margin="10,10" SelectionChanged="ComboBoxCompressType_SelectionChanged">
-                <ComboBoxItem Content="{DynamicResource DetailCompressKeepType}"/>
-                <ComboBoxItem Content="JPEG"/>
-                <ComboBoxItem Content="PNG"/>
-            </ComboBox>
+            <StackPanel >
+                <ComboBox x:Name="comboBoxCompressType" Margin="10,10" SelectionChanged="ComboBoxCompressType_SelectionChanged">
+                    <ComboBoxItem Content="{DynamicResource DetailCompressKeepType}"/>
+                    <ComboBoxItem Content="JPEG"/>
+                    <ComboBoxItem Content="PNG"/>
+                </ComboBox>
+                <CheckBox x:Name="chkboxMoveProcessed" Margin="10,0" Content="{DynamicResource DetailMoveProcessed}" Checked="ChkboxMoveProcessed_CheckedChanged" Unchecked="ChkboxMoveProcessed_CheckedChanged"/>
+            </StackPanel>
         </GroupBox>
         <GroupBox Header="{DynamicResource DetailCompressQuality}" Margin="0,10,0,0">
             <Grid Margin="10,10,0,10">
