@@ -304,6 +304,16 @@ namespace PicMerge {
 						Logger.Log($"[Failed to Move] \'{info.filename}\' to \'{moveDest}\' because \'{ex.Message}\'.");
 					}
 				}
+
+				if (succeed.Any()) {
+					string firstFile = succeed.First().filename;
+					var dir = Path.GetDirectoryName(firstFile);
+					if (dir != null) {
+						if (!Directory.EnumerateFileSystemEntries(dir).Any()) {
+							Directory.Delete(dir, false);
+						}
+					}
+				}
 			}
 		}
 
