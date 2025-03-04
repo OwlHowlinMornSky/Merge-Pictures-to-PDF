@@ -16,6 +16,9 @@ namespace WpfGui {
 			gpBoxDebug.Visibility = Visibility.Hidden;
 #endif
 
+			chkboxMoveProcessed.IsChecked = Settings1.Default.IOMoveProcessed;
+			chkboxPdfInFolder.IsChecked = Settings1.Default.IOPdfInFolder;
+
 			comboBoxCompressType.SelectedIndex = int.Clamp(Settings1.Default.CompressFormat, 0, comboBoxCompressType.Items.Count - 1);
 
 			sliderQuality.Value = double.Clamp(Settings1.Default.CompressQuality, 0, 100);
@@ -162,6 +165,8 @@ namespace WpfGui {
 		}
 
 		private void ChkboxMoveProcessed_CheckedChanged(object sender, RoutedEventArgs e) {
+			if (!Started)
+				return;
 			Settings1.Default.IOMoveProcessed = chkboxMoveProcessed.IsChecked ?? false;
 			Settings1.Default.IOPdfInFolder = chkboxPdfInFolder.IsChecked ?? false;
 		}
