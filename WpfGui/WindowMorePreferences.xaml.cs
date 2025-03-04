@@ -163,6 +163,7 @@ namespace WpfGui {
 
 		private void ChkboxMoveProcessed_CheckedChanged(object sender, RoutedEventArgs e) {
 			Settings1.Default.IOMoveProcessed = chkboxMoveProcessed.IsChecked ?? false;
+			Settings1.Default.IOPdfInFolder = chkboxPdfInFolder.IsChecked ?? false;
 		}
 	}
 }
