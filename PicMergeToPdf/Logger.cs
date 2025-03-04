@@ -4,6 +4,7 @@ namespace PicMerge {
 
 		private static string m_logFileName = "";
 		private static bool m_used = false;
+		private static object m_lock = new();
 
 		public static string FilePath {
 			get {
@@ -44,14 +45,16 @@ namespace PicMerge {
 		internal static void Log(string message) {
 			if (string.IsNullOrEmpty(message))
 				return;
-			if (m_file == null) {
-				if (string.IsNullOrEmpty(m_logFileName)) {
-					Init();
+			lock (m_lock) {
+				if (m_file == null) {
+					if (string.IsNullOrEmpty(m_logFileName)) {
+						Init();
+					}
+					m_file = new(m_logFileName);
 				}
-				m_file = new(m_logFileName);
+				m_file.LogString(message);
+				m_used = true;
 			}
-			m_file.LogString(message);
-			m_used = true;
 		}
 
 		private class LogFile : IDisposable {
