@@ -382,5 +382,17 @@ namespace WpfGui {
 				this["IOMoveProcessed"] = value;
 			}
 		}
+
+		[global::System.Configuration.UserScopedSettingAttribute()]
+		[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+		[global::System.Configuration.DefaultSettingValueAttribute("False")]
+		public bool IOPdfInFolder {
+			get {
+				return ((bool)(this["IOPdfInFolder"]));
+			}
+			set {
+				this["IOPdfInFolder"] = value;
+			}
+		}
 	}
 }

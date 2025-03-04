@@ -7,7 +7,9 @@ namespace PicMerge {
 		string _targetPath,
 
 		bool _moveProcessed,
-		string _moveDest
+		string _moveDest,
+
+		bool _pdfInFolder
 	) {
 		/// <summary>
 		/// 递归输入文件夹。
@@ -31,7 +33,7 @@ namespace PicMerge {
 		/// </summary>
 		public bool moveImagesProcessed = _moveProcessed;
 		public string moveToPath = _moveDest;
-		public bool keepPdfInFolder = false;
+		public bool keepPdfInFolder = _pdfInFolder;
 	}
 	public readonly struct PageParam(
 		PageParam.FixedType _fixedType, float _width, float _height, uint _dpi

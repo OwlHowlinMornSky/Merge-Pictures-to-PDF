@@ -30,8 +30,9 @@
     <sys:String x:Key="ChooseMoveDestinationDir">选择移动位置</sys:String>
 
     <sys:String x:Key="DetailTitle">更多选项</sys:String>
-    <sys:String x:Key="DetailCompressType">压缩目标格式</sys:String>
     <sys:String x:Key="DetailMoveProcessed">将已处理的图片移动到其他位置</sys:String>
+    <sys:String x:Key="DetailPdfInFolder">将合并的 PDF 置于文件夹内 而不是置于上一级</sys:String>
+    <sys:String x:Key="DetailCompressType">压缩目标格式</sys:String>
     <sys:String x:Key="DetailCompressKeepType">保持原格式</sys:String>
     <sys:String x:Key="DetailCompressQuality">压缩质量</sys:String>
     <sys:String x:Key="DetailResizeWhenCompress">压缩时改变图片大小</sys:String>

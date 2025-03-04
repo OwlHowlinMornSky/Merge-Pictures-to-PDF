@@ -30,8 +30,9 @@ Check log file for details:
     <sys:String x:Key="ChooseMoveDestinationDir">Choose move destination</sys:String>
 
     <sys:String x:Key="DetailTitle">More Preferences</sys:String>
-    <sys:String x:Key="DetailCompressType">Compress Target Type</sys:String>
     <sys:String x:Key="DetailMoveProcessed">Move Processed Images to Another Place</sys:String>
+    <sys:String x:Key="DetailPdfInFolder">Let output PDF be in folders instead of the parent folders.</sys:String>
+    <sys:String x:Key="DetailCompressType">Compress Target Type</sys:String>
     <sys:String x:Key="DetailCompressKeepType">Keep Original Type</sys:String>
     <sys:String x:Key="DetailCompressQuality">Compress Quality</sys:String>
     <sys:String x:Key="DetailResizeWhenCompress">Resize when compressing</sys:String>

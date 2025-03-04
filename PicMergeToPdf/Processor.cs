@@ -116,14 +116,16 @@ namespace PicMerge {
 				}
 				m_lockForRunning.value = 1;
 			}
+
+			// 非 输出到原位 时，必须 指定目的路径。 否则任务启动失败。
 			if (!param.stayNoMove && string.IsNullOrEmpty(param.destinationPath)) {
 				return false;
 			}
+			// 将处理的图片移动到另一个位置 时，必须 指定移动地点。 否则任务启动失败。
 			if (param.moveImagesProcessed && string.IsNullOrEmpty(param.moveToPath)) {
 				return false;
 			}
-			if (param.moveImagesProcessed)
-				param.keepPdfInFolder = true;
+
 			m_param = param;
 			m_internalParam = new(pp, ip);
 			Logger.Init();

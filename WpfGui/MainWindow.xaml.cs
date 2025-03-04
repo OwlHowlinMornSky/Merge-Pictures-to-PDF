@@ -274,7 +274,8 @@ namespace WpfGui {
 				_stayNoMove: Settings1.Default.IONoMove,
 				_targetPath: destDir,
 				_moveProcessed: Settings1.Default.IOMoveProcessed,
-				_moveDest: moveDestDir
+				_moveDest: moveDestDir,
+				_pdfInFolder: Settings1.Default.IOPdfInFolder
 			);
 			PicMerge.PageParam pageParam = new(
 				_fixedType:
