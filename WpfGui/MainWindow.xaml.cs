@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using iText.Forms.Form.Element;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -66,10 +67,11 @@ namespace WpfGui {
 		/// <param name="n">分母</param>
 		private void BarSetNum(int i, int n) {
 			lock (m_lockBar) {
-				double ratio = 100.0 * i / n;
+				double ratio = 1.0 * i / n;
 				App.Current.Dispatcher.Invoke(() => {
-					labelTotal.Content = string.Format(App.Current.TryFindResource("HaveFinishedPercent").ToString() ?? "{0:F2}", ratio);
-					porgBarTotal.Value = ratio;
+					TaskbarItemInfo.ProgressValue = ratio;
+					labelTotal.Content = string.Format(App.Current.TryFindResource("HaveFinishedPercent").ToString() ?? "{0:F2}", ratio * 100.0);
+					porgBarTotal.Value = ratio * 100.0;
 				});
 			}
 		}
@@ -80,6 +82,7 @@ namespace WpfGui {
 		private void BarSetFinish() {
 			lock (m_lockBar) {
 				App.Current.Dispatcher.Invoke(() => {
+					TaskbarItemInfo.ProgressValue = 1.0;
 					labelTotal.Content = App.Current.TryFindResource("Ready").ToString();
 					porgBarTotal.Value = 100.0;
 				});
@@ -87,7 +90,9 @@ namespace WpfGui {
 		}
 
 		private void PopWarning(string logPath) {
-			App.Current.Dispatcher.BeginInvoke(() => {
+			App.Current.Dispatcher.Invoke(() => {
+				TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
+				Activate();
 				MessageBox.Show(
 					this,
 					string.Format(App.Current.TryFindResource("CannotProcess") as string ?? "Failed files in log: {0}", logPath),
@@ -296,10 +301,13 @@ namespace WpfGui {
 				_longSide: Settings1.Default.CompressResizeLong ? Settings1.Default.CompressResizeLongValue : 0,
 				_reduceBy2: Settings1.Default.CompressResizeReduceByPow2
 			);
+			TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
 			bool succeed = await m_processor.StartAsync(paths, pageParam, imageParam, ioParam);
 			if (!succeed) {
 				await PopErrorAsync(App.Current.TryFindResource("WaitForCurrentTask").ToString() ?? "Error.");
 			}
+			TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.None;
+			TaskbarItemInfo.ProgressValue = 0.0;
 			return;
 		}
 
