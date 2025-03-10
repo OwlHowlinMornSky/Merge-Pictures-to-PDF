@@ -7,6 +7,8 @@
         mc:Ignorable="d"
         Title="{DynamicResource DetailTitle}" ResizeMode="NoResize" SizeToContent="WidthAndHeight" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Closing="Window_Closing">
     <StackPanel Margin="10,10" MinWidth="300">
+        <CheckBox x:Name="chkboxMoveProcessed" Margin="5,0,5,5" Content="{DynamicResource DetailMoveProcessed}" Checked="ChkboxMoveProcessed_CheckedChanged" Unchecked="ChkboxMoveProcessed_CheckedChanged"/>
+        <CheckBox x:Name="chkboxPdfInFolder" Margin="5,0,5,5" Content="{DynamicResource DetailPdfInFolder}" Checked="ChkboxMoveProcessed_CheckedChanged" Unchecked="ChkboxMoveProcessed_CheckedChanged"/>
         <GroupBox Header="{DynamicResource DetailCompressType}" Margin="0,0,0,0">
             <ComboBox x:Name="comboBoxCompressType" Margin="10,10" SelectionChanged="ComboBoxCompressType_SelectionChanged">
                 <ComboBoxItem Content="{DynamicResource DetailCompressKeepType}"/>

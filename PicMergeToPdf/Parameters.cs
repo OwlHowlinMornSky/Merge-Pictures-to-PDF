@@ -4,7 +4,12 @@ namespace PicMerge {
 		bool _recursion,
 		bool _keepStruct,
 		bool _stayNoMove,
-		string _targetPath
+		string _targetPath,
+
+		bool _moveProcessed,
+		string _moveDest,
+
+		bool _pdfInFolder
 	) {
 		/// <summary>
 		/// 递归输入文件夹。
@@ -19,13 +24,16 @@ namespace PicMerge {
 		/// </summary>
 		public bool stayNoMove = _stayNoMove;
 		/// <summary>
-		/// 把合成的PDF放在和图片同样的目录级别中。即设为true时，不把PDF放在目录并排位置。
-		/// </summary>
-		public bool keepPdfInFolder = false;
-		/// <summary>
 		/// 当 stayNoMove 为false时，此项必须包含目标目录。
 		/// </summary>
 		public string destinationPath = _targetPath;
+		/// <summary>
+		/// 把成功处理的图片移动到另一个位置，同时合成的PDF将放在和图片同样的目录级别中。即设为true时，不把PDF放在目录并排位置。
+		/// 这样有助于在图片与其他文件混合存放时 保留原始的文件夹结构。
+		/// </summary>
+		public bool moveImagesProcessed = _moveProcessed;
+		public string moveToPath = _moveDest;
+		public bool keepPdfInFolder = _pdfInFolder;
 	}
 	public readonly struct PageParam(
 		PageParam.FixedType _fixedType, float _width, float _height, uint _dpi

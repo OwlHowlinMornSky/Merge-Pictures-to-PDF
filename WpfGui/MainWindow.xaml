@@ -5,6 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Pictures to PDF" ResizeMode="NoResize" AllowDrop="True" Drop="Window_Drop" DragEnter="Window_DragEnter" Closing="Window_Closing" SizeToContent="WidthAndHeight">
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo ProgressState="Normal"/>
+    </Window.TaskbarItemInfo>
     <StackPanel x:Name="GridMain" AllowDrop="True">
         <GroupBox x:Name="GpBoxPageSize" Header="{DynamicResource PageSizeBox}" Margin="10,10,10,0" VerticalAlignment="Top" Grid.ColumnSpan="2">
             <Grid x:Name="GridPageSize">
