@@ -21,7 +21,7 @@ namespace PicMerge {
 				res = ReadImage(inputStream);
 			}
 			catch (Exception ex) {
-				Logger.Log($"[LoadImage Exception]\nPath: \'{filepath}\'\nMessage: {ex.Message}\nAt {ex.StackTrace}.");
+				Logger.Log($"[LoadImage Exception]\nPath: \'{filepath}\'\nMessage: {ex.Message}.");
 				return null;
 			}
 			if (res == null) {
@@ -54,7 +54,7 @@ namespace PicMerge {
 				return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
 			}
 			catch (Exception ex) {
-				Logger.Log($"[ReadImage Exception]: {ex.Message}, {ex.StackTrace}.");
+				Logger.Log($"[ReadImage Exception]: {ex.Message}.");
 				return null;
 			}
 		}
@@ -79,7 +79,7 @@ namespace PicMerge {
 					imageData.SetDpi(4096, 4096);
 				}
 				catch (Exception ex) {
-					Logger.Log($"[Iodine Exception]: {ex.Message}, {ex.StackTrace}.");
+					Logger.Log($"[Iodine Exception]: {ex.Message}.");
 					goto case FileType.Type.GIF;
 				}
 				break;
@@ -92,7 +92,7 @@ namespace PicMerge {
 					imageData.SetDpi(4096, 4096);
 				}
 				catch (Exception ex) {
-					Logger.Log($"[ImageSharp Exception]: {ex.Message}, {ex.StackTrace}.");
+					Logger.Log($"[ImageSharp Exception]: {ex.Message}.");
 					imageData = null;
 				}
 				if (type == FileType.Type.WEBP)
@@ -102,7 +102,7 @@ namespace PicMerge {
 					imageData = CreateWithCheckingResize(ref inbuffer);
 				}
 				catch (Exception ex) {
-					Logger.Log($"[iText Exception]: {ex.Message}, {ex.StackTrace}.");
+					Logger.Log($"[iText Exception]: {ex.Message}.");
 					imageData = null;
 				}
 				break;
@@ -132,7 +132,7 @@ namespace PicMerge {
 					imageData = CreateWithCheckingResize(ref inbuffer);
 				}
 				catch (Exception ex) {
-					Logger.Log($"[iText Exception]: {ex.Message}, {ex.StackTrace}.");
+					Logger.Log($"[iText Exception]: {ex.Message}.");
 					goto case FileType.Type.WEBP;
 				}
 				break;
@@ -144,7 +144,7 @@ namespace PicMerge {
 					imageData.SetDpi(4096, 4096);
 				}
 				catch (Exception ex) {
-					Logger.Log($"[Iodine Exception]: {ex.Message}, {ex.StackTrace}.");
+					Logger.Log($"[Iodine Exception]: {ex.Message}.");
 				}
 				/// 尝试利用 ImageSharp 压缩
 				try {
@@ -153,7 +153,7 @@ namespace PicMerge {
 					imageData.SetDpi(4096, 4096);
 				}
 				catch (Exception ex) {
-					Logger.Log($"[ImageSharp Exception]: {ex.Message}, {ex.StackTrace}.");
+					Logger.Log($"[ImageSharp Exception]: {ex.Message}.");
 					imageData = null;
 				}
 				break;

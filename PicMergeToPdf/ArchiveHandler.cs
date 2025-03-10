@@ -170,7 +170,7 @@ namespace PicMerge {
 				return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
 			}
 			catch (Exception ex) {
-				Logger.Log($"[Archive Exception]: {ex.Message}, {ex.StackTrace}.");
+				Logger.Log($"[Archive Exception]: {ex.Message}.");
 				return null;
 			}
 		}
