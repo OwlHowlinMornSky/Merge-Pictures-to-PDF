@@ -14,7 +14,14 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Copyright>Copyright (C) 2025-2026 Tyler Parret True &lt;https://github.com/OwlHowlinMornSky&gt;</Copyright>
     <Authors>Tyler Parret True</Authors>
+    <ApplicationIcon>Pic2PDF.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Pic2PDF.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PicMergeToPdf\PicMerge.csproj" />
