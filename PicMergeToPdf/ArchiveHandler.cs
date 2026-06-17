@@ -46,7 +46,7 @@ namespace PicMerge {
 					return m_result;
 				}
 
-				using IArchive archive = ArchiveFactory.Open(m_archivePath);
+				using IArchive archive = ArchiveFactory.OpenArchive(m_archivePath);
 
 				Task? prevTask = null;
 
