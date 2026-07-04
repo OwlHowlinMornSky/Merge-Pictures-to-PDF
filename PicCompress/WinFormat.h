@@ -18,4 +18,4 @@ private:
 	void* m_str;
 };
 
-LocalString WinCheckError(wchar_t* lpszFunction) noexcept;
+LocalString WinCheckError(const wchar_t* lpszFunction) noexcept;

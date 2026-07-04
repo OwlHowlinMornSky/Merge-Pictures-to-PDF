@@ -30,7 +30,7 @@ const wchar_t* LocalString::GetString() {
 	return (wchar_t*)m_str;
 }
 
-LocalString WinCheckError(wchar_t* lpszFunction) noexcept {
+LocalString WinCheckError(const wchar_t* lpszFunction) noexcept {
 	LPVOID lpMsgBuf = NULL;
 	LPVOID lpDisplayBuf = NULL;
 	DWORD dw = GetLastError();
