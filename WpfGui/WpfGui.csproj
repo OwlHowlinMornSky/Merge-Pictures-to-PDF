@@ -43,7 +43,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="COPY /Y $(OHMS_LIB_DIR)\libiodine\v0.17.3\bin\libiodine.dll $(OUTDIR)" />
+    <Exec Command="COPY /Y $(OHMS_LIB_DIR)\libiodine\v0.20.3\bin\iodine.dll $(OUTDIR)" />
   </Target>
 
 </Project>
