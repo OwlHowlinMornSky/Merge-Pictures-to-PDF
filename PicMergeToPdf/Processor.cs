@@ -171,7 +171,7 @@ namespace PicMerge {
 				m_haveFailedFiles = false;
 				if (unknown.Count > 0) {
 					foreach (string str in unknown) {
-						Logger.Log($"[Cannot Process] \"{str}\".");
+						Logger.Log($"[Invalid File] \"{str}\".");
 					}
 					m_haveFailedFiles = true;
 				}
@@ -182,17 +182,17 @@ namespace PicMerge {
 				}
 				/// 零散文件。
 				if (files.Count > 0) {
-					int archiveCnt = -1;
+					bool all_archive = false;
 					if (directories.Count < 1) { // 没有拖入目录（即只有文件）
-						archiveCnt = files.Where(x => {
+						all_archive = files.All(x => {
 							string ext = Path.GetExtension(x);
 							bool isZip = ext.Equals(".zip", StringComparison.OrdinalIgnoreCase);
 							bool is7z = ext.Equals(".7z", StringComparison.OrdinalIgnoreCase);
 							bool isRar = ext.Equals(".rar", StringComparison.OrdinalIgnoreCase);
 							return isZip || is7z || isRar;
-						}).Count();
+						});
 					}
-					if (archiveCnt == files.Count) { // 只有压缩文件
+					if (all_archive) { // 只有压缩文件
 						waitings.Enqueue(new TaskInputData(TaskInputData.Type.Archive, files));
 					}
 					else {
@@ -397,7 +397,10 @@ namespace PicMerge {
 			var failed = result.Where(r => r.code > 0x80000000);
 			if (failed.Any()) {
 				foreach (var str in failed) {
-					Logger.Log($"[Cannot Merge] At \"{title}\" from \"{str.filename}\", because \"{str.description}\" (Code: {str.code:X}).");
+					if (str.code == 0xFFFF0000 && !string.IsNullOrEmpty(str.description))
+						Logger.Log(str.description);
+					else
+						Logger.Log($"[Failed] At \"{title}\" from \"{str.filename}\", because \"{str.description}\" (Code: {str.code:X}).\n");
 				}
 				m_haveFailedFiles = true;
 			}

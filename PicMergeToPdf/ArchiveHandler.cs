@@ -3,7 +3,6 @@ using SharpCompress;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
-using System.Buffers;
 using System.Runtime.InteropServices;
 using static PicMerge.IMerger;
 
@@ -16,9 +15,10 @@ namespace PicMerge {
 	/// <param name="pp">页面参数</param>
 	/// <param name="ip">图片参数</param>
 	/// <err frag="0x8003" ack="0008"></err>
-	internal partial class ArchiveHandler(bool _keepStruct, PageParam pp, ImageParam ip) : Merger(ip) {
+	internal partial class ArchiveHandler(bool _keepStruct, PageParam pp, ImageParam ip) : Merger {
 
 		private readonly PageParam m_pp = pp;
+		private readonly ImageParam m_param = ip;
 
 		private readonly bool m_keepStruct = _keepStruct;
 
@@ -149,25 +149,21 @@ namespace PicMerge {
 				byte[] inbuffer = new byte[length];
 				using MemoryStream memoryStream = new(inbuffer, true);
 
-				byte[] b = ArrayPool<byte>.Shared.Rent(8);
-				try {
-					if (instream.Read(b, 0, 8) != 8) {
-						type = FileType.Type.Unknown;
-					}
-					else {
-						type = FileType.CheckType(b);
-						memoryStream.Write(b, 0, b.Length);
-					}
+				byte[] b = new byte[8];
+				if (instream.Read(b, 0, 8) != 8) {
+					type = FileType.Type.Unknown;
 				}
-				finally {
-					ArrayPool<byte>.Shared.Return(b, true);
+				else {
+					type = FileType.CheckType(b);
+					memoryStream.Write(b, 0, b.Length);
 				}
 				if (type == FileType.Type.Unknown) {
 					return null;
 				}
 
 				instream.CopyTo(memoryStream);
-				return m_param.compress ? LoadImageInMemory_Compress(type, ref inbuffer) : LoadImageInMemory_Direct(type, ref inbuffer);
+				return null;
+				//return m_param.compress ? LoadImageInMemory_Compress(type, in inbuffer, m_param) : LoadImageInMemory_Direct(type, in inbuffer, m_param);
 			}
 			catch (Exception ex) {
 				Logger.Log($"[Archive Exception]: {ex.Message}.");

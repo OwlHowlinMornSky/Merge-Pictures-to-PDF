@@ -10,9 +10,10 @@ namespace PicMerge {
 	/// <param name="pp">页面参数</param>
 	/// <param name="ip">图片参数</param>
 	/// <err frag="0x8001" ack="0006"></err>
-	internal class MergerSerial(Action finish1img, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
+	internal class MergerSerial(Action finish1img, PageParam pp, ImageParam ip) : Merger, IMerger {
 
 		private readonly PageParam m_pp = pp;
+		protected readonly ImageParam m_param = ip;
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
@@ -32,8 +33,10 @@ namespace PicMerge {
 				using PdfTarget pdfTarget = new(outputfilepath, title);
 
 				foreach (var file in files) {
-					ImageData? imageData = LoadImage(file);
+					LoadImageLog log = new();
+					ImageData? imageData = LoadImage(file, m_param, ref log);
 					if (imageData == null) {
+						result.Add(new FileResult(0xFFFF0000, file, log.error_message));
 						result.Add(new FileResult(0x80010001, file, StrUnsupported));
 						FinishOneImg();
 						continue;

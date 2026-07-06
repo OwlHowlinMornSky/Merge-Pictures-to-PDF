@@ -10,14 +10,20 @@ namespace PicMerge {
 	/// <param name="pp">页面参数</param>
 	/// <param name="ip">图片参数</param>
 	/// <err frag="0x8002" ack="0003"></err>
-	internal class MergerParallel(Action finish1img, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
+	internal class MergerParallel(Action finish1img, PageParam pp, ImageParam ip) : Merger, IMerger {
 
 		private readonly PageParam m_pp = pp;
+		protected readonly ImageParam m_param = ip;
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
 		/// </summary>
 		private readonly Action FinishOneImg = finish1img;
+
+		struct LoadResult() {
+			public ImageData? img_data = null;
+			public string log = "";
+		}
 
 		/// <summary>
 		/// 合并文件。此方法文件级并行，即并发加载处理，再依次加入结果。
@@ -28,7 +34,7 @@ namespace PicMerge {
 		/// <returns>无法合入的文件的列表</returns>
 		public virtual List<FileResult> Process(string outputfilepath, List<string> files, string? title = null) {
 			List<FileResult> result = [];
-			Queue<Task<ImageData?>> tasks = [];
+			Queue<Task<LoadResult>> tasks = [];
 			var file_cnt = files.Count;
 			var nextfile = files.GetEnumerator();
 
@@ -49,9 +55,11 @@ namespace PicMerge {
 				}
 
 				/// Get image and check
-				ImageData? imageData = tasks.Dequeue().Result;
+				LoadResult load_res = tasks.Dequeue().Result;
+				ImageData? imageData = load_res.img_data;
 				string file = files[landedCnt++];
 				if (imageData == null) {
+					result.Add(new FileResult(0xFFFF0000, file, load_res.log));
 					result.Add(new FileResult(0x80020001, file, StrUnsupported));
 					FinishOneImg();
 					continue;
@@ -73,8 +81,14 @@ namespace PicMerge {
 		/// <summary>
 		/// 开启一个新的加载图片任务。
 		/// </summary>
-		private Task<ImageData?> ParaLoad(string filepath) {
-			return Task.Run(() => { return LoadImage(filepath); });
+		private Task<LoadResult> ParaLoad(string filepath) {
+			return Task.Run(() => {
+				LoadResult res = new();
+				LoadImageLog log = new();
+				res.img_data = LoadImage(filepath, m_param, ref log);
+				res.log = log.error_message;
+				return res;
+			});
 		}
 	}
 }

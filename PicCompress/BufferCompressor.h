@@ -18,7 +18,7 @@ public:
 	 * @return 已写入输出文件 之 大小（字节）。
 	 */
 	static IodineBufferViewer^ Compress(
-		array<System::Byte>^% input,
+		_In_ array<System::Byte>^ input,
 		int targetFormat,
 		int quality,
 		bool resize,

@@ -1,7 +1,7 @@
 ﻿using static PicMerge.IMerger;
 
 namespace PicMerge {
-	internal class MergerArchive(Action finish1img, bool _stayNomove, bool _keepStruct, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
+	internal class MergerArchive(Action finish1img, bool _stayNomove, bool _keepStruct, PageParam pp, ImageParam ip) : Merger, IMerger {
 
 		private readonly PageParam m_pp = pp;
 		private readonly ImageParam m_ip = ip;

@@ -6,6 +6,8 @@ using iText.Kernel.Pdf.Canvas;
 namespace PicMerge {
 	internal class PdfTarget(string _outputPath, string? _title) : IDisposable {
 
+		internal static int BaseDpiForDirectLoadComputingSize = 4096;
+
 		private readonly string outputfilepath = _outputPath;
 		private readonly string? title = _title;
 
@@ -93,8 +95,8 @@ namespace PicMerge {
 				}
 
 				float pageScale = 72.0f / param.dpi;
-				float imageWantedPageScaleX = 4096.0f / imageData.GetDpiX();
-				float imageWantedPageScaleY = 4096.0f / imageData.GetDpiY();
+				float imageWantedPageScaleX = BaseDpiForDirectLoadComputingSize * 1.0f / imageData.GetDpiX();
+				float imageWantedPageScaleY = BaseDpiForDirectLoadComputingSize * 1.0f / imageData.GetDpiY();
 				pageSize.SetWidth(pageSize.GetWidth() * pageScale * imageWantedPageScaleX);
 				pageSize.SetHeight(pageSize.GetHeight() * pageScale * imageWantedPageScaleY);
 

@@ -8,7 +8,7 @@
 #include <msclr/marshal.h>
 
 PicCompress::IodineBufferViewer^ PicCompress::BufferCompressor::Compress(
-	array<System::Byte>^% input,
+	_In_ array<System::Byte>^ input,
 	int targetFormat,
 	int quality,
 	bool resize,
