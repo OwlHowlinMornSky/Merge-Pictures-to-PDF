@@ -6,15 +6,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PlatformTarget>x64</PlatformTarget>
-    <Version>1.4.1</Version>
-    <AssemblyVersion>1.4.0.0</AssemblyVersion>
-    <FileVersion>1.4.0.0</FileVersion>
+    <Version>1.5.0</Version>
+    <FileVersion>1.5.0.0</FileVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Copyright>Copyright (C) 2025-2026 Tyler Parret True &lt;https://github.com/OwlHowlinMornSky&gt;</Copyright>
     <Authors>Tyler Parret True</Authors>
     <Product>Pictures2PDF</Product>
-    <Description>Pictures2PDF</Description>
+    <Description>Pictures2PDF - core</Description>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <PackageId>$(AssemblyName)</PackageId>
+    <Title>$(AssemblyName)</Title>
+    <AssemblyVersion>1.5.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
