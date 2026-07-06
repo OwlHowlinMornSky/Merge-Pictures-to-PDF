@@ -1,17 +1,21 @@
 ﻿
 #include "Compressor.h"
-
 #include <libiodine/libiodine.h>
+
+#include <stdlib.h>
+#include <string.h>
+#include <msclr/marshal.h>
 
 PicCompress::Compressor::Compressor(System::IntPtr houtfile, System::Int64 oFileMaxLen) {
 	if (houtfile.ToPointer() == nullptr || oFileMaxLen < 1) {
-		throw gcnew InvalidOperationException("Invalid Output Mapping File.");
+		throw gcnew System::InvalidOperationException("Invalid Output Mapping File.");
 	}
 	m_viewOfOutFile = new MapView(houtfile.ToPointer(), true);
 	m_view = m_viewOfOutFile->GetView();
 	if (nullptr == m_view) {
-		LocalString description = ::WinCheckError(L"Failed to Map Output View");
-		auto ex = gcnew InvalidOperationException(gcnew System::String(description.GetString()));
+		std::wstring description = ::WinCheckError(L"Failed to Map Output View");
+		auto str = msclr::interop::marshal_as<System::String^>(description.c_str());
+		auto ex = gcnew System::InvalidOperationException(str);
 		throw ex;
 	}
 	m_oFileMaxLen = oFileMaxLen;
@@ -36,13 +40,14 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 	bool reduceBtPowOf2
 ) {
 	if (hinfile.ToPointer() == NULL || iFileLen < 1) {
-		throw gcnew ArgumentException("Invalid Input Maping File.");
+		throw gcnew System::ArgumentException("Invalid Input Maping File.");
 	}
 	MapView input_file_view(hinfile.ToPointer());
 	void* inview = input_file_view.GetView();
 	if (nullptr == inview) {
-		LocalString description = ::WinCheckError(L"Failed to Map Input View");
-		auto ex = gcnew InvalidOperationException(gcnew System::String(description.GetString()));
+		std::wstring description = ::WinCheckError(L"Failed to Map Input View");
+		auto str = msclr::interop::marshal_as<System::String^>(description.c_str());
+		auto ex = gcnew System::InvalidOperationException(str);
 		throw ex;
 	}
 
@@ -72,14 +77,14 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 		res = csi_convert_fromto(inview, iFileLen, m_view, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
 		break;
 	default:
-		throw gcnew System::ArgumentException(String::Format("Unknown target type: {0}", targetType));
+		throw gcnew System::ArgumentException(System::String::Format("Unknown target type: {0}", targetType));
 	}
 
 	if (!res.success) {
-		throw gcnew InvalidOperationException(gcnew System::String(res.error_message));
+		throw gcnew System::InvalidOperationException(gcnew System::String(res.error_message));
 	}
 	if (res.code < 1 || res.code > 2147483600ull) {
-		throw gcnew InsufficientMemoryException(String::Format("Code: {0}", res.code));
+		throw gcnew System::InsufficientMemoryException(System::String::Format("Code: {0}", res.code));
 	}
 	return (System::Int32)res.code;
 }

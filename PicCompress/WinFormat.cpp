@@ -1,14 +1,18 @@
 ﻿#include "WinFormat.h"
 
+#include <format>
+
 #define WIN32_LEAN_AND_MEAN (1)
 #include <Windows.h>
 #include <strsafe.h>
 
 MapView::MapView(void* handleToFileMapping, bool isWrite) {
+	// 构造时 自动创建 映射
 	m_view = MapViewOfFile(handleToFileMapping, isWrite ? FILE_MAP_WRITE : FILE_MAP_READ, 0, 0, 0);
 }
 
 MapView::~MapView() {
+	// 析构时 自动释放 映射
 	if (m_view)
 		UnmapViewOfFile(m_view);
 }
@@ -17,25 +21,11 @@ void* MapView::GetView() {
 	return m_view;
 }
 
-LocalString::LocalString(void* localMem) {
-	m_str = localMem;
-}
-
-LocalString::~LocalString() {
-	if (m_str)
-		LocalFree(m_str);
-}
-
-const wchar_t* LocalString::GetString() {
-	return (wchar_t*)m_str;
-}
-
-LocalString WinCheckError(const wchar_t* lpszFunction) noexcept {
-	LPVOID lpMsgBuf = NULL;
-	LPVOID lpDisplayBuf = NULL;
+std::wstring WinCheckError(std::wstring_view desciption) noexcept {
+	LPWSTR lpMsgBuf = NULL;
 	DWORD dw = GetLastError();
 
-	FormatMessageW(
+	DWORD ex = FormatMessageW(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER |
 		FORMAT_MESSAGE_FROM_SYSTEM |
 		FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -46,20 +36,19 @@ LocalString WinCheckError(const wchar_t* lpszFunction) noexcept {
 		0, NULL
 	);
 
-	lpDisplayBuf = (LPVOID)LocalAlloc(
-		LMEM_ZEROINIT,
-		(static_cast<SIZE_T>(lstrlenW((LPCWSTR)lpMsgBuf)) +
-			lstrlenW((LPCWSTR)lpszFunction) + 50) * sizeof(WCHAR)
-	);
-	if (lpDisplayBuf) {
-		StringCchPrintfW(
-			(LPWSTR)lpDisplayBuf,
-			LocalSize(lpDisplayBuf) / sizeof(WCHAR),
-			L"%s: %s (%d).",
-			lpszFunction, (LPCWSTR)lpMsgBuf, dw
-		);
-		LocalFree(lpMsgBuf);
-		lpMsgBuf = lpDisplayBuf;
+	if (0 == ex) {
+		return {};
 	}
-	return LocalString(lpMsgBuf);
+
+	try {
+		std::wstring res = std::format(L"{0}: {1} ({2}).", desciption, lpMsgBuf, dw);
+		LocalFree(lpMsgBuf);
+		return res;
+	}
+	catch (...) {
+		;
+	}
+
+	LocalFree(lpMsgBuf);
+	return {};
 }

@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-using namespace System;
-
 #include "WinFormat.h"
 
 namespace PicCompress {
