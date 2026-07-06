@@ -56,13 +56,15 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
 	parameters.png_quality = quality;
+	parameters.gif_quality = quality;
+	parameters.webp_quality = quality;
 	if (resize) {
 		parameters.width = width;
 		parameters.height = height;
+		parameters.allow_magnify = false;
+		parameters.reduce_by_power_of_2 = reduceBtPowOf2;
 		parameters.short_side_pixels = shortSide;
 		parameters.long_size_pixels = longSide;
-		parameters.reduce_by_power_of_2 = reduceBtPowOf2;
-		parameters.allow_magnify = false;
 	}
 
 	CSI_Result res;
@@ -81,7 +83,9 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 	}
 
 	if (!res.success) {
-		throw gcnew System::InvalidOperationException(gcnew System::String(res.error_message));
+		auto str = msclr::interop::marshal_as<System::String^>(res.error_message);
+		csi_free_string((char*)res.error_message);
+		throw gcnew System::InvalidOperationException(str);
 	}
 	if (res.code < 1 || res.code > 2147483600ull) {
 		throw gcnew System::InsufficientMemoryException(System::String::Format("Code: {0}", res.code));

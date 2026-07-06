@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-using namespace System;
-
 namespace PicCompress {
 
 /**
@@ -18,8 +16,8 @@ public:
 	 * @return 已写入输出文件 之 大小（字节）。
 	 */
 	static System::Int32 Compress(
-		array<Byte>^% input,
-		array<Byte>^% output,
+		array<System::Byte>^% input,
+		array<System::Byte>^% output,
 		int targetFormat,
 		int quality,
 		bool resize,
