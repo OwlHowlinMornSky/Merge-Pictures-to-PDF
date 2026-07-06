@@ -31,41 +31,15 @@ namespace PicMerge {
 			try {
 				using PdfTarget pdfTarget = new(outputfilepath, title);
 
-				/// 先扫到可以处理的文件。
-				int i = 0;
-				ImageData? imageData = null;
-				for (; i < files.Count; ++i) {
-					string file = files[i];
-
-					imageData = LoadImage(file);
-					if (imageData != null) {
-						break;
-					}
-					result.Add(new FileResult(0x80010001, file, StrUnsupported));
-					FinishOneImg();
-				}
-				if (imageData == null) {
-					return result;
-				}
-
-				/// 再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出pdf。
-				if (pdfTarget.AddImage(imageData, in m_pp)) {
-					result.Add(new FileResult(0x1, files[i]));
-				}
-				else {
-					result.Add(new FileResult(0x80010002, files[i], StrFailedToAdd));
-				}
-				FinishOneImg();
-
-				for (++i; i < files.Count; ++i) {
-					string file = files[i];
-
-					imageData = LoadImage(file);
-
+				foreach (var file in files) {
+					ImageData? imageData = LoadImage(file);
 					if (imageData == null) {
-						result.Add(new FileResult(0x80010003, file, StrUnsupported));
+						result.Add(new FileResult(0x80010001, file, StrUnsupported));
+						FinishOneImg();
+						continue;
 					}
-					else if (!pdfTarget.AddImage(imageData, in m_pp)) {
+
+					if (!pdfTarget.AddImage(imageData, in m_pp)) {
 						result.Add(new FileResult(0x80010004, file, StrFailedToAdd));
 					}
 					else {

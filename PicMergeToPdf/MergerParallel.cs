@@ -29,27 +29,36 @@ namespace PicMerge {
 		public virtual List<FileResult> Process(string outputfilepath, List<string> files, string? title = null) {
 			List<FileResult> result = [];
 			Queue<Task<ImageData?>> tasks = [];
+			var file_cnt = files.Count;
+			var nextfile = files.GetEnumerator();
 
-			int launchedCnt = 0;
 			/// 按电脑核心数启动load。
-			for (int i = 0, n = Environment.ProcessorCount + 1; i < n && launchedCnt < files.Count; i++) {
-				tasks.Enqueue(ParaLoad(files[launchedCnt++]));
+			for (int i = 0, n = Environment.ProcessorCount + 1; i < n; i++) {
+				if (!nextfile.MoveNext())
+					break;
+				tasks.Enqueue(ParaLoad(nextfile.Current));
 			}
 
 			using PdfTarget pdfTarget = new(outputfilepath, title);
 			int landedCnt = 0;
-			while (landedCnt < files.Count) {
+			while (landedCnt < file_cnt) {
+				/// Finish and launch another one
 				tasks.Peek().Wait();
-				if (launchedCnt < files.Count) {
-					tasks.Enqueue(ParaLoad(files[launchedCnt++]));
+				if (nextfile.MoveNext()) {
+					tasks.Enqueue(ParaLoad(nextfile.Current));
 				}
+
+				/// Get image and check
 				ImageData? imageData = tasks.Dequeue().Result;
-				/// Add Image.
 				string file = files[landedCnt++];
 				if (imageData == null) {
 					result.Add(new FileResult(0x80020001, file, StrUnsupported));
+					FinishOneImg();
+					continue;
 				}
-				else if (!pdfTarget.AddImage(imageData, in m_pp)) {
+
+				/// Add image
+				if (!pdfTarget.AddImage(imageData, in m_pp)) {
 					result.Add(new FileResult(0x80020002, file, StrFailedToAdd));
 				}
 				else {
