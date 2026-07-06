@@ -8,20 +8,13 @@ using static PicMerge.IMerger;
 namespace PicMerge {
 	internal static class CompressTarget {
 		public static byte[] GetCompressedImageData(ref byte[] input, ImageParam m_param) {
-			byte[] tempOutBuffer = ArrayPool<byte>.Shared.Rent(MapFileSize);
-			try {
-				int len = PicCompress.BufferCompressor.Compress(
-					ref input, ref tempOutBuffer,
-					m_param.format, m_param.quality,
-					m_param.resize, m_param.width, m_param.height, m_param.shortSide, m_param.longSide,
-					m_param.reduceByPowOf2
-				);
-				ReadOnlySpan<byte> tempSpan = new(tempOutBuffer, 0, len);
-				return tempSpan.ToArray();
-			}
-			finally {
-				ArrayPool<byte>.Shared.Return(tempOutBuffer, true);
-			}
+			//m_param.shortSide, m_param.longSide,
+			//	m_param.reduceByPowOf2
+			using var iodine_buf = PicCompress.BufferCompressor.Compress(
+				ref input, m_param.format, m_param.quality,
+				m_param.resize, m_param.width, m_param.height
+			);
+			return iodine_buf.ToArray();
 		}
 
 		public static byte[] GetImageSharpData(ref byte[] input, ImageParam m_param) {

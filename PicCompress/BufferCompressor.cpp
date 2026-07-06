@@ -7,18 +7,18 @@
 #include <string.h>
 #include <msclr/marshal.h>
 
-System::Int32 PicCompress::BufferCompressor::Compress(
+PicCompress::IodineBufferViewer^ PicCompress::BufferCompressor::Compress(
 	array<System::Byte>^% input,
-	array<System::Byte>^% output,
 	int targetFormat,
 	int quality,
 	bool resize,
 	int width,
-	int height,
-	int shortSide,
-	int longSide,
-	bool reduceBtPowOf2
+	int height
 ) {
+	pin_ptr<System::Byte> input_bytes(&input[0]);
+	uintptr_t input_buffer_len = input->Length;
+	const byte* input_buffer = input_bytes;
+
 	CCSParameters parameters = {};
 	parameters.keep_metadata = false;
 	parameters.jpeg_quality = quality;
@@ -29,30 +29,19 @@ System::Int32 PicCompress::BufferCompressor::Compress(
 	if (resize) {
 		parameters.width = width;
 		parameters.height = height;
-		parameters.allow_magnify = false;
-		parameters.reduce_by_power_of_2 = reduceBtPowOf2;
-		parameters.short_side_pixels = shortSide;
-		parameters.long_size_pixels = longSide;
 	}
 
-	pin_ptr<System::Byte> inputBuffer(&input[0]);
-	uint64_t inputLength = input->Length;
-	void* inbuffer = inputBuffer;
-
-	pin_ptr<System::Byte> outputBuffer(&output[0]);
-	uint64_t outputMaxLength = output->Length;
-	void* outbuffer = outputBuffer;
-	 
-	CCSResult res;
+	CByteArray output_buffer{};
+	CCSResult res{};
 	switch (targetFormat) {
 	case 0:
-		res = csi_compress_fromto(inbuffer, inputLength, outbuffer, outputMaxLength, &parameters);
+		res = iod_compress_in_memory(input_buffer, input_buffer_len, parameters, &output_buffer);
 		break;
 	case 1:
-		res = csi_convert_fromto(inbuffer, inputLength, outbuffer, outputMaxLength, SupportedFileTypes::Jpeg, &parameters);
+		res = iod_convert_in_memory(input_buffer, input_buffer_len, SupportedFileTypes::Jpeg, parameters, &output_buffer);
 		break;
 	case 2:
-		res = csi_convert_fromto(inbuffer, inputLength, outbuffer, outputMaxLength, SupportedFileTypes::Png, &parameters);
+		res = iod_convert_in_memory(input_buffer, input_buffer_len, SupportedFileTypes::Png, parameters, &output_buffer);
 		break;
 	default:
 		throw gcnew System::ArgumentException(System::String::Format("Unknown target type: {0}", targetFormat));
@@ -63,8 +52,6 @@ System::Int32 PicCompress::BufferCompressor::Compress(
 		c_free_string((char*)res.error_message);
 		throw gcnew System::InvalidOperationException(str);
 	}
-	if (res.code < 1 || res.code > 2147483600ul) {
-		throw gcnew System::InsufficientMemoryException(System::String::Format("Code: {0}", res.code));
-	}
-	return (System::Int32)res.code;
+
+	return gcnew PicCompress::IodineBufferViewer(output_buffer);
 }

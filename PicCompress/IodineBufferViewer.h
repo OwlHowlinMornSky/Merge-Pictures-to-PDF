@@ -2,6 +2,8 @@
 
 #include <libiodine.h>
 
+namespace PicCompress {
+
 public ref class IodineBufferViewer : System::IDisposable {
 private:
 	System::Byte* m_buffer;
@@ -12,7 +14,7 @@ public:
 	~IodineBufferViewer();
 	!IodineBufferViewer();
 
-	property int Length{
+	property int Length {
 		int get() {
 			return m_length;
 		}
@@ -37,5 +39,13 @@ public:
 
 	// 提供直接访问本机指针的方法
 	System::Byte* GetNativePointer();
+
+	// 复制全部数据到托管 byte[]
+	array<System::Byte>^ ToArray();
+
+	// 复制部分数据（指定起始偏移和数量）
+	array<System::Byte>^ ToArray(int offset, int count);
+
 };
 
+}
