@@ -21,21 +21,21 @@
     <ClInclude Include="Compressor.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="BufferCompressor.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="WinFormat.h">
       <Filter>Native</Filter>
     </ClInclude>
+    <ClInclude Include="IodineBufferViewer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>资源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Compressor.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="AssemblyInfo.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="BufferCompressor.cpp">
@@ -43,6 +43,12 @@
     </ClCompile>
     <ClCompile Include="WinFormat.cpp">
       <Filter>Native</Filter>
+    </ClCompile>
+    <ClCompile Include="IodineBufferViewer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AssemblyInfo.cpp">
+      <Filter>资源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,7 @@
 ﻿
 #include "Compressor.h"
-#include <libiodine/libiodine.h>
+
+#include <libiodine.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -22,6 +23,10 @@ PicCompress::Compressor::Compressor(System::IntPtr houtfile, System::Int64 oFile
 }
 
 PicCompress::Compressor::~Compressor() {
+	this->!Compressor();
+}
+
+PicCompress::Compressor::!Compressor() {
 	m_view = nullptr;
 	delete m_viewOfOutFile;
 	m_viewOfOutFile = nullptr;
@@ -51,7 +56,7 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 		throw ex;
 	}
 
-	CSI_Parameters parameters = {};
+	CCSParameters parameters = {};
 	parameters.keep_metadata = false;
 	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
@@ -67,16 +72,16 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 		parameters.long_size_pixels = longSide;
 	}
 
-	CSI_Result res;
+	CCSResult res;
 	switch (targetType) {
 	case 0:
 		res = csi_compress_fromto(inview, iFileLen, m_view, m_oFileMaxLen, &parameters);
 		break;
 	case 1:
-		res = csi_convert_fromto(inview, iFileLen, m_view, m_oFileMaxLen, CSI_SupportedFileTypes::Jpeg, &parameters);
+		res = csi_convert_fromto(inview, iFileLen, m_view, m_oFileMaxLen, SupportedFileTypes::Jpeg, &parameters);
 		break;
 	case 2:
-		res = csi_convert_fromto(inview, iFileLen, m_view, m_oFileMaxLen, CSI_SupportedFileTypes::Png, &parameters);
+		res = csi_convert_fromto(inview, iFileLen, m_view, m_oFileMaxLen, SupportedFileTypes::Png, &parameters);
 		break;
 	default:
 		throw gcnew System::ArgumentException(System::String::Format("Unknown target type: {0}", targetType));
@@ -84,7 +89,7 @@ System::Int32 PicCompress::Compressor::CompressFrom(
 
 	if (!res.success) {
 		auto str = msclr::interop::marshal_as<System::String^>(res.error_message);
-		csi_free_string((char*)res.error_message);
+		c_free_string((char*)res.error_message);
 		throw gcnew System::InvalidOperationException(str);
 	}
 	if (res.code < 1 || res.code > 2147483600ull) {

@@ -1,7 +1,7 @@
 ﻿
 #include "BufferCompressor.h"
 
-#include <libiodine/libiodine.h>
+#include <libiodine.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -19,7 +19,7 @@ System::Int32 PicCompress::BufferCompressor::Compress(
 	int longSide,
 	bool reduceBtPowOf2
 ) {
-	CSI_Parameters parameters = {};
+	CCSParameters parameters = {};
 	parameters.keep_metadata = false;
 	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
@@ -43,16 +43,16 @@ System::Int32 PicCompress::BufferCompressor::Compress(
 	uint64_t outputMaxLength = output->Length;
 	void* outbuffer = outputBuffer;
 	 
-	CSI_Result res;
+	CCSResult res;
 	switch (targetFormat) {
 	case 0:
 		res = csi_compress_fromto(inbuffer, inputLength, outbuffer, outputMaxLength, &parameters);
 		break;
 	case 1:
-		res = csi_convert_fromto(inbuffer, inputLength, outbuffer, outputMaxLength, CSI_SupportedFileTypes::Jpeg, &parameters);
+		res = csi_convert_fromto(inbuffer, inputLength, outbuffer, outputMaxLength, SupportedFileTypes::Jpeg, &parameters);
 		break;
 	case 2:
-		res = csi_convert_fromto(inbuffer, inputLength, outbuffer, outputMaxLength, CSI_SupportedFileTypes::Png, &parameters);
+		res = csi_convert_fromto(inbuffer, inputLength, outbuffer, outputMaxLength, SupportedFileTypes::Png, &parameters);
 		break;
 	default:
 		throw gcnew System::ArgumentException(System::String::Format("Unknown target type: {0}", targetFormat));
@@ -60,10 +60,10 @@ System::Int32 PicCompress::BufferCompressor::Compress(
 
 	if (!res.success) {
 		auto str = msclr::interop::marshal_as<System::String^>(res.error_message);
-		csi_free_string((char*)res.error_message);
+		c_free_string((char*)res.error_message);
 		throw gcnew System::InvalidOperationException(str);
 	}
-	if (res.code < 1 || res.code > 2147483600ull) {
+	if (res.code < 1 || res.code > 2147483600ul) {
 		throw gcnew System::InsufficientMemoryException(System::String::Format("Code: {0}", res.code));
 	}
 	return (System::Int32)res.code;

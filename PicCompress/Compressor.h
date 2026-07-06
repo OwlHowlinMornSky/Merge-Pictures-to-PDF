@@ -16,6 +16,7 @@ public:
 	 */
 	Compressor(System::IntPtr houtfile, System::Int64 oFileMaxLen);
 	~Compressor();
+	!Compressor();
 
 public:
 	/**
