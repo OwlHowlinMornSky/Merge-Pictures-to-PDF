@@ -2,8 +2,6 @@
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
-using System.Buffers;
-using static PicMerge.IMerger;
 
 namespace PicMerge {
 	internal static class CompressTarget {
