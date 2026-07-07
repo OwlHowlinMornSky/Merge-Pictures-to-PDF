@@ -364,9 +364,9 @@ namespace PicMerge {
 			if (failed.Any()) {
 				foreach (var str in failed) {
 					if (str.code == 0xFFFF0000 && !string.IsNullOrEmpty(str.description))
-						Logger.Log(str.description);
+						Logger.Log('\n' + str.description);
 					else
-						Logger.Log($"[Failed] At \"{title}\" from \"{str.filename}\", because \"{str.description}\" (Code: {str.code:X}).\n");
+						Logger.Log($"[Failed] At \"{title}\" from \"{str.filename}\", because \"{str.description}\" (Code: {str.code:X}).");
 				}
 				m_haveFailedFiles = true;
 			}

@@ -21,17 +21,7 @@ namespace PicMerge {
 			}
 
 			switch (param.format) {
-			case 1: { // JPEG
-				JpegEncoder encoder = new() {
-					SkipMetadata = true,
-					ColorType = JpegEncodingColor.Rgb,
-					Quality = param.quality,
-					Interleaved = false
-				};
-				input_image.SaveAsJpeg(imgSt, encoder);
-				break;
-			}
-			default: {
+			case 2: { // PNG
 				int quality = 10 - param.quality / 10;
 				PngEncoder encoder = new() {
 					SkipMetadata = true,
@@ -51,6 +41,17 @@ namespace PicMerge {
 					}
 				};
 				input_image.SaveAsPng(imgSt, encoder);
+				break;
+			}
+			//case 1:// JPEG
+			default: { // others
+				JpegEncoder encoder = new() {
+					SkipMetadata = true,
+					ColorType = JpegEncodingColor.Rgb,
+					Quality = param.quality,
+					Interleaved = false
+				};
+				input_image.SaveAsJpeg(imgSt, encoder);
 				break;
 			}
 			}

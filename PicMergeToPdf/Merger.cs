@@ -136,7 +136,7 @@ namespace PicMerge {
 					break;
 				//case 0: // 原格式
 				default:
-					param.format = 2; // To PNG
+					param.format = 1; // To JPEG
 					break;
 				}
 				goto case FileType.Type.JPEG;
@@ -173,7 +173,7 @@ namespace PicMerge {
 				break;
 			//case 0: // 原格式
 			default:
-				param.format = 2; // To PNG
+				param.format = 1; // To JPEG
 				break;
 			} // ImageSharp目前只会输出PNG和Jpeg.
 			goto case FileType.Type.JPEG;*/
