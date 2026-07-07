@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PicMergeToPdf\PicMerge.csproj" />
+    <ProjectReference Include="..\PicMerge\PicMerge.csproj" />
   </ItemGroup>
 
   <ItemGroup>
