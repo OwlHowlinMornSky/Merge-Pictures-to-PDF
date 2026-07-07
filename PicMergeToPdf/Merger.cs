@@ -45,7 +45,7 @@ namespace PicMerge {
 				res.output = ReadImage(in buffer, param, ref res.log, out res.img_w_override, out res.img_h_override);
 			}
 			catch (Exception ex) {
-				res.log += $"[Load] Exception from '{ex.Source}': {ex.Message}";
+				res.log += $"[Load] Exception: {ex.Message}";
 				res.output = null;
 			}
 			if (res.output is null) {
@@ -94,8 +94,8 @@ namespace PicMerge {
 				if (optimize) // 优化则使质量最高，保证不接收optimize的格式也能接近无损
 					param.quality = 100;
 
-				if (param.compress || param.resize) {
-					// 压缩和改变大小都需要尝试处理：
+				if (param.compress || param.format != 0 || param.resize) {
+					// 压缩、改变格式和改变大小都需要尝试处理：
 					// 先尝试Iodine，最大化压缩率；
 					// 再尝试ImageSharp，转换的同时可以压缩；
 					// 最后尝试直接加载。
@@ -118,7 +118,7 @@ namespace PicMerge {
 				}
 			}
 			catch (Exception ex) {
-				log += $"[Read] Exception from '{ex.Source}': {ex.Message}";
+				log += $"[Read] Exception: {ex.Message}";
 				img_stream = null;
 			}
 			return img_stream;
@@ -128,33 +128,34 @@ namespace PicMerge {
 			Stream? imageData = null;
 			switch (type) {
 			case FileType.Type.WEBP: // Iodine, Img#.
-				switch (param.format) {
+			case FileType.Type.GIF:  // Iodine, Img#.
+			case FileType.Type.TIFF: // Iodine, Img#.
+				switch (param.format) { // 必须转换
 				case 1: // JPEG
 				case 2: // PNG
 					break;
-				case 0: // 原格式
+				//case 0: // 原格式
 				default:
-					param.format = 1; // WEBP必须转换
+					param.format = 2; // To PNG
 					break;
 				}
 				goto case FileType.Type.JPEG;
 			case FileType.Type.JPEG: // Iodine, Img#, Direct.
 			case FileType.Type.PNG:  // Iodine, Img#, Direct.
-			case FileType.Type.GIF:  // Iodine, Img#, Direct.
-			case FileType.Type.TIFF: // Iodine, Img#, Direct.
 				try {
 					imageData = CompressTarget.GetCompressedImageData(in buffer, param, optimize);
 				}
 				catch (Exception ex) {
-					log += $"[Iodine] Exception from {ex.Source}: {ex.Message}";
+					log += $"[Iodine] Exception: {ex.Message}";
 					imageData = null;
 				}
 				break;
-			case FileType.Type.BMP:  // Img#, Direct.
-				log += $"[Iodine] Not supports 'BMP' yet.";
-				break;
+			case FileType.Type.BMP:  // Img#.
 			default:
 				break;
+			}
+			if (imageData is null) {
+				log += $"[Iodine] Cannot do it. Type: '{type}'.";
 			}
 			return imageData;
 		}
@@ -162,22 +163,35 @@ namespace PicMerge {
 		protected static Stream? LoadImageByImageSharp(FileType.Type type, in Image image, ImageParam param, ref LoadImageLog log) {
 			Stream? imageData = null;
 			switch (type) {
+			case FileType.Type.GIF:  // Iodine, Img#.
+			case FileType.Type.TIFF: // Iodine, Img#.
+			case FileType.Type.WEBP: // Iodine, Img#.
+			case FileType.Type.BMP:  // Img#.
+			/*switch (param.format) { // 必须转换
+			case 1: // JPEG
+			case 2: // PNG
+				break;
+			//case 0: // 原格式
+			default:
+				param.format = 2; // To PNG
+				break;
+			} // ImageSharp目前只会输出PNG和Jpeg.
+			goto case FileType.Type.JPEG;*/
 			case FileType.Type.JPEG: // Iodine, Img#, Direct.
 			case FileType.Type.PNG:  // Iodine, Img#, Direct.
-			case FileType.Type.GIF:  // Iodine, Img#, Direct.
-			case FileType.Type.TIFF: // Iodine, Img#, Direct.
-			case FileType.Type.BMP:  // Img#, Direct.
-			case FileType.Type.WEBP: // Iodine, Img#.
-				try { // ImageSharp目前只会输出PNG和Jpeg，除了指定PNG，其他全部转化为Jpeg.
+				try {
 					imageData = CompressTarget.GetImageSharpData(in image, param);
 				}
 				catch (Exception ex) {
-					log += $"[ImageSharp] Exception from '{ex.Source}': {ex.Message}";
+					log += $"[ImageSharp] Exception: {ex.Message}";
 					imageData = null;
 				}
 				break;
 			default:
 				break;
+			}
+			if (imageData is null) {
+				log += $"[ImageSharp] Cannot do it. Type: '{type}'.";
 			}
 			return imageData;
 		}
@@ -194,11 +208,11 @@ namespace PicMerge {
 			switch (type) {
 			case FileType.Type.JPEG: // Iodine, Img#, Direct.
 			case FileType.Type.PNG:  // Iodine, Img#, Direct.
-			case FileType.Type.GIF:  // Iodine, Img#, Direct.
-			case FileType.Type.TIFF: // Iodine, Img#, Direct.
-			case FileType.Type.BMP:  // Img#, Direct.
 				break;
+			case FileType.Type.GIF:  // Iodine, Img#.
+			case FileType.Type.TIFF: // Iodine, Img#.
 			case FileType.Type.WEBP: // Iodine, Img#.
+			case FileType.Type.BMP:  // Img#.
 			default:
 				log += $"[PDFsharp] Not supports '{type}'.";
 				return null;
@@ -208,8 +222,11 @@ namespace PicMerge {
 				res = new MemoryStream(buffer, false);
 			}
 			catch (Exception ex) {
-				log += $"[ImageSharp] Exception from {ex.Source}: {ex.Message}";
+				log += $"[PDFsharp] Exception: {ex.Message}";
 				res = null;
+			}
+			if (res is null) {
+				log += $"[PDFsharp] Cannot do it. Type: '{type}'.";
 			}
 			return res;
 		}

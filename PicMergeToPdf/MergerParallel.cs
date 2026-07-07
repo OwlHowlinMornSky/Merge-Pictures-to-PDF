@@ -52,8 +52,13 @@ namespace PicMerge {
 				LoadImageResult load_res = tasks.Dequeue().Result;
 				Stream? imageData = load_res.output;
 				string file = files[landedCnt++];
+#if DEBUG
+				result.Add(new FileResult(0xFFFF0000, file, load_res.log.error_message));
+				if (imageData == null) {
+#else
 				if (imageData == null) {
 					result.Add(new FileResult(0xFFFF0000, file, load_res.log.error_message));
+#endif
 					result.Add(new FileResult(0x80020001, file, StrFailedToRead));
 					FinishOneImg();
 					continue;
