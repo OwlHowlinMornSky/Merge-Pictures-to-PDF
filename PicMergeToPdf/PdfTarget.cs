@@ -102,6 +102,10 @@ internal class PdfTarget(string _outputPath, string? _title) : IDisposable {
 		catch (Exception) {
 			return false;
 		}
+		finally {
+			stream_to_image.Close();
+			stream_to_image.Dispose();
+		}
 		return true;
 	}
 
