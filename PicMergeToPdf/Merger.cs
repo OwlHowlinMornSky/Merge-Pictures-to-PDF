@@ -8,6 +8,13 @@ namespace PicMerge {
 
 		protected readonly object m_lock = new(); // Used to avoid IO at the same time.
 
+		internal enum Loader {
+			NULL,
+			Iodine,
+			ImageSharp,
+			PDFsharp,
+		}
+
 		internal struct LoadImageLog(string msg) {
 			public string error_message = msg;
 
@@ -33,6 +40,7 @@ namespace PicMerge {
 		/// <returns>加载结果</returns>
 		internal LoadImageResult LoadImage(string filepath, ImageParam param) {
 			LoadImageResult res = new($"[Load] Loading \'{filepath}\'...");
+			Loader loader = Loader.NULL;
 			try {
 				byte[] buffer;
 				lock (m_lock) { // 防止同时IO
@@ -42,7 +50,7 @@ namespace PicMerge {
 					inputStream.ReadExactly(buffer, 0, (int)inputStream.Length);
 					inputStream.Close();
 				}
-				res.output = ReadImage(in buffer, param, ref res.log, out res.img_w_override, out res.img_h_override);
+				(res.output, loader) = ReadImage(in buffer, param, ref res.log, out res.img_w_override, out res.img_h_override);
 			}
 			catch (Exception ex) {
 				res.log += $"[Load] Exception: {ex.Message}";
@@ -52,7 +60,7 @@ namespace PicMerge {
 				res.log += $"[Load] Loading '{filepath}' Failed.";
 			}
 			else {
-				res.log += $"[Load] '{filepath}' Loaded.";
+				res.log += $"[Load] '{filepath}' Loaded by {loader}.";
 			}
 			return res;
 		}
@@ -62,8 +70,9 @@ namespace PicMerge {
 		/// </summary>
 		/// <param name="input">要读入之图片之文件流</param>
 		/// <returns>加载结果</returns>
-		internal static Stream? ReadImage(in byte[] buffer, ImageParam param, ref LoadImageLog log, out int img_w_or, out int img_h_or) {
+		internal static (Stream?, Loader) ReadImage(in byte[] buffer, ImageParam param, ref LoadImageLog log, out int img_w_or, out int img_h_or) {
 			Stream? img_stream = null;
+			Loader loader = Loader.NULL;
 			img_w_or = -1;
 			img_h_or = -1;
 			try {
@@ -73,7 +82,7 @@ namespace PicMerge {
 				log += $"[Read] Image format: '{type}'.";
 
 				if (type == FileType.Type.Unknown)
-					return null;
+					return (null, Loader.NULL);
 
 				log += $"[Read] Checking in... (invalid file if no 'checked in' followed)";
 				using Image image = Image.Load(buffer);
@@ -99,18 +108,18 @@ namespace PicMerge {
 					// 先尝试Iodine，最大化压缩率；
 					// 再尝试ImageSharp，转换的同时可以压缩；
 					// 最后尝试直接加载。
-					img_stream ??= LoadImgaeByIodine(type, in buffer, param, optimize, ref log);
-					img_stream ??= LoadImageByImageSharp(type, in image, param, ref log);
-					img_stream ??= LoadImageDirectly(type, in buffer, param, ref log, out img_w_or, out img_h_or);
+					img_stream ??= LoadImgaeByIodine(type, in buffer, param, optimize, ref log, out loader);
+					img_stream ??= LoadImageByImageSharp(type, in image, param, ref log, out loader);
+					img_stream ??= LoadImageDirectly(type, in buffer, param, ref log, out loader, out img_w_or, out img_h_or);
 				}
 				else {
 					// 既不压缩、也不改变大小时：
 					// 先尝试直接加载，忽略计算的图片尺寸；
 					// 再尝试ImageSharp，可读取的格式更多；
 					// 最后尝试Iodine，不能闲着。（www
-					img_stream ??= LoadImageDirectly(type, in buffer, param, ref log, out _, out _);
-					img_stream ??= LoadImageByImageSharp(type, in image, param, ref log);
-					img_stream ??= LoadImgaeByIodine(type, in buffer, param, optimize, ref log);
+					img_stream ??= LoadImageDirectly(type, in buffer, param, ref log, out loader, out _, out _);
+					img_stream ??= LoadImageByImageSharp(type, in image, param, ref log, out loader);
+					img_stream ??= LoadImgaeByIodine(type, in buffer, param, optimize, ref log, out loader);
 				}
 
 				if (img_stream is null) {
@@ -121,10 +130,10 @@ namespace PicMerge {
 				log += $"[Read] Exception: {ex.Message}";
 				img_stream = null;
 			}
-			return img_stream;
+			return (img_stream, loader);
 		}
 
-		protected static Stream? LoadImgaeByIodine(FileType.Type type, in byte[] buffer, ImageParam param, bool optimize, ref LoadImageLog log) {
+		protected static Stream? LoadImgaeByIodine(FileType.Type type, in byte[] buffer, ImageParam param, bool optimize, ref LoadImageLog log, out Loader loader) {
 			Stream? imageData = null;
 			switch (type) {
 			case FileType.Type.WEBP: // Iodine, Img#.
@@ -156,11 +165,15 @@ namespace PicMerge {
 			}
 			if (imageData is null) {
 				log += $"[Iodine] Cannot do it. Type: '{type}'.";
+				loader = Loader.NULL;
+			}
+			else {
+				loader = Loader.Iodine;
 			}
 			return imageData;
 		}
 
-		protected static Stream? LoadImageByImageSharp(FileType.Type type, in Image image, ImageParam param, ref LoadImageLog log) {
+		protected static Stream? LoadImageByImageSharp(FileType.Type type, in Image image, ImageParam param, ref LoadImageLog log, out Loader loader) {
 			Stream? imageData = null;
 			switch (type) {
 			case FileType.Type.GIF:  // Iodine, Img#.
@@ -192,11 +205,15 @@ namespace PicMerge {
 			}
 			if (imageData is null) {
 				log += $"[ImageSharp] Cannot do it. Type: '{type}'.";
+				loader = Loader.NULL;
+			}
+			else {
+				loader = Loader.ImageSharp;
 			}
 			return imageData;
 		}
 
-		private static MemoryStream? LoadImageDirectly(FileType.Type type, in byte[] buffer, ImageParam param, ref LoadImageLog log, out int img_w, out int img_h) {
+		private static MemoryStream? LoadImageDirectly(FileType.Type type, in byte[] buffer, ImageParam param, ref LoadImageLog log, out Loader loader, out int img_w, out int img_h) {
 			if (param.resize) {
 				img_w = param.width;
 				img_h = param.height;
@@ -215,6 +232,7 @@ namespace PicMerge {
 			case FileType.Type.BMP:  // Img#.
 			default:
 				log += $"[PDFsharp] Not supports '{type}'.";
+				loader = Loader.NULL;
 				return null;
 			}
 			MemoryStream? res;
@@ -227,6 +245,10 @@ namespace PicMerge {
 			}
 			if (res is null) {
 				log += $"[PDFsharp] Cannot do it. Type: '{type}'.";
+				loader = Loader.NULL;
+			}
+			else {
+				loader = Loader.PDFsharp;
 			}
 			return res;
 		}
