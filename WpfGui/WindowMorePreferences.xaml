@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
+        xmlns:numeric="http://gu.se/NumericInput"
         mc:Ignorable="d"
         Title="{DynamicResource DetailTitle}"
         ShowInTaskbar="False"
@@ -37,7 +38,14 @@
                       ItemsSource="{Binding Path=FormatList}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Converter={StaticResource formatDisplayConverter}}"/>
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource formatDisplayConverter}">
+                                    <Binding Path="." />
+                                    <Binding Path="CurrentLangId" Source="{x:Static local:App.LangMngr}" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
@@ -73,11 +81,11 @@
                               IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
                               IsChecked="{Binding ResizeWidth, Mode=TwoWay}"
                               VerticalContentAlignment="Center"/>
-                    <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
-                             VerticalContentAlignment="Center"
-                             PreviewKeyDown="TextNum_PreviewKeyDown"
+                    <numeric:IntBox x:Name="intboxWidth" MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center" ValidationTrigger="PropertyChanged"
                              IsEnabled="{Binding IsChecked, ElementName=chkBoxWidth}"
-                             Text="{Binding ResizeWidthValue, Mode=TwoWay}"/>
+                             Value="{Binding ResizeWidthValue, Mode=TwoWay}"
+                             MinValue="0" MaxValue="16777216"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxHeight"
@@ -85,11 +93,11 @@
                               IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
                               IsChecked="{Binding ResizeHeight, Mode=TwoWay}"
                               VerticalContentAlignment="Center"/>
-                    <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
-                             VerticalContentAlignment="Center"
-                             PreviewKeyDown="TextNum_PreviewKeyDown"
+                    <numeric:IntBox x:Name="intboxHeight" MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center" ValidationTrigger="PropertyChanged"
                              IsEnabled="{Binding IsChecked, ElementName=chkBoxHeight}"
-                             Text="{Binding ResizeHeightValue, Mode=TwoWay}"/>
+                             Value="{Binding ResizeHeightValue, Mode=TwoWay}"
+                             MinValue="0" MaxValue="16777216"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxShort"
@@ -97,11 +105,11 @@
                               IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
                               IsChecked="{Binding ResizeShort, Mode=TwoWay}"
                               VerticalContentAlignment="Center"/>
-                    <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
-                             VerticalContentAlignment="Center"
-                             PreviewKeyDown="TextNum_PreviewKeyDown"
+                    <numeric:IntBox x:Name="intboxShort" MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center" ValidationTrigger="PropertyChanged"
                              IsEnabled="{Binding IsChecked, ElementName=chkBoxShort}"
-                             Text="{Binding ResizeShortValue, Mode=TwoWay}"/>
+                             Value="{Binding ResizeShortValue, Mode=TwoWay}"
+                             MinValue="0" MaxValue="16777216"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxLong"
@@ -109,11 +117,11 @@
                               IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
                               IsChecked="{Binding ResizeLong, Mode=TwoWay}"
                               VerticalContentAlignment="Center"/>
-                    <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
-                             VerticalContentAlignment="Center"
-                             PreviewKeyDown="TextNum_PreviewKeyDown"
+                    <numeric:IntBox x:Name="intboxLong" MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center" ValidationTrigger="PropertyChanged"
                              IsEnabled="{Binding IsChecked, ElementName=chkBoxLong}"
-                             Text="{Binding ResizeLongValue, Mode=TwoWay}"/>
+                             Value="{Binding ResizeLongValue, Mode=TwoWay}"
+                             MinValue="0" MaxValue="16777216"/>
                 </StackPanel>
                 <CheckBox Content="{DynamicResource DetailResizePow2}"
                           ToolTip="{DynamicResource DetailResizePow2Tip}"

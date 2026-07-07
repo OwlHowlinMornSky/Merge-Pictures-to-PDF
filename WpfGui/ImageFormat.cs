@@ -25,9 +25,9 @@ namespace WpfGui {
 		}
 	}
 
-	public class ImageFormatDisplayConverter : IValueConverter {
-		public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
-			if (value is ImageFormat format) {
+	public class ImageFormatDisplayConverter : IMultiValueConverter {
+		public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture) {
+			if (values.Length > 0 && values[0] is ImageFormat format) {
 				if (format == ImageFormat.TryKeep) {
 					// 从应用程序资源中查找 "DetailCompressKeepType"
 					if (Application.Current.TryFindResource("DetailCompressKeepType") is string display)
@@ -39,7 +39,7 @@ namespace WpfGui {
 			return Binding.DoNothing;
 		}
 
-		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+		public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) {
 			// 不需要实现，因为 ComboBox 的 SelectedItem 绑定直接操作枚举对象，
 			// 不会调用 ConvertBack。
 			throw new NotImplementedException();

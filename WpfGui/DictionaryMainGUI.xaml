@@ -19,6 +19,7 @@
     <sys:String x:Key="HaveFinishedPercent">{0:F2}% finished</sys:String>
     <sys:String x:Key="Error">Error</sys:String>
     <sys:String x:Key="Warning">Warning</sys:String>
+    <sys:String x:Key="InvalidParams">Invalid parameter(s) exist.</sys:String>
     <sys:String x:Key="InvalidDrop">Data dropped is invalid.</sys:String>
     <sys:String x:Key="WaitForCurrentTask">Please wait for task finished.</sys:String>
 
@@ -46,7 +47,7 @@ Answer 'Yes' to view the log.</sys:String>
     <sys:String x:Key="DetailResizePow2Tip" xml:space="preserve"
 >When reducing image, let the scale be power of 2.
 Reducing is goning on until each measure is not great than your preferred value.</sys:String>
-    <sys:String x:Key="PageDpiTip" xml:space="preserve"
+    <sys:String x:Key="PagePpiTip" xml:space="preserve"
 >This is used to scale the page, not the image.
 The default value is 72.
 The greater this value, the smaller the pdf pages.</sys:String>

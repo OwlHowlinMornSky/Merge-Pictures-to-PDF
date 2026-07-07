@@ -111,37 +111,37 @@ namespace WpfGui {
 			}
 		} = Settings1.Default.CompressResizeReduceByPow2;
 
-		public string ResizeWidthValue {
+		public int ResizeWidthValue {
 			get; set {
-				Settings1.Default.CompressResizeWidthValue = int.Parse(value);
+				Settings1.Default.CompressResizeWidthValue = value;
 				field = value;
 				OnPropertyChanged(nameof(ResizeWidthValue));
 			}
-		} = Settings1.Default.CompressResizeWidthValue.ToString();
+		} = Settings1.Default.CompressResizeWidthValue;
 
-		public string ResizeHeightValue {
+		public int ResizeHeightValue {
 			get; set {
-				Settings1.Default.CompressResizeHeightValue = int.Parse(value);
+				Settings1.Default.CompressResizeHeightValue = value;
 				field = value;
 				OnPropertyChanged(nameof(ResizeHeightValue));
 			}
-		} = Settings1.Default.CompressResizeHeightValue.ToString();
+		} = Settings1.Default.CompressResizeHeightValue;
 
-		public string ResizeShortValue {
+		public int ResizeShortValue {
 			get; set {
-				Settings1.Default.CompressResizeShortValue = int.Parse(value);
+				Settings1.Default.CompressResizeShortValue = value;
 				field = value;
 				OnPropertyChanged(nameof(ResizeShortValue));
 			}
-		} = Settings1.Default.CompressResizeShortValue.ToString();
+		} = Settings1.Default.CompressResizeShortValue;
 
-		public string ResizeLongValue {
+		public int ResizeLongValue {
 			get; set {
-				Settings1.Default.CompressResizeLongValue = int.Parse(value);
+				Settings1.Default.CompressResizeLongValue = value;
 				field = value;
 				OnPropertyChanged(nameof(ResizeLongValue));
 			}
-		} = Settings1.Default.CompressResizeLongValue.ToString();
+		} = Settings1.Default.CompressResizeLongValue;
 
 
 

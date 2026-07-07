@@ -169,7 +169,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int PagePageType {
             get {
                 return ((int)(this["PagePageType"]));
@@ -181,10 +181,10 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public float PageSizeWidth {
+        [global::System.Configuration.DefaultSettingValueAttribute("300")]
+        public double PageSizeWidth {
             get {
-                return ((float)(this["PageSizeWidth"]));
+                return ((double)(this["PageSizeWidth"]));
             }
             set {
                 this["PageSizeWidth"] = value;
@@ -193,10 +193,10 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public float PageSizeHeight {
+        [global::System.Configuration.DefaultSettingValueAttribute("400")]
+        public double PageSizeHeight {
             get {
-                return ((float)(this["PageSizeHeight"]));
+                return ((double)(this["PageSizeHeight"]));
             }
             set {
                 this["PageSizeHeight"] = value;
@@ -325,7 +325,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool PageFixedWidth {
             get {
                 return ((bool)(this["PageFixedWidth"]));
@@ -337,10 +337,10 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public uint PageDpi {
+        [global::System.Configuration.DefaultSettingValueAttribute("72")]
+        public double PageDpi {
             get {
-                return ((uint)(this["PageDpi"]));
+                return ((double)(this["PageDpi"]));
             }
             set {
                 this["PageDpi"] = value;

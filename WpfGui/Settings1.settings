@@ -39,13 +39,13 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="PagePageType" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">2</Value>
-    </Setting>
-    <Setting Name="PageSizeWidth" Type="System.Single" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="PageSizeHeight" Type="System.Single" Scope="User">
-      <Value Profile="(Default)">0</Value>
+    <Setting Name="PageSizeWidth" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">300</Value>
+    </Setting>
+    <Setting Name="PageSizeHeight" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">400</Value>
     </Setting>
     <Setting Name="IORecurse" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
@@ -81,10 +81,10 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="PageFixedWidth" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="PageDpi" Type="System.UInt32" Scope="User">
-      <Value Profile="(Default)">0</Value>
+    <Setting Name="PageDpi" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">72</Value>
     </Setting>
     <Setting Name="PrevSelectTargetPath" Type="System.String" Scope="User">
       <Value Profile="(Default)" />

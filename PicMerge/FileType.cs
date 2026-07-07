@@ -14,18 +14,6 @@ namespace PicMerge {
 			//TGA,
 		}
 
-		internal static Type CheckType(Stream file) {
-			var oldpos = file.Position;
-
-			byte[] b = new byte[8];
-			if (file.Read(b, 0, 8) != 8)
-				return Type.Unknown;
-			var res = CheckType(b);
-
-			file.Position = oldpos;
-			return res;
-		}
-
 		internal static Type CheckType(byte[] b) {
 
 			if (b.Length < 2)

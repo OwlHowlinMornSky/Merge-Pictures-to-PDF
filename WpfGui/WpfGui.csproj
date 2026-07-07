@@ -29,6 +29,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Gu.Wpf.NumericInput" Version="0.5.5" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\PicMerge\PicMerge.csproj" />
   </ItemGroup>
 

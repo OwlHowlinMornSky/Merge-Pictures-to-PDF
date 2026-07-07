@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace WpfGui {
@@ -6,9 +7,6 @@ namespace WpfGui {
 	/// WindowMorePreferences.xaml 的交互逻辑
 	/// </summary>
 	public partial class WindowMorePreferences : Window {
-		protected bool Started {
-			get; private set;
-		} = false;
 		public WindowMorePreferences() {
 			InitializeComponent();
 #if !DEBUG
@@ -23,24 +21,18 @@ namespace WpfGui {
 				Settings1.Default.CompressResizeShortValue = (int)(Settings1.Default.PageSizeWidth * 4);
 			if (Settings1.Default.CompressResizeLongValue == 0)
 				Settings1.Default.CompressResizeLongValue = (int)(Settings1.Default.PageSizeHeight * 4);
-
-			Started = true;
-		}
-
-		/// <summary>
-		/// 输入尺寸的框 的 键入通知。用来限制 只能输入数字。
-		/// </summary>
-		private void TextNum_PreviewKeyDown(object sender, KeyEventArgs e) {
-			bool isNum = e.Key >= Key.D0 && e.Key <= Key.D9;
-			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
-			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
-			if (isNum || isNumPad || isControl) {
-				return;
-			}
-			e.Handled = true;
 		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+			this.Focus();
+			if (Validation.GetHasError(intboxWidth) ||
+				Validation.GetHasError(intboxHeight) ||
+				Validation.GetHasError(intboxShort) ||
+				Validation.GetHasError(intboxLong)) {
+				MessageBox.Show(this, App.Current.TryFindResource("InvalidParams").ToString() ?? "Check value please.", this.Title, MessageBoxButton.OK, MessageBoxImage.Error);
+				e.Cancel = true;
+				return;
+			}
 			Settings1.Default.Save();
 		}
 
@@ -52,8 +44,7 @@ namespace WpfGui {
 		}
 
 		private void ButtonLanguage_Click(object sender, RoutedEventArgs e) {
-			Settings1.Default.Language = Settings1.Default.Language == 0 ? 1 : 0;
-			MainWindow.ChangeLang(Settings1.Default.Language);
+			App.LangMngr.CurrentLangId++;
 		}
 
 		private void ButtonTest_Click(object sender, RoutedEventArgs e) {
@@ -67,10 +58,10 @@ namespace WpfGui {
 				bd.ResizeShort = !bd.ResizeShort;
 				bd.ResizeLong = !bd.ResizeLong;
 				bd.ResizeReduceByPow2 = !bd.ResizeReduceByPow2;
-				bd.ResizeWidthValue = (int.Parse(bd.ResizeWidthValue) + 1).ToString();
-				bd.ResizeHeightValue = (int.Parse(bd.ResizeHeightValue) + 1).ToString();
-				bd.ResizeShortValue = (int.Parse(bd.ResizeShortValue) + 1).ToString();
-				bd.ResizeLongValue = (int.Parse(bd.ResizeLongValue) + 1).ToString();
+				bd.ResizeWidthValue++;
+				bd.ResizeHeightValue++;
+				bd.ResizeShortValue++;
+				bd.ResizeLongValue++;
 			}
 		}
 	}
