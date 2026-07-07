@@ -14,7 +14,7 @@ public:
 	~IodineBufferViewer();
 	!IodineBufferViewer();
 
-	property int Length {
+	property int Length{
 		int get() {
 			return m_length;
 		}

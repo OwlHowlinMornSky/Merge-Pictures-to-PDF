@@ -1,9 +1,5 @@
-﻿using iText.Commons.Bouncycastle.Operator;
-using iText.IO.Image;
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using iText.IO.Image;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
-using System.Text;
 
 namespace PicMerge {
 	internal class Merger() {
