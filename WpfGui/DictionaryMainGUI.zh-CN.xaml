@@ -36,8 +36,7 @@
     <sys:String x:Key="DetailCompressType">压缩目标格式</sys:String>
     <sys:String x:Key="DetailCompressKeepType">保持原格式</sys:String>
     <sys:String x:Key="DetailCompressQuality">压缩质量</sys:String>
-    <sys:String x:Key="DetailResizeWhenCompress">压缩时改变图片大小</sys:String>
-    <sys:String x:Key="DetailResize">改变大小</sys:String>
+    <sys:String x:Key="DetailResize">改变图片大小</sys:String>
     <sys:String x:Key="DetailPreferredWidth">期望宽度</sys:String>
     <sys:String x:Key="DetailPreferredHeight">期望高度</sys:String>
     <sys:String x:Key="DetailPreferredShort">短边长度</sys:String>

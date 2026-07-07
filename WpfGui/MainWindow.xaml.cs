@@ -330,7 +330,7 @@ namespace WpfGui {
 			);
 			PicMerge.ImageParam imageParam = new(
 				_compress: Settings1.Default.IOCompress,
-				_format: Settings1.Default.CompressFormat,
+				_format: ImageFormatHelp.StringToIndex(Settings1.Default.CompressFormat),
 				_quality: Settings1.Default.CompressQuality,
 				_resize: Settings1.Default.CompressResize,
 				_width: Settings1.Default.CompressResizeWidth ? Settings1.Default.CompressResizeWidthValue : 0,

@@ -36,8 +36,7 @@ Answer 'Yes' to view the log.</sys:String>
     <sys:String x:Key="DetailCompressType">Compress Target Type</sys:String>
     <sys:String x:Key="DetailCompressKeepType">Keep Original Type</sys:String>
     <sys:String x:Key="DetailCompressQuality">Compress Quality</sys:String>
-    <sys:String x:Key="DetailResizeWhenCompress">Resize when compressing</sys:String>
-    <sys:String x:Key="DetailResize">Resize</sys:String>
+    <sys:String x:Key="DetailResize">Resize Images</sys:String>
     <sys:String x:Key="DetailPreferredWidth">Preferred Width</sys:String>
     <sys:String x:Key="DetailPreferredHeight">Preferred Height</sys:String>
     <sys:String x:Key="DetailPreferredShort">Short Side Length</sys:String>

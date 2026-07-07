@@ -5,50 +5,186 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
         mc:Ignorable="d"
-        Title="{DynamicResource DetailTitle}" ResizeMode="NoResize" SizeToContent="WidthAndHeight" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Closing="Window_Closing">
+        Title="{DynamicResource DetailTitle}"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" SizeToContent="WidthAndHeight"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <local:MorePreference x:Key="myDataSource"/>
+        <local:ImageFormatDisplayConverter x:Key="formatDisplayConverter"/>
+    </Window.Resources>
+    <Window.DataContext>
+        <Binding Source="{StaticResource myDataSource}"/>
+    </Window.DataContext>
+
     <StackPanel Margin="10,10" MinWidth="300">
-        <CheckBox x:Name="chkboxMoveProcessed" Margin="5,0,5,5" Content="{DynamicResource DetailMoveProcessed}" Checked="ChkboxMoveProcessed_CheckedChanged" Unchecked="ChkboxMoveProcessed_CheckedChanged"/>
-        <CheckBox x:Name="chkboxPdfInFolder" Margin="5,0,5,5" Content="{DynamicResource DetailPdfInFolder}" Checked="ChkboxMoveProcessed_CheckedChanged" Unchecked="ChkboxMoveProcessed_CheckedChanged"/>
-        <GroupBox Header="{DynamicResource DetailCompressType}" Margin="0,0,0,0">
-            <ComboBox x:Name="comboBoxCompressType" Margin="10,10" SelectionChanged="ComboBoxCompressType_SelectionChanged">
-                <ComboBoxItem Content="{DynamicResource DetailCompressKeepType}"/>
-                <ComboBoxItem Content="JPEG"/>
-                <ComboBoxItem Content="PNG"/>
+
+        <CheckBox x:Name="chkboxMoveProcessed"
+                  Margin="5,0,5,5"
+                  Content="{DynamicResource DetailMoveProcessed}"
+                  IsChecked="{Binding IoMoveProcessed, Mode=TwoWay}"/>
+        <CheckBox x:Name="chkboxPdfInFolder"
+                  Margin="5,0,5,5"
+                  Content="{DynamicResource DetailPdfInFolder}"
+                  IsChecked="{Binding IoPdfInFolder, Mode=TwoWay}"/>
+
+        <GroupBox Header="{DynamicResource DetailCompressType}"
+                  Margin="0,0,0,0">
+            <ComboBox Margin="10,10"
+                      SelectedItem="{Binding Path=TargetFormat, Mode=TwoWay}"
+                      ItemsSource="{Binding Path=FormatList}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource formatDisplayConverter}}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
             </ComboBox>
         </GroupBox>
-        <GroupBox Header="{DynamicResource DetailCompressQuality}" Margin="0,10,0,0">
+
+        <GroupBox Header="{DynamicResource DetailCompressQuality}"
+                  Margin="0,10,0,0">
             <Grid Margin="10,10,0,10">
-                <Slider x:Name="sliderQuality" Margin="0,0,40,0" MinWidth="100" SmallChange="1" Maximum="100" LargeChange="10" TickPlacement="Both" IsSnapToTickEnabled="True" VerticalContentAlignment="Center" ValueChanged="SliderQuality_ValueChanged"/>
-                <Label Content="{Binding Value, ElementName=sliderQuality}" Margin="0,0,0,0" HorizontalAlignment="Right" VerticalContentAlignment="Center"/>
+                <Slider x:Name="sliderQuality"
+                        Value="{Binding Path=Quality, Mode=TwoWay}"
+                        Margin="0,0,40,0" MinWidth="100"
+                        SmallChange="1" Maximum="100" LargeChange="10"
+                        TickPlacement="Both" IsSnapToTickEnabled="True"
+                        VerticalContentAlignment="Center"/>
+                <Label Content="{Binding Value, ElementName=sliderQuality}"
+                       Margin="0,0,0,0"
+                       HorizontalAlignment="Right"
+                       VerticalContentAlignment="Center"/>
             </Grid>
         </GroupBox>
-        <GroupBox Header="{DynamicResource DetailResizeWhenCompress}" Margin="0,10,0,0">
+
+        <GroupBox Margin="0,10,0,0">
+            <GroupBox.Header>
+                <CheckBox x:Name="chkBoxResize"
+                          Content="{DynamicResource DetailResize}"
+                          IsChecked="{Binding Resize, Mode=TwoWay}"/>
+            </GroupBox.Header>
+
             <StackPanel Margin="10,10">
-                <CheckBox x:Name="chkBoxResize" Content="{DynamicResource DetailResize}" Checked="ResizeCheckedChanged" Unchecked="ResizeCheckedChanged"/>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="chkBoxWidth" Content="{DynamicResource DetailPreferredWidth}" VerticalContentAlignment="Center" Checked="ResizeWHCheckedChanged" Unchecked="ResizeWHCheckedChanged"/>
-                    <TextBox x:Name="textBoxWidth" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <CheckBox x:Name="chkBoxWidth"
+                              Content="{DynamicResource DetailPreferredWidth}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeWidth, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center"
+                             PreviewKeyDown="TextNum_PreviewKeyDown"
+                             Text="{Binding ResizeWidthValue, Mode=TwoWay}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="IsEnabled" Value="False"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxWidth}" Value="True"/>
+                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxResize}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="IsEnabled" Value="True"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="chkBoxHeight" Content="{DynamicResource DetailPreferredHeight}" VerticalContentAlignment="Center" Checked="ResizeWHCheckedChanged" Unchecked="ResizeWHCheckedChanged"/>
-                    <TextBox x:Name="textBoxHeight" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <CheckBox x:Name="chkBoxHeight"
+                              Content="{DynamicResource DetailPreferredHeight}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeHeight, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center"
+                             PreviewKeyDown="TextNum_PreviewKeyDown"
+                             Text="{Binding ResizeHeightValue, Mode=TwoWay}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="IsEnabled" Value="False"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxHeight}" Value="True"/>
+                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxResize}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="IsEnabled" Value="True"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="chkBoxShort" Content="{DynamicResource DetailPreferredShort}" VerticalContentAlignment="Center" Checked="ResizeSIDECheckedChanged" Unchecked="ResizeSIDECheckedChanged"/>
-                    <TextBox x:Name="textBoxShort" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <CheckBox x:Name="chkBoxShort"
+                              Content="{DynamicResource DetailPreferredShort}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeShort, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center"
+                             PreviewKeyDown="TextNum_PreviewKeyDown"
+                             Text="{Binding ResizeShortValue, Mode=TwoWay}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="IsEnabled" Value="False"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxShort}" Value="True"/>
+                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxResize}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="IsEnabled" Value="True"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="chkBoxLong" Content="{DynamicResource DetailPreferredLong}" VerticalContentAlignment="Center" Checked="ResizeSIDECheckedChanged" Unchecked="ResizeSIDECheckedChanged"/>
-                    <TextBox x:Name="textBoxLong" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <CheckBox x:Name="chkBoxLong"
+                              Content="{DynamicResource DetailPreferredLong}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeLong, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center"
+                             PreviewKeyDown="TextNum_PreviewKeyDown"
+                             Text="{Binding ResizeLongValue, Mode=TwoWay}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="IsEnabled" Value="False"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxLong}" Value="True"/>
+                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxResize}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="IsEnabled" Value="True"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                 </StackPanel>
-                <CheckBox x:Name="chkBoxPow2" Content="{DynamicResource DetailResizePow2}" ToolTip="{DynamicResource DetailResizePow2Tip}" Checked="ResizeCheckedChanged" Unchecked="ResizeCheckedChanged"/>
+                <CheckBox Content="{DynamicResource DetailResizePow2}"
+                          ToolTip="{DynamicResource DetailResizePow2Tip}"
+                          IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                          IsChecked="{Binding ResizeReduceByPow2, Mode=TwoWay}"/>
             </StackPanel>
         </GroupBox>
+
         <GroupBox x:Name="gpBoxDebug" Header="Debug">
             <WrapPanel Margin="5,5">
                 <Button Content="Language" Margin="0,0,10,0" Click="ButtonLanguage_Click"/>
-                <Button Content="Reset Settings" Click="ButtonResetSettings_Click"/>
+                <Button Content="Reset Settings" Margin="0,0,10,0" Click="ButtonResetSettings_Click"/>
+                <Button Content="Test Button" Click="ButtonTest_Click"/>
             </WrapPanel>
         </GroupBox>
+
     </StackPanel>
 </Window>

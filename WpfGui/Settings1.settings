@@ -2,14 +2,14 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="WpfGui" GeneratedClassName="Settings1">
   <Profiles />
   <Settings>
-    <Setting Name="CompressFormat" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">1</Value>
+    <Setting Name="CompressFormat" Type="System.String" Scope="User">
+      <Value Profile="(Default)">TryKeep</Value>
     </Setting>
     <Setting Name="CompressQuality" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">80</Value>
     </Setting>
     <Setting Name="CompressResize" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="CompressResizeWidth" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -18,7 +18,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="CompressResizeShort" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="CompressResizeLong" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -30,7 +30,7 @@
       <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="CompressResizeShortValue" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">2160</Value>
+      <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="CompressResizeLongValue" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>

@@ -12,7 +12,7 @@ namespace WpfGui {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.12.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "18.7.0.0")]
     internal sealed partial class Settings1 : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings1 defaultInstance = ((Settings1)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings1())));
@@ -25,10 +25,10 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
-        public int CompressFormat {
+        [global::System.Configuration.DefaultSettingValueAttribute("TryKeep")]
+        public string CompressFormat {
             get {
-                return ((int)(this["CompressFormat"]));
+                return ((string)(this["CompressFormat"]));
             }
             set {
                 this["CompressFormat"] = value;
@@ -49,7 +49,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool CompressResize {
             get {
                 return ((bool)(this["CompressResize"]));
@@ -85,7 +85,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool CompressResizeShort {
             get {
                 return ((bool)(this["CompressResizeShort"]));
@@ -133,7 +133,7 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2160")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int CompressResizeShortValue {
             get {
                 return ((int)(this["CompressResizeShortValue"]));
@@ -357,42 +357,42 @@ namespace WpfGui {
             set {
                 this["PrevSelectTargetPath"] = value;
             }
-		}
-
-		[global::System.Configuration.UserScopedSettingAttribute()]
-		[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-		[global::System.Configuration.DefaultSettingValueAttribute("")]
-		public string PrevSelectMovePath {
-			get {
-				return ((string)(this["PrevSelectMovePath"]));
-			}
-			set {
-				this["PrevSelectMovePath"] = value;
-			}
-		}
-
-		[global::System.Configuration.UserScopedSettingAttribute()]
-		[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-		[global::System.Configuration.DefaultSettingValueAttribute("False")]
-		public bool IOMoveProcessed {
-			get {
-				return ((bool)(this["IOMoveProcessed"]));
-			}
-			set {
-				this["IOMoveProcessed"] = value;
-			}
-		}
-
-		[global::System.Configuration.UserScopedSettingAttribute()]
-		[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-		[global::System.Configuration.DefaultSettingValueAttribute("False")]
-		public bool IOPdfInFolder {
-			get {
-				return ((bool)(this["IOPdfInFolder"]));
-			}
-			set {
-				this["IOPdfInFolder"] = value;
-			}
-		}
-	}
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PrevSelectMovePath {
+            get {
+                return ((string)(this["PrevSelectMovePath"]));
+            }
+            set {
+                this["PrevSelectMovePath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IOMoveProcessed {
+            get {
+                return ((bool)(this["IOMoveProcessed"]));
+            }
+            set {
+                this["IOMoveProcessed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IOPdfInFolder {
+            get {
+                return ((bool)(this["IOPdfInFolder"]));
+            }
+            set {
+                this["IOPdfInFolder"] = value;
+            }
+        }
+    }
 }
