@@ -66,7 +66,7 @@
                           IsChecked="{Binding Resize, Mode=TwoWay}"/>
             </GroupBox.Header>
 
-            <StackPanel Margin="10,10">
+            <StackPanel Margin="10,10" IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}">
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxWidth"
                               Content="{DynamicResource DetailPreferredWidth}"
@@ -76,22 +76,8 @@
                     <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
                              VerticalContentAlignment="Center"
                              PreviewKeyDown="TextNum_PreviewKeyDown"
-                             Text="{Binding ResizeWidthValue, Mode=TwoWay}">
-                        <TextBox.Style>
-                            <Style TargetType="TextBox">
-                                <Setter Property="IsEnabled" Value="False"/>
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxWidth}" Value="True"/>
-                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxResize}" Value="True"/>
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="IsEnabled" Value="True"/>
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Style>
-                    </TextBox>
+                             IsEnabled="{Binding IsChecked, ElementName=chkBoxWidth}"
+                             Text="{Binding ResizeWidthValue, Mode=TwoWay}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxHeight"
@@ -102,22 +88,8 @@
                     <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
                              VerticalContentAlignment="Center"
                              PreviewKeyDown="TextNum_PreviewKeyDown"
-                             Text="{Binding ResizeHeightValue, Mode=TwoWay}">
-                        <TextBox.Style>
-                            <Style TargetType="TextBox">
-                                <Setter Property="IsEnabled" Value="False"/>
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxHeight}" Value="True"/>
-                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxResize}" Value="True"/>
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="IsEnabled" Value="True"/>
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Style>
-                    </TextBox>
+                             IsEnabled="{Binding IsChecked, ElementName=chkBoxHeight}"
+                             Text="{Binding ResizeHeightValue, Mode=TwoWay}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxShort"
@@ -128,22 +100,8 @@
                     <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
                              VerticalContentAlignment="Center"
                              PreviewKeyDown="TextNum_PreviewKeyDown"
-                             Text="{Binding ResizeShortValue, Mode=TwoWay}">
-                        <TextBox.Style>
-                            <Style TargetType="TextBox">
-                                <Setter Property="IsEnabled" Value="False"/>
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxShort}" Value="True"/>
-                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxResize}" Value="True"/>
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="IsEnabled" Value="True"/>
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Style>
-                    </TextBox>
+                             IsEnabled="{Binding IsChecked, ElementName=chkBoxShort}"
+                             Text="{Binding ResizeShortValue, Mode=TwoWay}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxLong"
@@ -154,22 +112,8 @@
                     <TextBox MaxLength="12" Margin="10,0,0,0" Width="100"
                              VerticalContentAlignment="Center"
                              PreviewKeyDown="TextNum_PreviewKeyDown"
-                             Text="{Binding ResizeLongValue, Mode=TwoWay}">
-                        <TextBox.Style>
-                            <Style TargetType="TextBox">
-                                <Setter Property="IsEnabled" Value="False"/>
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxLong}" Value="True"/>
-                                            <Condition Binding="{Binding IsChecked, ElementName=chkBoxResize}" Value="True"/>
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="IsEnabled" Value="True"/>
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Style>
-                    </TextBox>
+                             IsEnabled="{Binding IsChecked, ElementName=chkBoxLong}"
+                             Text="{Binding ResizeLongValue, Mode=TwoWay}"/>
                 </StackPanel>
                 <CheckBox Content="{DynamicResource DetailResizePow2}"
                           ToolTip="{DynamicResource DetailResizePow2Tip}"

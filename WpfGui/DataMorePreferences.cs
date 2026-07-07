@@ -56,6 +56,10 @@ namespace WpfGui {
 				Settings1.Default.CompressResizeWidth = value;
 				field = value;
 				OnPropertyChanged(nameof(ResizeWidth));
+				if (value) {
+					ResizeShort = false;
+					ResizeLong = false;
+				}
 			}
 		} = Settings1.Default.CompressResizeWidth;
 
@@ -65,6 +69,10 @@ namespace WpfGui {
 				Settings1.Default.CompressResizeHeight = value;
 				field = value;
 				OnPropertyChanged(nameof(ResizeHeight));
+				if (value) {
+					ResizeShort = false;
+					ResizeLong = false;
+				}
 			}
 		} = Settings1.Default.CompressResizeHeight;
 
@@ -74,6 +82,10 @@ namespace WpfGui {
 				Settings1.Default.CompressResizeShort = value;
 				field = value;
 				OnPropertyChanged(nameof(ResizeShort));
+				if (value) {
+					ResizeWidth = false;
+					ResizeHeight = false;
+				}
 			}
 		} = Settings1.Default.CompressResizeShort;
 
@@ -83,6 +95,10 @@ namespace WpfGui {
 				Settings1.Default.CompressResizeLong = value;
 				field = value;
 				OnPropertyChanged(nameof(ResizeLong));
+				if (value) {
+					ResizeWidth = false;
+					ResizeHeight = false;
+				}
 			}
 		} = Settings1.Default.CompressResizeLong;
 
