@@ -16,8 +16,7 @@ namespace PicMerge {
 			public enum Type : byte {
 				None = 0,
 				Directory,
-				FileNotArchive,
-				Archive,
+				File,
 			}
 			public readonly Type type = _type;
 			public List<string> files = _files;
@@ -182,22 +181,7 @@ namespace PicMerge {
 				}
 				/// 零散文件。
 				if (files.Count > 0) {
-					bool all_archive = false;
-					if (directories.Count < 1) { // 没有拖入目录（即只有文件）
-						all_archive = files.All(x => {
-							string ext = Path.GetExtension(x);
-							bool isZip = ext.Equals(".zip", StringComparison.OrdinalIgnoreCase);
-							bool is7z = ext.Equals(".7z", StringComparison.OrdinalIgnoreCase);
-							bool isRar = ext.Equals(".rar", StringComparison.OrdinalIgnoreCase);
-							return isZip || is7z || isRar;
-						});
-					}
-					if (all_archive) { // 只有压缩文件
-						waitings.Enqueue(new TaskInputData(TaskInputData.Type.Archive, files));
-					}
-					else {
-						waitings.Enqueue(new TaskInputData(TaskInputData.Type.FileNotArchive, files));
-					}
+					waitings.Enqueue(new TaskInputData(TaskInputData.Type.File, files));
 				}
 			}
 			/// 正常情况下的处理。不考虑压缩文件。
@@ -240,7 +224,7 @@ namespace PicMerge {
 				ProcessOneFolder(srcDir, outputPath, relativeIsEmpty ? Path.GetFileName(baseDir) : relative);
 				break;
 			}
-			case TaskInputData.Type.FileNotArchive: {
+			case TaskInputData.Type.File: {
 				string pathOfFirstFile = data.files[0];
 				string dirOfFirstFile = Path.GetDirectoryName(pathOfFirstFile) ?? "";
 
@@ -252,10 +236,6 @@ namespace PicMerge {
 
 				/// 零散文件的标题 取 文件所在父目录的名字。
 				ProcessFiles(data.files, outputPath, Path.GetFileName(dirOfFirstFile));
-				break;
-			}
-			case TaskInputData.Type.Archive: {
-				ProcessArchive(data.files);
 				break;
 			}
 			default:
@@ -317,20 +297,6 @@ namespace PicMerge {
 					}
 				}
 			}
-		}
-
-		private void ProcessArchive(List<string> files) {
-			files.Sort(StrCmpLogicalW);
-			IMerger merger = IMerger.CreateArchiveConverter(
-				CallbackFinishOneImgFile,
-				m_param.stayNoMove,
-				m_param.keepStruct,
-				m_internalParam.pp,
-				m_internalParam.ip
-			);
-			List<IMerger.FileResult> failed = merger.Process(m_param.destinationPath, files);
-			CallbackFinishAllImgFile();
-			CheckResultListFailed(m_param.destinationPath, ref failed);
 		}
 
 		/// <summary>

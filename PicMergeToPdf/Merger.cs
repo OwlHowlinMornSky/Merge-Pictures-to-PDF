@@ -8,8 +8,8 @@ using System.Text;
 namespace PicMerge {
 	internal class Merger() {
 
-		protected string StrUnsupported = "Unsupported type.";
-		protected string StrFailedToAdd = "Failed to add into pdf.";
+		protected string StrFailedToRead = "Failed to process.";
+		protected string StrFailedToAdd = "Failed to add into PDF.";
 
 		protected readonly object m_lock = new(); // Used to avoid IO at the same time.
 

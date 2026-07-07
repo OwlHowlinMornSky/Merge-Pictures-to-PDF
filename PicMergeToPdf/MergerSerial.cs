@@ -37,7 +37,7 @@ namespace PicMerge {
 					ImageData? imageData = LoadImage(file, m_param, ref log);
 					if (imageData == null) {
 						result.Add(new FileResult(0xFFFF0000, file, log.error_message));
-						result.Add(new FileResult(0x80010001, file, StrUnsupported));
+						result.Add(new FileResult(0x80010001, file, StrFailedToRead));
 						FinishOneImg();
 						continue;
 					}

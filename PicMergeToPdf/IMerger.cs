@@ -49,16 +49,6 @@ namespace PicMerge {
 			return parallel ? new MergerParallel(finish1img, pp, ip) : new MergerSerial(finish1img, pp, ip);
 		}
 
-		public static IMerger CreateArchiveConverter(
-			Action finish1img,
-			bool stayNoMove,
-			bool keepStruct,
-			PageParam pp,
-			ImageParam ip
-		) {
-			return new MergerArchive(finish1img, stayNoMove, keepStruct, pp, ip);
-		}
-
 		/// <summary>
 		/// 确保给定的目录存在。请在传入前 检查 path是 想要的目录的路径 而不是 想要的文件的路径。
 		/// 该方法会 递归地创建链条上的所有目录。例如传入 C:\DirA\DirB\DirC，而 DirA 不存在，

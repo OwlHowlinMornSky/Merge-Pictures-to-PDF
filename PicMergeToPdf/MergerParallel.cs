@@ -60,7 +60,7 @@ namespace PicMerge {
 				string file = files[landedCnt++];
 				if (imageData == null) {
 					result.Add(new FileResult(0xFFFF0000, file, load_res.log));
-					result.Add(new FileResult(0x80020001, file, StrUnsupported));
+					result.Add(new FileResult(0x80020001, file, StrFailedToRead));
 					FinishOneImg();
 					continue;
 				}
