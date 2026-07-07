@@ -6,11 +6,6 @@ namespace PicMerge {
 	/// </summary>
 	public interface IMerger {
 
-		/// <summary>
-		/// 内存映射文件设定的最大大小。
-		/// </summary>
-		internal const int MapFileSize = 0x04000000;
-
 		public readonly struct FileResult(uint _c, string _file, string _desc = "Success.") {
 			public readonly uint code = _c;
 			public readonly string filename = _file;
@@ -52,16 +47,6 @@ namespace PicMerge {
 			ImageParam ip
 		) {
 			return parallel ? new MergerParallel(finish1img, pp, ip) : new MergerSerial(finish1img, pp, ip);
-		}
-
-		public static IMerger CreateArchiveConverter(
-			Action finish1img,
-			bool stayNoMove,
-			bool keepStruct,
-			PageParam pp,
-			ImageParam ip
-		) {
-			return new MergerArchive(finish1img, stayNoMove, keepStruct, pp, ip);
 		}
 
 		/// <summary>

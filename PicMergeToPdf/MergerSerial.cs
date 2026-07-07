@@ -10,9 +10,10 @@ namespace PicMerge {
 	/// <param name="pp">页面参数</param>
 	/// <param name="ip">图片参数</param>
 	/// <err frag="0x8001" ack="0006"></err>
-	internal class MergerSerial(Action finish1img, PageParam pp, ImageParam ip) : Merger(ip), IMerger {
+	internal class MergerSerial(Action finish1img, PageParam pp, ImageParam ip) : Merger, IMerger {
 
 		private readonly PageParam m_pp = pp;
+		protected readonly ImageParam m_param = ip;
 
 		/// <summary>
 		/// 完成一张图片（其实是一个文件，不论是否是图片）的回调。
@@ -31,41 +32,17 @@ namespace PicMerge {
 			try {
 				using PdfTarget pdfTarget = new(outputfilepath, title);
 
-				/// 先扫到可以处理的文件。
-				int i = 0;
-				ImageData? imageData = null;
-				for (; i < files.Count; ++i) {
-					string file = files[i];
-
-					imageData = LoadImage(file);
-					if (imageData != null) {
-						break;
-					}
-					result.Add(new FileResult(0x80010001, file, StrUnsupported));
-					FinishOneImg();
-				}
-				if (imageData == null) {
-					return result;
-				}
-
-				/// 再打开文件开写。这样的话，如果没有可合入的文件，就不会创建出pdf。
-				if (pdfTarget.AddImage(imageData, in m_pp)) {
-					result.Add(new FileResult(0x1, files[i]));
-				}
-				else {
-					result.Add(new FileResult(0x80010002, files[i], StrFailedToAdd));
-				}
-				FinishOneImg();
-
-				for (++i; i < files.Count; ++i) {
-					string file = files[i];
-
-					imageData = LoadImage(file);
-
+				foreach (var file in files) {
+					LoadImageLog log = new();
+					ImageData? imageData = LoadImage(file, m_param, ref log);
 					if (imageData == null) {
-						result.Add(new FileResult(0x80010003, file, StrUnsupported));
+						result.Add(new FileResult(0xFFFF0000, file, log.error_message));
+						result.Add(new FileResult(0x80010001, file, StrFailedToRead));
+						FinishOneImg();
+						continue;
 					}
-					else if (!pdfTarget.AddImage(imageData, in m_pp)) {
+
+					if (!pdfTarget.AddImage(imageData, in m_pp)) {
 						result.Add(new FileResult(0x80010004, file, StrFailedToAdd));
 					}
 					else {

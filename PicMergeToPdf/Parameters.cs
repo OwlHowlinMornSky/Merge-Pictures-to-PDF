@@ -65,7 +65,7 @@ namespace PicMerge {
 		/// </summary>
 		public readonly uint dpi = _dpi;
 	}
-	public readonly struct ImageParam(
+	public struct ImageParam(
 		bool _compress, int _format, int _quality,
 		bool _resize, int _width, int _height, int _shortSide, int _longSide,
 		bool _reduceBy2
@@ -78,38 +78,38 @@ namespace PicMerge {
 		/// Compress target image format.
 		/// 0 = NoChange, 1=jpg, 2=png.
 		/// </summary>
-		public readonly int format = _format;
+		public int format = _format;
 		/// <summary>
 		/// Compress quality. From 0 to 100.
 		/// If target format is PNG, this will automatically be mapped from 0~100 into 0~9.
 		/// </summary>
-		public readonly int quality = _quality;
+		public int quality = _quality;
 		/// <summary>
 		/// Resize image. Magnify is not allowed.
 		/// </summary>
-		public readonly bool resize = _resize;
+		public bool resize = _resize;
 		/// <summary>
 		/// Preferred width of result.
 		/// </summary>
-		public readonly int width = _width;
+		public int width = _width;
 		/// <summary>
 		/// Preferred height of result.
 		/// </summary>
-		public readonly int height = _height;
+		public int height = _height;
 		/// <summary>
 		/// Preferred length of short side of result.
 		/// </summary>
-		public readonly int shortSide = _shortSide;
+		public int shortSide = _shortSide;
 		/// <summary>
 		/// Preferred length of long side of result.
 		/// </summary>
-		public readonly int longSide = _longSide;
+		public int longSide = _longSide;
 		/// <summary>
 		/// When reducing image, let the scale be power of 2.
 		/// Reducing is goning on until each measure is not great than your preferred value.
 		/// For example:
 		/// (1400, 600) -> (700, 300) -> (350, 150) ...
 		/// </summary>
-		public readonly bool reduceByPowOf2 = _reduceBy2;
+		public bool reduceByPowOf2 = _reduceBy2;
 	}
 }
