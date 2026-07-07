@@ -3,11 +3,7 @@
 
 #include <libiodine.h>
 
-#include <stdlib.h>
-#include <string.h>
-#include <msclr/marshal.h>
-
-PicCompress::IodineBufferViewer^ PicCompress::BufferCompressor::Compress(
+PicCompress::IodineOutputStream^ PicCompress::BufferCompressor::Compress(
 	_In_ array<System::Byte>^ input,
 	int targetFormat,
 	int quality,
@@ -17,7 +13,7 @@ PicCompress::IodineBufferViewer^ PicCompress::BufferCompressor::Compress(
 ) {
 	pin_ptr<System::Byte> input_bytes(&input[0]);
 	uintptr_t input_buffer_len = input->Length;
-	const byte* input_buffer = input_bytes;
+	const Byte* input_buffer = input_bytes;
 
 	CCSParameters parameters = {};
 	parameters.keep_metadata = false;
@@ -48,10 +44,10 @@ PicCompress::IodineBufferViewer^ PicCompress::BufferCompressor::Compress(
 	}
 
 	if (!res.success) {
-		auto str = msclr::interop::marshal_as<System::String^>(res.error_message);
+		System::String^ str = Marshal::PtrToStringAnsi((System::IntPtr)(void*)res.error_message);
 		c_free_string((char*)res.error_message);
 		throw gcnew System::InvalidOperationException(str);
 	}
 
-	return gcnew PicCompress::IodineBufferViewer(output_buffer);
+	return gcnew PicCompress::IodineOutputStream(output_buffer);
 }

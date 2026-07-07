@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "IodineBufferViewer.h"
+#include "IodineOutputStream.h"
 
 namespace PicCompress {
 
@@ -17,7 +17,7 @@ public:
 	 * @param quality: 压缩之目标质量。
 	 * @return 已写入输出文件 之 大小（字节）。
 	 */
-	static IodineBufferViewer^ Compress(
+	static IodineOutputStream^ Compress(
 		_In_ array<System::Byte>^ input,
 		int targetFormat,
 		int quality,
