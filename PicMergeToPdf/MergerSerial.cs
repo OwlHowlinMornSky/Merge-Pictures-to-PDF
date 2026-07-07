@@ -1,5 +1,4 @@
-﻿using iText.IO.Image;
-using static PicMerge.IMerger;
+﻿using static PicMerge.IMerger;
 
 namespace PicMerge {
 	/// <summary>
@@ -33,10 +32,10 @@ namespace PicMerge {
 				using PdfTarget pdfTarget = new(outputfilepath, title);
 
 				foreach (var file in files) {
-					LoadImageLog log = new();
-					ImageData? imageData = LoadImage(file, m_param, ref log);
+					LoadImageResult lresult = LoadImage(file, m_param);
+					Stream? imageData = lresult.output;
 					if (imageData == null) {
-						result.Add(new FileResult(0xFFFF0000, file, log.error_message));
+						result.Add(new FileResult(0xFFFF0000, file, lresult.log.error_message));
 						result.Add(new FileResult(0x80010001, file, StrFailedToRead));
 						FinishOneImg();
 						continue;

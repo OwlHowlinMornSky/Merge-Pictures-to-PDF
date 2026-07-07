@@ -7,6 +7,7 @@ PicCompress::IodineOutputStream^ PicCompress::BufferCompressor::Compress(
 	_In_ array<System::Byte>^ input,
 	int targetFormat,
 	int quality,
+	bool optimize,
 	bool resize,
 	int width,
 	int height
@@ -16,12 +17,21 @@ PicCompress::IodineOutputStream^ PicCompress::BufferCompressor::Compress(
 	const Byte* input_buffer = input_bytes;
 
 	CCSParameters parameters = {};
+
 	parameters.keep_metadata = false;
+
 	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
+	parameters.jpeg_optimize = optimize;
+
 	parameters.png_quality = quality;
+	parameters.png_optimize = optimize;
+
 	parameters.gif_quality = quality;
+
 	parameters.webp_quality = quality;
+	parameters.webp_lossless = optimize;
+
 	if (resize) {
 		parameters.width = width;
 		parameters.height = height;

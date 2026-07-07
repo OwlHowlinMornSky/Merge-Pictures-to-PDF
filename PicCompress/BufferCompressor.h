@@ -21,6 +21,7 @@ public:
 		_In_ array<System::Byte>^ input,
 		int targetFormat,
 		int quality,
+		bool optimize,
 		bool resize,
 		int width,
 		int height

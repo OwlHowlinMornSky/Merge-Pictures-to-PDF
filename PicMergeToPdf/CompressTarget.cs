@@ -5,32 +5,16 @@ using SixLabors.ImageSharp.Processing;
 
 namespace PicMerge {
 	internal static class CompressTarget {
-		public static byte[] GetCompressedImageData(in byte[] input, ImageParam param) {
-#if DEBUG
-			if (param.reduceByPowOf2 || param.shortSide != 0 || param.longSide != 0) {
-				throw new ArgumentException("Extra parameters not processed.");
-			}
-			if (param.resize && (param.width < 1 || param.height < 1)) {
-				throw new ArgumentException("Parameters is invalid.");
-			}
-#endif
-			using var iodine_buf = PicCompress.BufferCompressor.Compress(
-				input, param.format, param.quality,
+		public static Stream GetCompressedImageData(in byte[] input, ImageParam param, bool opimize) {
+			var iodine_steam = PicCompress.BufferCompressor.Compress(
+				input, param.format, param.quality, opimize,
 				param.resize, param.width, param.height
 			);
-			return iodine_buf.ToArray();
+			return iodine_steam;
 		}
 
-		public static byte[] GetImageSharpData(in Image input_image, ImageParam param) {
-#if DEBUG
-			if (param.reduceByPowOf2 || param.shortSide != 0 || param.longSide != 0) {
-				throw new ArgumentException("Extra parameters not processed.");
-			}
-			if (param.resize && (param.width < 1 || param.height < 1)) {
-				throw new ArgumentException("Parameters is invalid.");
-			}
-#endif
-			using MemoryStream imgSt = new();
+		public static Stream GetImageSharpData(in Image input_image, ImageParam param) {
+			MemoryStream imgSt = new();
 
 			if (param.resize) {
 				input_image.Mutate(x => x.Resize(param.width, param.height));
@@ -70,7 +54,8 @@ namespace PicMerge {
 				break;
 			}
 			}
-			return imgSt.ToArray();
+
+			return imgSt;
 		}
 	}
 }
