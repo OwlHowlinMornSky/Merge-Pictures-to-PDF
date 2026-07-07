@@ -25,7 +25,8 @@
     <sys:String x:Key="CannotProcess" xml:space="preserve"
 >一些文件无法处理。
 查看日志以了解详情：
-{0}</sys:String>
+{0}
+若要查看该日志，请选择“是”。</sys:String>
     <sys:String x:Key="ChooseDestinationDir">选择输出位置</sys:String>
     <sys:String x:Key="ChooseMoveDestinationDir">选择移动位置</sys:String>
 

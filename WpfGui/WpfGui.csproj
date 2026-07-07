@@ -18,6 +18,8 @@
     <Description>Pictures2PDF - GUI</Description>
     <PackageId>$(AssemblyName)</PackageId>
     <Title>$(AssemblyName)</Title>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
