@@ -92,6 +92,9 @@ internal class PdfTarget(string _outputPath, string? _title) : IDisposable {
 			page_w.Point *= page_scale;
 			page_h.Point *= page_scale;
 
+			page.Width = page_w;
+			page.Height = page_h;
+
 			// 绘制图片（铺满页面）
 			using var gfx = XGraphics.FromPdfPage(page);
 			gfx.DrawImage(image, 0, 0, page.Width.Point, page.Height.Point);
