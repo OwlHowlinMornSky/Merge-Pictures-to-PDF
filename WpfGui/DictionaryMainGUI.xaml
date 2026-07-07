@@ -25,7 +25,8 @@
     <sys:String x:Key="CannotProcess" xml:space="preserve"
 >Some files cannot be processed.
 Check log file for details:
-{0}</sys:String>
+{0}
+Answer 'Yes' to view the log.</sys:String>
     <sys:String x:Key="ChooseDestinationDir">Choose output place</sys:String>
     <sys:String x:Key="ChooseMoveDestinationDir">Choose move destination</sys:String>
 

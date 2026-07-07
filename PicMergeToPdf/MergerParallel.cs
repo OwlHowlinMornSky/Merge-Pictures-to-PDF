@@ -1,5 +1,4 @@
-﻿using iText.IO.Image;
-using static PicMerge.IMerger;
+﻿using static PicMerge.IMerger;
 
 namespace PicMerge {
 	/// <summary>
@@ -20,11 +19,6 @@ namespace PicMerge {
 		/// </summary>
 		private readonly Action FinishOneImg = finish1img;
 
-		struct LoadResult() {
-			public ImageData? img_data = null;
-			public string log = "";
-		}
-
 		/// <summary>
 		/// 合并文件。此方法文件级并行，即并发加载处理，再依次加入结果。
 		/// </summary>
@@ -34,7 +28,7 @@ namespace PicMerge {
 		/// <returns>无法合入的文件的列表</returns>
 		public virtual List<FileResult> Process(string outputfilepath, List<string> files, string? title = null) {
 			List<FileResult> result = [];
-			Queue<Task<LoadResult>> tasks = [];
+			Queue<Task<LoadImageResult>> tasks = [];
 			var file_cnt = files.Count;
 			var nextfile = files.GetEnumerator();
 
@@ -55,11 +49,16 @@ namespace PicMerge {
 				}
 
 				/// Get image and check
-				LoadResult load_res = tasks.Dequeue().Result;
-				ImageData? imageData = load_res.img_data;
+				LoadImageResult load_res = tasks.Dequeue().Result;
+				Stream? imageData = load_res.output;
 				string file = files[landedCnt++];
+#if DEBUG
+				result.Add(new FileResult(0xFFFF0000, file, load_res.log.error_message));
 				if (imageData == null) {
-					result.Add(new FileResult(0xFFFF0000, file, load_res.log));
+#else
+				if (imageData == null) {
+					result.Add(new FileResult(0xFFFF0000, file, load_res.log.error_message));
+#endif
 					result.Add(new FileResult(0x80020001, file, StrFailedToRead));
 					FinishOneImg();
 					continue;
@@ -81,13 +80,9 @@ namespace PicMerge {
 		/// <summary>
 		/// 开启一个新的加载图片任务。
 		/// </summary>
-		private Task<LoadResult> ParaLoad(string filepath) {
+		private Task<LoadImageResult> ParaLoad(string filepath) {
 			return Task.Run(() => {
-				LoadResult res = new();
-				LoadImageLog log = new();
-				res.img_data = LoadImage(filepath, m_param, ref log);
-				res.log = log.error_message;
-				return res;
+				return LoadImage(filepath, m_param);
 			});
 		}
 	}

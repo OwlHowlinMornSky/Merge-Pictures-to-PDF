@@ -24,6 +24,9 @@
     <ClInclude Include="Resource.h">
       <Filter>资源文件</Filter>
     </ClInclude>
+    <ClInclude Include="IodineOutputStream.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BufferCompressor.cpp">
@@ -34,6 +37,9 @@
     </ClCompile>
     <ClCompile Include="AssemblyInfo.cpp">
       <Filter>资源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IodineOutputStream.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

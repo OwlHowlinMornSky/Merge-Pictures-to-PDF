@@ -1,5 +1,4 @@
-﻿using iText.IO.Image;
-using SixLabors.ImageSharp;
+﻿using SixLabors.ImageSharp;
 
 namespace PicMerge {
 	internal class Merger() {
@@ -9,8 +8,15 @@ namespace PicMerge {
 
 		protected readonly object m_lock = new(); // Used to avoid IO at the same time.
 
-		internal struct LoadImageLog() {
-			public string error_message = "";
+		internal enum Loader {
+			NULL,
+			Iodine,
+			ImageSharp,
+			PDFsharp,
+		}
+
+		internal struct LoadImageLog(string msg) {
+			public string error_message = msg;
 
 			public void operator +=(string msg) {
 				error_message += Environment.NewLine;
@@ -18,27 +24,43 @@ namespace PicMerge {
 			}
 		}
 
+		internal struct LoadImageResult(string msg) {
+			public Stream? output = null;
+
+			public LoadImageLog log = new(msg);
+
+			public int img_w_override = -1;
+			public int img_h_override = -1;
+		}
+
 		/// <summary>
 		/// 用于从文件加载图片。
 		/// </summary>
 		/// <param name="filepath">图片文件路径</param>
 		/// <returns>加载结果</returns>
-		internal ImageData? LoadImage(string filepath, ImageParam param, ref LoadImageLog log) {
-			log.error_message = $"[Load] Loading \'{filepath}\'...";
-			ImageData? res;
+		internal LoadImageResult LoadImage(string filepath, ImageParam param) {
+			LoadImageResult res = new($"[Load] Loading \'{filepath}\'...");
+			Loader loader = Loader.NULL;
 			try {
-				using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
-				res = ReadImage(inputStream, param, ref log);
+				byte[] buffer;
+				lock (m_lock) { // 防止同时IO
+					using FileStream inputStream = new(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
+					inputStream.Seek(0, SeekOrigin.Begin);
+					buffer = new byte[inputStream.Length];
+					inputStream.ReadExactly(buffer, 0, (int)inputStream.Length);
+					inputStream.Close();
+				}
+				(res.output, loader) = ReadImage(in buffer, param, ref res.log, out res.img_w_override, out res.img_h_override);
 			}
 			catch (Exception ex) {
-				res = null;
-				log += $"[Load] Exception: {ex.Message} by {ex.Source}.";
+				res.log += $"[Load] Exception: {ex.Message}";
+				res.output = null;
 			}
-			if (res == null) {
-				log += $"[Load] Failed loading \'{filepath}\'.";
+			if (res.output is null) {
+				res.log += $"[Load] Loading '{filepath}' Failed.";
 			}
 			else {
-				log += $"[Load] Loaded \'{filepath}\'.";
+				res.log += $"[Load] '{filepath}' Loaded by {loader}.";
 			}
 			return res;
 		}
@@ -46,225 +68,189 @@ namespace PicMerge {
 		/// <summary>
 		/// 从内存映射文件读取图片。
 		/// </summary>
-		/// <param name="instream">要读入之图片之文件流</param>
+		/// <param name="input">要读入之图片之文件流</param>
 		/// <returns>加载结果</returns>
-		internal ImageData? ReadImage(Stream instream, ImageParam param, ref LoadImageLog log) {
+		internal static (Stream?, Loader) ReadImage(in byte[] buffer, ImageParam param, ref LoadImageLog log, out int img_w_or, out int img_h_or) {
+			Stream? img_stream = null;
+			Loader loader = Loader.NULL;
+			img_w_or = -1;
+			img_h_or = -1;
 			try {
-				if (instream.Length > int.MaxValue || instream.Length < 8) {
-					return null;
-				}
 				FileType.Type type;
-				byte[] inbuffer;
-				lock (m_lock) {
-					type = FileType.CheckType(instream);
-					if (type == FileType.Type.Unknown) {
-						return null;
-					}
-					instream.Seek(0, SeekOrigin.Begin);
-					inbuffer = new byte[instream.Length];
-					instream.ReadExactly(inbuffer, 0, (int)instream.Length);
-				}
-				log += $"[Read] Image format: {type}.";
+				type = FileType.CheckType(buffer);
 
-				return param.compress ? LoadImageInMemory_Compress(type, in inbuffer, param, ref log) : LoadImageInMemory_Direct(type, in inbuffer, param, ref log);
+				log += $"[Read] Image format: '{type}'.";
+
+				if (type == FileType.Type.Unknown)
+					return (null, Loader.NULL);
+
+				log += $"[Read] Checking in... (invalid file if no 'checked in' followed)";
+				using Image image = Image.Load(buffer);
+				log += $"[Read] Checked in.";
+
+				/// 计算尺寸
+				param = ProcessExtra(image.Width, image.Height, param);
+#if DEBUG
+				log += $"[Read] Computed size: {param.width}, {param.height}";
+				if (param.reduceByPowOf2 || param.shortSide != 0 || param.longSide != 0) {
+					throw new ArgumentException("Extra parameters not processed.");
+				}
+				if (param.resize && (param.width < 1 || param.height < 1)) {
+					throw new ArgumentException("Parameters is invalid.");
+				}
+#endif
+				bool optimize = !param.compress; // 不压缩则使用优化
+				if (optimize) // 优化则使质量最高，保证不接收optimize的格式也能接近无损
+					param.quality = 100;
+
+				if (param.compress || param.format != 0 || param.resize) {
+					// 压缩、改变格式和改变大小都需要尝试处理：
+					// 先尝试Iodine，最大化压缩率；
+					// 再尝试ImageSharp，转换的同时可以压缩；
+					// 最后尝试直接加载。
+					img_stream ??= LoadImgaeByIodine(type, in buffer, param, optimize, ref log, out loader);
+					img_stream ??= LoadImageByImageSharp(type, in image, param, ref log, out loader);
+					img_stream ??= LoadImageDirectly(type, in buffer, param, ref log, out loader, out img_w_or, out img_h_or);
+				}
+				else {
+					// 既不压缩、也不改变大小时：
+					// 先尝试直接加载，忽略计算的图片尺寸；
+					// 再尝试ImageSharp，可读取的格式更多；
+					// 最后尝试Iodine，不能闲着。（www
+					img_stream ??= LoadImageDirectly(type, in buffer, param, ref log, out loader, out _, out _);
+					img_stream ??= LoadImageByImageSharp(type, in image, param, ref log, out loader);
+					img_stream ??= LoadImgaeByIodine(type, in buffer, param, optimize, ref log, out loader);
+				}
+
+				if (img_stream is null) {
+					log += $"[Read] Reading Failed, no any tool supports the format.";
+				}
 			}
 			catch (Exception ex) {
-				log += $"[Read] Exception: {ex.Message} by {ex.Source}.";
-				return null;
+				log += $"[Read] Exception: {ex.Message}";
+				img_stream = null;
 			}
+			return (img_stream, loader);
 		}
 
-		/// <summary>
-		/// 尝试压缩全部图片时的加载逻辑。
-		/// </summary>
-		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		protected ImageData? LoadImageInMemory_Compress(FileType.Type type, in byte[] inbuffer, ImageParam param, ref LoadImageLog log) {
-			log += $"[Read] Reading... (Invalid image if failed)";
-			using Image image = Image.Load(inbuffer);
-			log += $"[Read] Finished. Valid image.";
-
-			/// 计算尺寸
-			param = ProcessExtra(image.Width, image.Height, param);
-#if DEBUG
-			log += $"[Read] Computed size: {param.width}, {param.height}";
-#endif
-
-			ImageData? imageData = null;
+		protected static Stream? LoadImgaeByIodine(FileType.Type type, in byte[] buffer, ImageParam param, bool optimize, ref LoadImageLog log, out Loader loader) {
+			Stream? imageData = null;
 			switch (type) {
-			case FileType.Type.JPEG: // Iodine, Img#, Direct.
-			case FileType.Type.PNG:  // Iodine, Img#, Direct.
-			case FileType.Type.GIF:  // Iodine, Img#, Direct.
-			case FileType.Type.TIFF: // Iodine, Img#, Direct.
-				/// 尝试利用 Caesium-Iodine 压缩
-				try {
-					byte[] outbuffer = CompressTarget.GetCompressedImageData(in inbuffer, param);
-					imageData = ImageDataFactory.Create(outbuffer);
-					imageData.SetDpi(
-						PdfTarget.BaseDpiForDirectLoadComputingSize,
-						PdfTarget.BaseDpiForDirectLoadComputingSize
-					);
-				}
-				catch (Exception ex) {
-					log += $"[Iodine] Exception: {ex.Message} by {ex.Source}.";
-					imageData = null;
-				}
-				if (imageData == null)
-					goto case FileType.Type.BMP;
-				break;
 			case FileType.Type.WEBP: // Iodine, Img#.
-				/// 尝试利用 Caesium-Iodine 压缩
-				try {
-					var ppp = param;
-					ppp.format = 1; // WEBP必须转换
-					byte[] outbuffer = CompressTarget.GetCompressedImageData(in inbuffer, ppp);
-					imageData = ImageDataFactory.Create(outbuffer);
-					imageData.SetDpi(
-						PdfTarget.BaseDpiForDirectLoadComputingSize,
-						PdfTarget.BaseDpiForDirectLoadComputingSize
-					);
-				}
-				catch (Exception ex) {
-					log += $"[Iodine] Exception: {ex.Message} by {ex.Source}.";
-					imageData = null;
-				}
-				if (imageData == null)
-					goto case FileType.Type.BMP;
-				break;
-			case FileType.Type.BMP:  // Img#, Direct.
-				/// 尝试利用 ImageSharp 压缩
-				try {
-					byte[] outbuffer = CompressTarget.GetImageSharpData(in image, param);
-					imageData = ImageDataFactory.Create(outbuffer);
-					imageData.SetDpi(
-						PdfTarget.BaseDpiForDirectLoadComputingSize,
-						PdfTarget.BaseDpiForDirectLoadComputingSize
-					);
-				}
-				catch (Exception ex) {
-					log += $"[ImageSharp] Exception: {ex.Message} by {ex.Source}.";
-					imageData = null;
-				}
-				if (imageData == null)
-					goto default;
-				break;
-			default:
-				/// 尝试 直接加载
-				try {
-					imageData = CreateWithCheckingResize(in inbuffer, param);
-				}
-				catch (Exception ex) {
-					log += $"[iText] Exception: {ex.Message} by {ex.Source}.";
-					imageData = null;
-				}
-				break;
-			}
-			return imageData;
-		}
-
-		/// <summary>
-		/// 直接读取时（不全部压缩）的加载逻辑。
-		/// </summary>
-		/// <returns>加载出的数据，或者 null 若无法加载</returns>
-		protected ImageData? LoadImageInMemory_Direct(FileType.Type type, in byte[] inbuffer, ImageParam param, ref LoadImageLog log) {
-			Image? image = null;
-			try {
-				image = Image.Load(inbuffer);
-			}
-			catch {
-				log.error_message += Environment.NewLine;
-				log.error_message += $"[Read] Error: Invalid image file.";
-				return null;
-			}
-
-			/// 计算尺寸
-			param = ProcessExtra(image.Width, image.Height, param);
-#if DEBUG
-			log += $"[Read] Computed size: {param.width}, {param.height}";
-#endif
-			param.quality = 100; // 不压缩
-
-			ImageData? imageData = null;
-			switch (type) {
-			case FileType.Type.JPEG: // Iodine, Img#, Direct.
-			case FileType.Type.PNG:  // Iodine, Img#, Direct.
-			case FileType.Type.GIF:  // Iodine, Img#, Direct.
-			case FileType.Type.TIFF: // Iodine, Img#, Direct.
-			case FileType.Type.BMP:  // Img#, Direct.
-				/// 尝试 直接加载
-				try {
-					imageData = CreateWithCheckingResize(in inbuffer, param);
-				}
-				catch (Exception ex) {
-					log += $"[iText] Exception: {ex.Message} by {ex.Source}.";
-					imageData = null;
-					goto case FileType.Type.WEBP;
-				}
-				break;
-			case FileType.Type.WEBP: // Iodine, Img#.
-				/// 尝试利用 ImageSharp 转化
-				try {
-					byte[] outbuffer = CompressTarget.GetImageSharpData(in image, param);
-					imageData = ImageDataFactory.Create(outbuffer);
-					imageData.SetDpi(
-						PdfTarget.BaseDpiForDirectLoadComputingSize,
-						PdfTarget.BaseDpiForDirectLoadComputingSize
-					);
-				}
-				catch (Exception ex) {
-					log += $"[ImageSharp] Exception: {ex.Message} by {ex.Source}.";
-					imageData = null;
-				}
-				if (type == FileType.Type.BMP)
+			case FileType.Type.GIF:  // Iodine, Img#.
+			case FileType.Type.TIFF: // Iodine, Img#.
+				switch (param.format) { // 必须转换
+				case 1: // JPEG
+				case 2: // PNG
 					break;
-				if (imageData == null)
-					goto default;
-				break;
-			default:
-				/// 尝试利用 Iodine 转化
+				//case 0: // 原格式
+				default:
+					param.format = 1; // To JPEG
+					break;
+				}
+				goto case FileType.Type.JPEG;
+			case FileType.Type.JPEG: // Iodine, Img#, Direct.
+			case FileType.Type.PNG:  // Iodine, Img#, Direct.
 				try {
-					var ppp = param;
-					ppp.format = 1; // 最终保底：全部尝试转化为jpeg
-					byte[] outbuffer = CompressTarget.GetCompressedImageData(in inbuffer, ppp);
-					imageData = ImageDataFactory.Create(outbuffer);
-					imageData.SetDpi(
-						PdfTarget.BaseDpiForDirectLoadComputingSize,
-						PdfTarget.BaseDpiForDirectLoadComputingSize
-					);
+					imageData = CompressTarget.GetCompressedImageData(in buffer, param, optimize);
 				}
 				catch (Exception ex) {
-					log += $"[Iodine] Exception: {ex.Message} by {ex.Source}.";
+					log += $"[Iodine] Exception: {ex.Message}";
 					imageData = null;
 				}
 				break;
+			case FileType.Type.BMP:  // Img#.
+			default:
+				break;
+			}
+			if (imageData is null) {
+				log += $"[Iodine] Cannot do it. Type: '{type}'.";
+				loader = Loader.NULL;
+			}
+			else {
+				loader = Loader.Iodine;
 			}
 			return imageData;
 		}
 
-		private ImageData CreateWithCheckingResize(in byte[] inbuffer, ImageParam param) {
-#if DEBUG
-			if (param.reduceByPowOf2 || param.shortSide != 0 || param.longSide != 0) {
-				throw new ArgumentException("Extra parameters not processed.");
+		protected static Stream? LoadImageByImageSharp(FileType.Type type, in Image image, ImageParam param, ref LoadImageLog log, out Loader loader) {
+			Stream? imageData = null;
+			switch (type) {
+			case FileType.Type.GIF:  // Iodine, Img#.
+			case FileType.Type.TIFF: // Iodine, Img#.
+			case FileType.Type.WEBP: // Iodine, Img#.
+			case FileType.Type.BMP:  // Img#.
+			/*switch (param.format) { // 必须转换
+			case 1: // JPEG
+			case 2: // PNG
+				break;
+			//case 0: // 原格式
+			default:
+				param.format = 1; // To JPEG
+				break;
+			} // ImageSharp目前只会输出PNG和Jpeg.
+			goto case FileType.Type.JPEG;*/
+			case FileType.Type.JPEG: // Iodine, Img#, Direct.
+			case FileType.Type.PNG:  // Iodine, Img#, Direct.
+				try {
+					imageData = CompressTarget.GetImageSharpData(in image, param);
+				}
+				catch (Exception ex) {
+					log += $"[ImageSharp] Exception: {ex.Message}";
+					imageData = null;
+				}
+				break;
+			default:
+				break;
 			}
-			if (param.resize && (param.width < 1 || param.height < 1)) {
-				throw new ArgumentException("Parameters is invalid.");
+			if (imageData is null) {
+				log += $"[ImageSharp] Cannot do it. Type: '{type}'.";
+				loader = Loader.NULL;
 			}
-#endif
-			var image = ImageDataFactory.Create(inbuffer);
-			image.SetDpi(
-				PdfTarget.BaseDpiForDirectLoadComputingSize,
-				PdfTarget.BaseDpiForDirectLoadComputingSize
-			);
+			else {
+				loader = Loader.ImageSharp;
+			}
+			return imageData;
+		}
 
+		private static MemoryStream? LoadImageDirectly(FileType.Type type, in byte[] buffer, ImageParam param, ref LoadImageLog log, out Loader loader, out int img_w, out int img_h) {
 			if (param.resize) {
-				float xx = image.GetWidth() / param.width;
-				float yy = image.GetHeight() / param.height;
-				image.SetDpi(
-					(int)float.Round(PdfTarget.BaseDpiForDirectLoadComputingSize * xx),
-					(int)float.Round(PdfTarget.BaseDpiForDirectLoadComputingSize * yy)
-				);
+				img_w = param.width;
+				img_h = param.height;
 			}
-
-			return image;
+			else {
+				img_w = -1;
+				img_h = -1;
+			}
+			switch (type) {
+			case FileType.Type.JPEG: // Iodine, Img#, Direct.
+			case FileType.Type.PNG:  // Iodine, Img#, Direct.
+				break;
+			case FileType.Type.GIF:  // Iodine, Img#.
+			case FileType.Type.TIFF: // Iodine, Img#.
+			case FileType.Type.WEBP: // Iodine, Img#.
+			case FileType.Type.BMP:  // Img#.
+			default:
+				log += $"[PDFsharp] Not supports '{type}'.";
+				loader = Loader.NULL;
+				return null;
+			}
+			MemoryStream? res;
+			try {
+				res = new MemoryStream(buffer, false);
+			}
+			catch (Exception ex) {
+				log += $"[PDFsharp] Exception: {ex.Message}";
+				res = null;
+			}
+			if (res is null) {
+				log += $"[PDFsharp] Cannot do it. Type: '{type}'.";
+				loader = Loader.NULL;
+			}
+			else {
+				loader = Loader.PDFsharp;
+			}
+			return res;
 		}
 
 		static ImageParam ProcessExtra(int org_w, int org_h, ImageParam param) {

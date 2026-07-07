@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -88,17 +89,55 @@ namespace WpfGui {
 			}
 		}
 
+
+		[LibraryImport("shell32.dll")]
+		private static partial void ILFree(IntPtr pidlList);
+
+		[LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
+		private static partial IntPtr ILCreateFromPathW(string pszPath);
+
+		[LibraryImport("shell32.dll")]
+		private static partial int SHOpenFolderAndSelectItems(IntPtr pidlList, uint cild, IntPtr children, uint dwFlags);
+
+		private void OpenFolderAndSelectFile(string filePath) {
+			// 确保文件路径是绝对路径
+			filePath = Path.GetFullPath(filePath);
+
+			// 获取文件的 PIDL (Pointer to an Item ID List)
+			IntPtr pidlList = ILCreateFromPathW(filePath);
+
+			if (pidlList != IntPtr.Zero) {
+				try {
+					// 调用 API 打开资源管理器并选中文件
+					// 第三个参数为 IntPtr.Zero 表示只选中一个文件
+					SHOpenFolderAndSelectItems(pidlList, 0, IntPtr.Zero, 0);
+				}
+				finally {
+					// 释放 PIDL 资源
+					ILFree(pidlList);
+				}
+			}
+		}
+
 		private void PopWarning(string logPath) {
 			App.Current.Dispatcher.Invoke(() => {
 				TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
 				Activate();
-				MessageBox.Show(
+				var choice = MessageBox.Show(
 					this,
-					string.Format(App.Current.TryFindResource("CannotProcess") as string ?? "Failed files in log: {0}", logPath),
+					string.Format(
+						App.Current.TryFindResource("CannotProcess") as string
+						?? "Failed files in log: {0}" + Environment.NewLine + "Open it?",
+						logPath
+						),
 					$"{Title}: {App.Current.TryFindResource("Warning")}",
-					MessageBoxButton.OK,
-					MessageBoxImage.Warning
+					MessageBoxButton.YesNo,
+					MessageBoxImage.Warning,
+					MessageBoxResult.Yes
 				);
+				if (choice == MessageBoxResult.Yes) {
+					OpenFolderAndSelectFile(logPath);
+				}
 			});
 		}
 

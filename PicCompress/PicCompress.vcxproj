@@ -64,6 +64,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalIncludeDirectories>$(OHMS_LIB_DIR)\libiodine\v0.20.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <AdditionalDependencies>iodine.dll.lib</AdditionalDependencies>
@@ -81,6 +82,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalIncludeDirectories>$(OHMS_LIB_DIR)\libiodine\v0.20.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <AdditionalDependencies>iodine.dll.lib</AdditionalDependencies>
@@ -90,12 +92,14 @@
   <ItemGroup>
     <ClInclude Include="BufferCompressor.h" />
     <ClInclude Include="IodineBufferViewer.h" />
+    <ClInclude Include="IodineOutputStream.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="BufferCompressor.cpp" />
     <ClCompile Include="IodineBufferViewer.cpp" />
+    <ClCompile Include="IodineOutputStream.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc" />

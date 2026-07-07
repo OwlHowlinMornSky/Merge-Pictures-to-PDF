@@ -28,8 +28,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="itext" Version="9.6.0" />
-    <PackageReference Include="itext.bouncy-castle-adapter" Version="9.6.0" />
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
