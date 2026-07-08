@@ -84,7 +84,7 @@ internal class PdfTarget(string _outputPath, string? _title) : IDisposable {
 				page_h.Point = img_h;
 			}
 
-			double page_scale = param.scale;
+			double page_scale = param.scale / 100.0;
 			page_w.Point *= page_scale;
 			page_h.Point *= page_scale;
 
