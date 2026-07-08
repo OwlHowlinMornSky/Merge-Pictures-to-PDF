@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 
 namespace WpfGui {
@@ -12,6 +13,8 @@ namespace WpfGui {
 					value %= LangCnt;
 				if (value < 0)
 					value = 0;
+				Settings1.Default.Language = value;
+
 				ResourceDictionary rd = new() {
 					Source = value switch {
 						1 => new Uri("DictionaryMainGUI.zh-CN.xaml", UriKind.Relative),
@@ -33,7 +36,19 @@ namespace WpfGui {
 				field = value;
 				OnPropertyChanged(nameof(CurrentLangId));
 			}
-		} = Settings1.Default.Language;
+		}
+
+		public LanguageManager() {
+			if (Settings1.Default.Language < 0) {
+				if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase))
+					CurrentLangId = 1;
+				else
+					CurrentLangId = 0;
+			}
+			else {
+				CurrentLangId = Settings1.Default.Language;
+			}
+		}
 
 		public event PropertyChangedEventHandler? PropertyChanged;
 		protected virtual void OnPropertyChanged(string propertyName) {

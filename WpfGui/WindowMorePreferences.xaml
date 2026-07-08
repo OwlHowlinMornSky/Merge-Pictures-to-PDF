@@ -130,11 +130,13 @@
             </StackPanel>
         </GroupBox>
 
-        <GroupBox x:Name="gpBoxDebug" Header="Debug">
+        <GroupBox Header="{DynamicResource DetailOthers}">
             <WrapPanel Margin="5,5">
-                <Button Content="Language" Margin="0,0,10,0" Click="ButtonLanguage_Click"/>
-                <Button Content="Reset Settings" Margin="0,0,10,0" Click="ButtonResetSettings_Click"/>
-                <Button Content="Test Button" Click="ButtonTest_Click"/>
+                <Button Margin="0,0,10,0" Click="ButtonLanguage_Click">
+                    <Image Source="/Lang-36.png" Width="48" Height="36"/>
+                </Button>
+                <Button Content="{DynamicResource DetailOthersReset}" Margin="0,0,10,0" Click="ButtonResetSettings_Click"/>
+                <Button x:Name="gpBoxDebug" Content="Test Button" Click="ButtonTest_Click"/>
             </WrapPanel>
         </GroupBox>
 

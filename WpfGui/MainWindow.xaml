@@ -119,7 +119,9 @@
                           IsChecked="{Binding Path=IONoMove, Mode=TwoWay}"/>
             </WrapPanel>
         </GroupBox>
-        <Button Content="{DynamicResource DetailButton}" Margin="0,10,10,0" HorizontalAlignment="Right" Click="ButtonMorePreferences_Click"/>
+        <Button Margin="0,10,10,0" Width="72" Height="22" HorizontalAlignment="Right" Click="ButtonMorePreferences_Click">
+            <Image Source="/set-16.png" Width="16" Height="16"/>
+        </Button>
         <Label x:Name="labelTotal" Content="{DynamicResource Ready}" Margin="10,25,0,0" VerticalAlignment="Bottom"/>
         <ProgressBar x:Name="porgBarTotal" Margin="10,0,10,10" Height="20" VerticalAlignment="Bottom"/>
     </StackPanel>

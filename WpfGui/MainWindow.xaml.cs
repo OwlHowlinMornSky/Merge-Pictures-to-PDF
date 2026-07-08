@@ -21,13 +21,6 @@ namespace WpfGui {
 		private readonly PicMerge.Processor m_processor;
 
 		public MainWindow() {
-			if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase)) {
-				App.LangMngr.CurrentLangId = 1;
-			}
-			else {
-				App.LangMngr.CurrentLangId = 0;
-			}
-
 			InitializeComponent();
 
 			m_processor = new PicMerge.Processor(BarSetNum, BarSetFinish, PopWarning);

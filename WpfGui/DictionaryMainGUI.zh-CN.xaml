@@ -44,6 +44,9 @@
     <sys:String x:Key="DetailPreferredLong">长边长度</sys:String>
     <sys:String x:Key="DetailResizePow2">按2的幂次缩小</sys:String>
 
+    <sys:String x:Key="DetailOthers">其他</sys:String>
+    <sys:String x:Key="DetailOthersReset">重置所有选项</sys:String>
+
     <sys:String x:Key="DetailResizePow2Tip" xml:space="preserve"
 >缩小图片时，保持缩放比例为2的幂。
 缩小到图片各个尺寸满足设置的值为止。</sys:String>

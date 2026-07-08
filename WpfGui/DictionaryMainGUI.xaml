@@ -44,6 +44,9 @@ Answer 'Yes' to view the log.</sys:String>
     <sys:String x:Key="DetailPreferredLong">Long Side Length</sys:String>
     <sys:String x:Key="DetailResizePow2">Reduce by Power of 2</sys:String>
 
+    <sys:String x:Key="DetailOthers">Others</sys:String>
+    <sys:String x:Key="DetailOthersReset">Reset All Settings</sys:String>
+    
     <sys:String x:Key="DetailResizePow2Tip" xml:space="preserve"
 >When reducing image, let the scale be power of 2.
 Reducing is goning on until each measure is not great than your preferred value.</sys:String>

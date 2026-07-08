@@ -23,9 +23,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Lang-36.png" />
+    <None Remove="set-16.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Pic2PDF.ico">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Lang-36.png" />
+    <Resource Include="set-16.png" />
   </ItemGroup>
 
   <ItemGroup>
