@@ -2,6 +2,8 @@
 
 namespace WpfGui {
 	internal class DataMain : INotifyPropertyChanged {
+		private readonly bool _isInitializing;
+		private bool _isUpdatingFromPreset = false;
 
 		public IEnumerable<int> FormatList {
 			get; private set {
@@ -18,40 +20,60 @@ namespace WpfGui {
 				OnPropertyChanged(nameof(PageSizeId));
 				if (value != 0) {
 					var nsize = PageSizeDisplayConverter.GetPageSize(value);
-					// Trigger Event
+					// Trigger UI Change
+					_isUpdatingFromPreset = true;
 					PageSizeWidth++;
 					PageSizeWidth = nsize.Width;
 					PageSizeHeight++;
 					PageSizeHeight = nsize.Height;
 					PageSizeDpi++;
 					PageSizeDpi = 72.0;
+					_isUpdatingFromPreset = false;
 				}
 			}
-		} = Settings1.Default.PagePageType;
+		}
 
 		public double PageSizeWidth {
 			get; set {
+				if (value == field)
+					return;
 				Settings1.Default.PageSizeWidth = value;
 				field = value;
 				OnPropertyChanged(nameof(PageSizeWidth));
+				// 只有在非初始化且非预设更新时，才切换到自定义
+				if (!_isInitializing && !_isUpdatingFromPreset) {
+					PageSizeId = 0;
+				}
 			}
-		} = Settings1.Default.PageSizeWidth;
+		}
 
 		public double PageSizeHeight {
 			get; set {
+				if (value == field)
+					return;
 				Settings1.Default.PageSizeHeight = value;
 				field = value;
 				OnPropertyChanged(nameof(PageSizeHeight));
+				// 只有在非初始化且非预设更新时，才切换到自定义
+				if (!_isInitializing && !_isUpdatingFromPreset) {
+					PageSizeId = 0;
+				}
 			}
 		} = Settings1.Default.PageSizeHeight;
 
 		public double PageSizeDpi {
 			get; set {
+				if (value == field)
+					return;
 				Settings1.Default.PageDpi = value;
 				field = value;
 				OnPropertyChanged(nameof(PageSizeDpi));
+				// 只有在非初始化且非预设更新时，才切换到自定义
+				if (!_isInitializing && !_isUpdatingFromPreset) {
+					PageSizeId = 0;
+				}
 			}
-		} = Settings1.Default.PageDpi;
+		}
 
 		public bool PageFixedWidth {
 			get;
@@ -109,6 +131,8 @@ namespace WpfGui {
 
 
 		public DataMain() {
+			_isInitializing = true;
+
 			PageSizeDisplayConverter.Reset();
 			List<int> list = [];
 			list.Add(0);
@@ -127,6 +151,12 @@ namespace WpfGui {
 				}
 			}
 			FormatList = list;
+
+			PageSizeId = Settings1.Default.PagePageType;
+			PageSizeWidth = Settings1.Default.PageSizeWidth;
+			PageSizeDpi = Settings1.Default.PageDpi;
+
+			_isInitializing = false;
 		}
 
 		public event PropertyChangedEventHandler? PropertyChanged;

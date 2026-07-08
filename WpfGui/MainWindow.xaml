@@ -65,7 +65,8 @@
                     </ComboBox>
                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                         <numeric:DoubleBox x:Name="doubleboxWidth" MaxLength="24" HorizontalAlignment="Left" Width="50" VerticalContentAlignment="Center"
-                                 Value="{Binding PageSizeWidth, Mode=TwoWay}" ValidationTrigger="PropertyChanged" MinValue="1" MaxValue="4294967296" TextChanged="Doublebox_ValueChanged">
+                                           Value="{Binding PageSizeWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ValidationTrigger="PropertyChanged"
+                                           MinValue="1" MaxValue="4294967296">
                             <numeric:DoubleBox.Style>
                                 <Style TargetType="numeric:DoubleBox">
                                     <Setter Property="IsEnabled" Value="True"/>
@@ -83,7 +84,8 @@
                         </numeric:DoubleBox>
                         <Label Content="×" VerticalContentAlignment="Center"/>
                         <numeric:DoubleBox x:Name="doubleboxHeight" MaxLength="24" HorizontalAlignment="Left" Width="50" VerticalContentAlignment="Center"
-                                 Value="{Binding PageSizeHeight, Mode=TwoWay}" ValidationTrigger="PropertyChanged" MinValue="1" MaxValue="4294967296" TextChanged="Doublebox_ValueChanged">
+                                           Value="{Binding PageSizeHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ValidationTrigger="PropertyChanged"
+                                           MinValue="1" MaxValue="4294967296">
                             <numeric:DoubleBox.Style>
                                 <Style TargetType="numeric:DoubleBox">
                                     <Setter Property="IsEnabled" Value="True"/>
@@ -101,7 +103,8 @@
                         </numeric:DoubleBox>
                         <Label Content="p² " VerticalContentAlignment="Center"/>
                         <numeric:DoubleBox x:Name="doubleboxPPI" IsEnabled="True" ToolTip="{DynamicResource PagePpiTip}" Margin="0,0,0,0" MaxLength="24" HorizontalAlignment="Left" Width="40" VerticalContentAlignment="Center"
-                                 Value="{Binding PageSizeDpi, Mode=TwoWay}" ValidationTrigger="PropertyChanged" MinValue="1" MaxValue="4294967296" TextChanged="Doublebox_ValueChanged"/>
+                                           Value="{Binding PageSizeDpi, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ValidationTrigger="PropertyChanged"
+                                           MinValue="1" MaxValue="4294967296"/>
                         <Label Content="PPI" ToolTip="{DynamicResource PagePpiTip}" VerticalContentAlignment="Center"/>
                     </StackPanel>
                 </StackPanel>

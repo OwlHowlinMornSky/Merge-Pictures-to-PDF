@@ -268,11 +268,5 @@ namespace WpfGui {
 				}
 			}
 		}
-
-		private void Doublebox_ValueChanged(object sender, TextChangedEventArgs e) {
-			if (DataContext is DataMain dm) {
-				dm.PageSizeId = 0;
-			}
-		}
 	}
 }
