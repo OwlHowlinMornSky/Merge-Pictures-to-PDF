@@ -58,10 +58,17 @@ namespace WpfGui {
 				bd.IoPdfInFolder = !bd.IoPdfInFolder;
 				bd.Quality++;
 				bd.Resize = !bd.Resize;
-				bd.ResizeWidth = !bd.ResizeWidth;
-				bd.ResizeHeight = !bd.ResizeHeight;
-				bd.ResizeShort = !bd.ResizeShort;
-				bd.ResizeLong = !bd.ResizeLong;
+
+				bool rw = bd.ResizeWidth;
+				bool rh = bd.ResizeHeight;
+				bool rs = bd.ResizeShort;
+				bool rl = bd.ResizeLong;
+
+				bd.ResizeWidth = !rw;
+				bd.ResizeHeight = !rh;
+				bd.ResizeShort = !rs;
+				bd.ResizeLong = !rl;
+
 				bd.ResizeReduceByPow2 = !bd.ResizeReduceByPow2;
 				bd.ResizeWidthValue++;
 				bd.ResizeHeightValue++;
