@@ -84,25 +84,27 @@ namespace PicMerge {
 				};
 			}
 			else if (quality >= 50) {
-				// 较高质量: 轻微量化，保留透明
+				// 较高质量: 量化，移除透明
 				res = image.Clone(ctx => ctx.Quantize(new WuQuantizer(new QuantizerOptions {
-					Dither = OrderedDither.Bayer16x16,
+					Dither = OrderedDither.Bayer8x8,
+					DitherScale = 1.0f,
 					ColorMatchingMode = ColorMatchingMode.Hybrid,
 					MaxColors = 256 // 将颜色减少到最多256色
 				})));
 				encoder = new PngEncoder {
 					SkipMetadata = true,
 					ColorType = PngColorType.Palette,
-					TransparentColorMode = PngTransparentColorMode.Preserve,
+					TransparentColorMode = PngTransparentColorMode.Clear,
 					BitDepth = PngBitDepth.Bit8, // 调色板索引用8位
 					CompressionLevel = PngCompressionLevel.BestCompression,
 					FilterMethod = PngFilterMethod.Adaptive,
 				};
 			}
 			else if (quality >= 30) {
-				// 中等质量: 进一步减少颜色,移除透明
+				// 中等质量: 量化，抖动更少
 				res = image.Clone(ctx => ctx.Quantize(new WuQuantizer(new QuantizerOptions {
 					Dither = OrderedDither.Bayer8x8,
+					DitherScale = 0.8f,
 					ColorMatchingMode = ColorMatchingMode.Hybrid,
 					MaxColors = 256
 				})));
@@ -116,10 +118,11 @@ namespace PicMerge {
 				};
 			}
 			else {
-				// 低质量: 强力压缩，降低位深
+				// 低质量: 强力压缩，进一步减少颜色
 				res = image.Clone(ctx => ctx.Quantize(new WuQuantizer(new QuantizerOptions {
-					Dither = OrderedDither.Bayer4x4,
-					ColorMatchingMode = ColorMatchingMode.Coarse,
+					Dither = OrderedDither.Bayer8x8,
+					DitherScale = 0.6f,
+					ColorMatchingMode = ColorMatchingMode.Hybrid,
 					MaxColors = 16
 				})));
 				encoder = new PngEncoder {
