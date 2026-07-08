@@ -83,8 +83,8 @@
     <Setting Name="PageFixedWidth" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="PageDpi" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">72</Value>
+    <Setting Name="PageScale" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">100</Value>
     </Setting>
     <Setting Name="PrevSelectTargetPath" Type="System.String" Scope="User">
       <Value Profile="(Default)" />

@@ -102,10 +102,10 @@
                             </numeric:DoubleBox.Style>
                         </numeric:DoubleBox>
                         <Label Content="p² " VerticalContentAlignment="Center"/>
-                        <numeric:DoubleBox x:Name="doubleboxPPI" IsEnabled="True" ToolTip="{DynamicResource PagePpiTip}" Margin="0,0,0,0" MaxLength="24" HorizontalAlignment="Left" Width="40" VerticalContentAlignment="Center"
-                                           Value="{Binding PageSizeDpi, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ValidationTrigger="PropertyChanged"
-                                           MinValue="1" MaxValue="4294967296"/>
-                        <Label Content="PPI" ToolTip="{DynamicResource PagePpiTip}" VerticalContentAlignment="Center"/>
+                        <numeric:DoubleBox x:Name="doubleboxScale" IsEnabled="True" ToolTip="{DynamicResource PageScaleTip}" Margin="0,0,0,0" MaxLength="24" HorizontalAlignment="Left" Width="40" VerticalContentAlignment="Center"
+                                           Value="{Binding PageSizeScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ValidationTrigger="PropertyChanged"
+                                           MinValue="0" MaxValue="4294967296"/>
+                        <Label Content="%" ToolTip="{DynamicResource PageScaleTip}" VerticalContentAlignment="Center"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>

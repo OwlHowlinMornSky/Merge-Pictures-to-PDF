@@ -337,13 +337,13 @@ namespace WpfGui {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("72")]
-        public double PageDpi {
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public double PageScale {
             get {
-                return ((double)(this["PageDpi"]));
+                return ((double)(this["PageScale"]));
             }
             set {
-                this["PageDpi"] = value;
+                this["PageScale"] = value;
             }
         }
         

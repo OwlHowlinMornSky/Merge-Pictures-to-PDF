@@ -106,7 +106,7 @@ namespace WpfGui {
 			}
 			if (Validation.GetHasError(doubleboxWidth) ||
 				Validation.GetHasError(doubleboxHeight) ||
-				Validation.GetHasError(doubleboxPPI)) {
+				Validation.GetHasError(doubleboxScale)) {
 				await PopErrorAsync(App.Current.TryFindResource("InvalidParams").ToString() ?? "InvalidParams");
 				return;
 			}
@@ -159,7 +159,7 @@ namespace WpfGui {
 				(Settings1.Default.PageFixedWidth ? PicMerge.PageParam.FixedType.WidthFixed : 0),
 				_width: Settings1.Default.PageSizeWidth,
 				_height: Settings1.Default.PageSizeHeight,
-				_dpi: Settings1.Default.PageDpi
+				_scale: Settings1.Default.PageScale
 			);
 			PicMerge.ImageParam imageParam = new(
 				_compress: Settings1.Default.IOCompress,

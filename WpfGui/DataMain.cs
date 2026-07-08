@@ -26,8 +26,8 @@ namespace WpfGui {
 					PageSizeWidth = nsize.Width;
 					PageSizeHeight++;
 					PageSizeHeight = nsize.Height;
-					PageSizeDpi++;
-					PageSizeDpi = 72.0;
+					PageSizeScale++;
+					PageSizeScale = 100.0;
 					_isUpdatingFromPreset = false;
 				}
 			}
@@ -61,13 +61,13 @@ namespace WpfGui {
 			}
 		} = Settings1.Default.PageSizeHeight;
 
-		public double PageSizeDpi {
+		public double PageSizeScale {
 			get; set {
 				if (value == field)
 					return;
-				Settings1.Default.PageDpi = value;
+				Settings1.Default.PageScale = value;
 				field = value;
-				OnPropertyChanged(nameof(PageSizeDpi));
+				OnPropertyChanged(nameof(PageSizeScale));
 				// 只有在非初始化且非预设更新时，才切换到自定义
 				if (!_isInitializing && !_isUpdatingFromPreset) {
 					PageSizeId = 0;
@@ -154,7 +154,7 @@ namespace WpfGui {
 
 			PageSizeId = Settings1.Default.PagePageType;
 			PageSizeWidth = Settings1.Default.PageSizeWidth;
-			PageSizeDpi = Settings1.Default.PageDpi;
+			PageSizeScale = Settings1.Default.PageScale;
 
 			_isInitializing = false;
 		}
