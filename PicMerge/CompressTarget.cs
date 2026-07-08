@@ -28,9 +28,8 @@ namespace PicMerge {
 			case 1: { // JPEG
 				JpegEncoder encoder = new() {
 					SkipMetadata = true,
-					ColorType = JpegEncodingColor.Rgb,
+					ColorType = JpegEncodingColor.YCbCrRatio420,
 					Quality = param.quality,
-					Interleaved = false
 				};
 				input_image.SaveAsJpeg(imgSt, encoder);
 				break;
