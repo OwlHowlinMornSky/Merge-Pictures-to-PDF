@@ -56,7 +56,7 @@
             <Grid Margin="10,10,0,10">
                 <Slider x:Name="sliderQuality"
                         Value="{Binding Path=Quality, Mode=TwoWay}"
-                        Margin="0,0,40,0" MinWidth="100"
+                        Margin="0,0,40,0" MinWidth="100" Minimum="1"
                         SmallChange="1" Maximum="100" LargeChange="10"
                         TickPlacement="Both" IsSnapToTickEnabled="True"
                         VerticalContentAlignment="Center"/>

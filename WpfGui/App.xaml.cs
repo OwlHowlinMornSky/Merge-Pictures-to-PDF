@@ -21,7 +21,12 @@ namespace WpfGui {
 			string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lib", $"{name}.dll");
 			if (!File.Exists(path))
 				return null;
-			return Assembly.LoadFrom(path);
+			try {
+				return Assembly.LoadFrom(path);
+			}
+			catch {
+				return null;
+			}
 		}
 	}
 }
