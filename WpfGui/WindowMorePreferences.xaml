@@ -86,6 +86,7 @@
                              IsEnabled="{Binding IsChecked, ElementName=chkBoxWidth}"
                              Value="{Binding ResizeWidthValue, Mode=TwoWay}"
                              MinValue="0" MaxValue="16777216"/>
+                    <Label Content="pixels" VerticalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxHeight"
@@ -98,6 +99,7 @@
                              IsEnabled="{Binding IsChecked, ElementName=chkBoxHeight}"
                              Value="{Binding ResizeHeightValue, Mode=TwoWay}"
                              MinValue="0" MaxValue="16777216"/>
+                    <Label Content="pixels" VerticalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxShort"
@@ -110,6 +112,7 @@
                              IsEnabled="{Binding IsChecked, ElementName=chkBoxShort}"
                              Value="{Binding ResizeShortValue, Mode=TwoWay}"
                              MinValue="0" MaxValue="16777216"/>
+                    <Label Content="pixels" VerticalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <CheckBox x:Name="chkBoxLong"
@@ -122,11 +125,16 @@
                              IsEnabled="{Binding IsChecked, ElementName=chkBoxLong}"
                              Value="{Binding ResizeLongValue, Mode=TwoWay}"
                              MinValue="0" MaxValue="16777216"/>
+                    <Label Content="pixels" VerticalContentAlignment="Center"/>
                 </StackPanel>
-                <CheckBox Content="{DynamicResource DetailResizePow2}"
-                          ToolTip="{DynamicResource DetailResizePow2Tip}"
-                          IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
-                          IsChecked="{Binding ResizeReduceByPow2, Mode=TwoWay}"/>
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox Content="{DynamicResource DetailResizePow2}"
+                              ToolTip="{DynamicResource DetailResizePow2Tip}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeReduceByPow2, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <Label Content="pixels" Visibility="Hidden" VerticalContentAlignment="Center"/>
+                </StackPanel>
             </StackPanel>
         </GroupBox>
 

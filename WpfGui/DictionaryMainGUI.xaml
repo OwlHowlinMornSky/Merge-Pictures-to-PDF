@@ -5,7 +5,7 @@
     <sys:String x:Key="PageSizeBox">Page Size</sys:String>
     <sys:String x:Key="PageSizeWidthFixed">Fixed width</sys:String>
     <sys:String x:Key="PageSizeHeightFixed">Fixed height</sys:String>
-    <sys:String x:Key="PageSizePaperCustom">Custom</sys:String>
+    <sys:String x:Key="PageSizePaperCustom">Custom Page Size</sys:String>
 
     <sys:String x:Key="IOBox">Input/Output</sys:String>
     <sys:String x:Key="IORecursion">Recurse input folder</sys:String>
@@ -34,8 +34,8 @@ Answer 'Yes' to view the log.</sys:String>
     <sys:String x:Key="DetailTitle">More Preferences</sys:String>
     <sys:String x:Key="DetailMoveProcessed">Move Processed Images to Another Place</sys:String>
     <sys:String x:Key="DetailPdfInFolder">Let output PDF be in folders instead of the parent folders.</sys:String>
-    <sys:String x:Key="DetailCompressType">Compress Target Type</sys:String>
-    <sys:String x:Key="DetailCompressKeepType">Keep Original Type</sys:String>
+    <sys:String x:Key="DetailCompressType">Image Format when Putting into PDF</sys:String>
+    <sys:String x:Key="DetailCompressKeepType">Prefer Keepping Original Format</sys:String>
     <sys:String x:Key="DetailCompressQuality">Compress Quality</sys:String>
     <sys:String x:Key="DetailResize">Resize Images</sys:String>
     <sys:String x:Key="DetailPreferredWidth">Preferred Width</sys:String>

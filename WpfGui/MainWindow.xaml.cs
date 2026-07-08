@@ -119,6 +119,7 @@ namespace WpfGui {
 				return;
 			}
 			BarSetNum(0, 1);
+			Settings1.Default.Save();
 
 			PicMerge.IOParam ioParam;
 			string destDir = "";
