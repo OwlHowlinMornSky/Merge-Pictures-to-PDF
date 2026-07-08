@@ -7,6 +7,8 @@ namespace WpfGui {
 	/// WindowMorePreferences.xaml 的交互逻辑
 	/// </summary>
 	public partial class WindowMorePreferences : Window {
+		private bool m_reseted = false;
+
 		public WindowMorePreferences() {
 			InitializeComponent();
 #if !DEBUG
@@ -34,6 +36,9 @@ namespace WpfGui {
 				return;
 			}
 			Settings1.Default.Save();
+			if(m_reseted) {
+				DialogResult = true;
+			}
 		}
 
 		private void ButtonResetSettings_Click(object sender, RoutedEventArgs e) {
@@ -41,6 +46,7 @@ namespace WpfGui {
 			if (DataContext is MorePreference) {
 				DataContext = new MorePreference();
 			}
+			m_reseted = true;
 		}
 
 		private void ButtonLanguage_Click(object sender, RoutedEventArgs e) {

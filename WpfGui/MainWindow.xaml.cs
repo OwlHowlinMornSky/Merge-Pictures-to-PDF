@@ -81,8 +81,8 @@ namespace WpfGui {
 			WindowMorePreferences dialog = new() {
 				Owner = this
 			};
-			dialog.ShowDialog();
-			if (DataContext is DataMain) {
+			var reset = dialog.ShowDialog();
+			if (reset is true && DataContext is DataMain) {
 				var dm = new DataMain();
 				DataContext = dm;
 			}
