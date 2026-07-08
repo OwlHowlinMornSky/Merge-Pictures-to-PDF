@@ -5,7 +5,7 @@
     <sys:String x:Key="PageSizeBox">页面尺寸</sys:String>
     <sys:String x:Key="PageSizeWidthFixed">固定宽度</sys:String>
     <sys:String x:Key="PageSizeHeightFixed">固定高度</sys:String>
-    <sys:String x:Key="PageSizePaperCustom">自定义</sys:String>
+    <sys:String x:Key="PageSizePaperCustom">自定义尺寸</sys:String>
 
     <sys:String x:Key="IOBox">输入输出</sys:String>
     <sys:String x:Key="IORecursion">递归输入</sys:String>
@@ -19,6 +19,7 @@
     <sys:String x:Key="HaveFinishedPercent">已完成 {0:F2}%</sys:String>
     <sys:String x:Key="Error">错误</sys:String>
     <sys:String x:Key="Warning">警告</sys:String>
+    <sys:String x:Key="InvalidParams">请检查设置参数。</sys:String>
     <sys:String x:Key="InvalidDrop">拖入的数据不合规。</sys:String>
     <sys:String x:Key="WaitForCurrentTask">请等待当前任务完成。</sys:String>
 
@@ -33,23 +34,24 @@
     <sys:String x:Key="DetailTitle">更多选项</sys:String>
     <sys:String x:Key="DetailMoveProcessed">将已处理的图片移动到其他位置</sys:String>
     <sys:String x:Key="DetailPdfInFolder">将合并的 PDF 置于文件夹内 而不是置于上一级</sys:String>
-    <sys:String x:Key="DetailCompressType">压缩目标格式</sys:String>
-    <sys:String x:Key="DetailCompressKeepType">保持原格式</sys:String>
+    <sys:String x:Key="DetailCompressType">填入PDF时的图片格式</sys:String>
+    <sys:String x:Key="DetailCompressKeepType">尽可能保持原格式</sys:String>
     <sys:String x:Key="DetailCompressQuality">压缩质量</sys:String>
-    <sys:String x:Key="DetailResizeWhenCompress">压缩时改变图片大小</sys:String>
-    <sys:String x:Key="DetailResize">改变大小</sys:String>
+    <sys:String x:Key="DetailResize">改变图片大小</sys:String>
     <sys:String x:Key="DetailPreferredWidth">期望宽度</sys:String>
     <sys:String x:Key="DetailPreferredHeight">期望高度</sys:String>
     <sys:String x:Key="DetailPreferredShort">短边长度</sys:String>
     <sys:String x:Key="DetailPreferredLong">长边长度</sys:String>
     <sys:String x:Key="DetailResizePow2">按2的幂次缩小</sys:String>
 
+    <sys:String x:Key="DetailOthers">其他</sys:String>
+    <sys:String x:Key="DetailOthersReset">重置所有选项</sys:String>
+
     <sys:String x:Key="DetailResizePow2Tip" xml:space="preserve"
 >缩小图片时，保持缩放比例为2的幂。
 缩小到图片各个尺寸满足设置的值为止。</sys:String>
-    <sys:String x:Key="PageDpiTip" xml:space="preserve"
+    <sys:String x:Key="PageScaleTip" xml:space="preserve"
 >该参数用来缩放 PDF 页面。
-默认值为 72。
-值越大，PDF 页面越小。</sys:String>
+默认值为 100%。</sys:String>
 
 </ResourceDictionary>

@@ -4,9 +4,9 @@ namespace PicMerge {
 	internal class Merger() {
 
 		protected string StrFailedToRead = "Failed to process.";
-		protected string StrFailedToAdd = "Failed to add into PDF.";
+		protected string StrFailedToPut = "Cannot put into PDF: ";
 
-		protected readonly object m_lock = new(); // Used to avoid IO at the same time.
+		protected readonly Lock m_lock = new(); // Used to avoid IO at the same time.
 
 		internal enum Loader {
 			NULL,
@@ -108,7 +108,7 @@ namespace PicMerge {
 					// 先尝试Iodine，最大化压缩率；
 					// 再尝试ImageSharp，转换的同时可以压缩；
 					// 最后尝试直接加载。
-					img_stream ??= LoadImgaeByIodine(type, in buffer, param, optimize, ref log, out loader);
+					img_stream ??= LoadImageByIodine(type, in buffer, param, ref log, out loader);
 					img_stream ??= LoadImageByImageSharp(type, in image, param, ref log, out loader);
 					img_stream ??= LoadImageDirectly(type, in buffer, param, ref log, out loader, out img_w_or, out img_h_or);
 				}
@@ -119,7 +119,7 @@ namespace PicMerge {
 					// 最后尝试Iodine，不能闲着。（www
 					img_stream ??= LoadImageDirectly(type, in buffer, param, ref log, out loader, out _, out _);
 					img_stream ??= LoadImageByImageSharp(type, in image, param, ref log, out loader);
-					img_stream ??= LoadImgaeByIodine(type, in buffer, param, optimize, ref log, out loader);
+					img_stream ??= LoadImageByIodine(type, in buffer, param, ref log, out loader);
 				}
 
 				if (img_stream is null) {
@@ -133,26 +133,26 @@ namespace PicMerge {
 			return (img_stream, loader);
 		}
 
-		protected static Stream? LoadImgaeByIodine(FileType.Type type, in byte[] buffer, ImageParam param, bool optimize, ref LoadImageLog log, out Loader loader) {
+		protected static Stream? LoadImageByIodine(FileType.Type type, in byte[] buffer, ImageParam param, ref LoadImageLog log, out Loader loader) {
 			Stream? imageData = null;
 			switch (type) {
 			case FileType.Type.WEBP: // Iodine, Img#.
 			case FileType.Type.GIF:  // Iodine, Img#.
 			case FileType.Type.TIFF: // Iodine, Img#.
 				switch (param.format) { // 必须转换
+				default:
+				case 0: // 原格式
+					param.format = 2; // To PNG
+					break;
 				case 1: // JPEG
 				case 2: // PNG
-					break;
-				//case 0: // 原格式
-				default:
-					param.format = 1; // To JPEG
 					break;
 				}
 				goto case FileType.Type.JPEG;
 			case FileType.Type.JPEG: // Iodine, Img#, Direct.
 			case FileType.Type.PNG:  // Iodine, Img#, Direct.
 				try {
-					imageData = CompressTarget.GetCompressedImageData(in buffer, param, optimize);
+					imageData = CompressTarget.GetCompressedImageData(in buffer, param);
 				}
 				catch (Exception ex) {
 					log += $"[Iodine] Exception: {ex.Message}";
@@ -180,16 +180,16 @@ namespace PicMerge {
 			case FileType.Type.TIFF: // Iodine, Img#.
 			case FileType.Type.WEBP: // Iodine, Img#.
 			case FileType.Type.BMP:  // Img#.
-			/*switch (param.format) { // 必须转换
-			case 1: // JPEG
-			case 2: // PNG
-				break;
-			//case 0: // 原格式
-			default:
-				param.format = 1; // To JPEG
-				break;
-			} // ImageSharp目前只会输出PNG和Jpeg.
-			goto case FileType.Type.JPEG;*/
+				switch (param.format) { // 必须转换
+				default:
+				case 0: // 原格式
+					param.format = 2; // To PNG
+					break;
+				case 1: // JPEG
+				case 2: // PNG
+					break;
+				}
+				goto case FileType.Type.JPEG;
 			case FileType.Type.JPEG: // Iodine, Img#, Direct.
 			case FileType.Type.PNG:  // Iodine, Img#, Direct.
 				try {

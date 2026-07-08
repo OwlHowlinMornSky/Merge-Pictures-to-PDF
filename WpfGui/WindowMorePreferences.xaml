@@ -1,54 +1,152 @@
 ﻿<Window x:Class="WpfGui.WindowMorePreferences"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:numeric="http://gu.se/NumericInput"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfGui"
         mc:Ignorable="d"
-        Title="{DynamicResource DetailTitle}" ResizeMode="NoResize" SizeToContent="WidthAndHeight" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Closing="Window_Closing">
+        Title="{DynamicResource DetailTitle}"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" SizeToContent="WidthAndHeight"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <local:MorePreference x:Key="myDataSource"/>
+        <local:ImageFormatDisplayConverter x:Key="formatDisplayConverter"/>
+    </Window.Resources>
+    <Window.DataContext>
+        <Binding Source="{StaticResource myDataSource}"/>
+    </Window.DataContext>
+
     <StackPanel Margin="10,10" MinWidth="300">
-        <CheckBox x:Name="chkboxMoveProcessed" Margin="5,0,5,5" Content="{DynamicResource DetailMoveProcessed}" Checked="ChkboxMoveProcessed_CheckedChanged" Unchecked="ChkboxMoveProcessed_CheckedChanged"/>
-        <CheckBox x:Name="chkboxPdfInFolder" Margin="5,0,5,5" Content="{DynamicResource DetailPdfInFolder}" Checked="ChkboxMoveProcessed_CheckedChanged" Unchecked="ChkboxMoveProcessed_CheckedChanged"/>
-        <GroupBox Header="{DynamicResource DetailCompressType}" Margin="0,0,0,0">
-            <ComboBox x:Name="comboBoxCompressType" Margin="10,10" SelectionChanged="ComboBoxCompressType_SelectionChanged">
-                <ComboBoxItem Content="{DynamicResource DetailCompressKeepType}"/>
-                <ComboBoxItem Content="JPEG"/>
-                <ComboBoxItem Content="PNG"/>
+
+        <CheckBox x:Name="chkboxMoveProcessed"
+                  Margin="5,0,5,5"
+                  Content="{DynamicResource DetailMoveProcessed}"
+                  IsChecked="{Binding IoMoveProcessed, Mode=TwoWay}"/>
+        <CheckBox x:Name="chkboxPdfInFolder"
+                  Margin="5,0,5,5"
+                  Content="{DynamicResource DetailPdfInFolder}"
+                  IsChecked="{Binding IoPdfInFolder, Mode=TwoWay}"/>
+
+        <GroupBox Header="{DynamicResource DetailCompressType}"
+                  Margin="0,0,0,0">
+            <ComboBox Margin="10,10"
+                      SelectedItem="{Binding Path=TargetFormat, Mode=TwoWay}"
+                      ItemsSource="{Binding Path=FormatList}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource formatDisplayConverter}">
+                                    <Binding Path="." />
+                                    <Binding Path="CurrentLangId" Source="{x:Static local:App.LangMngr}" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
             </ComboBox>
         </GroupBox>
-        <GroupBox Header="{DynamicResource DetailCompressQuality}" Margin="0,10,0,0">
+
+        <GroupBox Header="{DynamicResource DetailCompressQuality}"
+                  Margin="0,10,0,0">
             <Grid Margin="10,10,0,10">
-                <Slider x:Name="sliderQuality" Margin="0,0,40,0" MinWidth="100" SmallChange="1" Maximum="100" LargeChange="10" TickPlacement="Both" IsSnapToTickEnabled="True" VerticalContentAlignment="Center" ValueChanged="SliderQuality_ValueChanged"/>
-                <Label Content="{Binding Value, ElementName=sliderQuality}" Margin="0,0,0,0" HorizontalAlignment="Right" VerticalContentAlignment="Center"/>
+                <Slider x:Name="sliderQuality"
+                        Value="{Binding Path=Quality, Mode=TwoWay}"
+                        Margin="0,0,40,0" MinWidth="100" Minimum="1"
+                        SmallChange="1" Maximum="100" LargeChange="10"
+                        TickPlacement="Both" IsSnapToTickEnabled="True"
+                        VerticalContentAlignment="Center"/>
+                <Label Content="{Binding Value, ElementName=sliderQuality}"
+                       Margin="0,0,0,0"
+                       HorizontalAlignment="Right"
+                       VerticalContentAlignment="Center"/>
             </Grid>
         </GroupBox>
-        <GroupBox Header="{DynamicResource DetailResizeWhenCompress}" Margin="0,10,0,0">
-            <StackPanel Margin="10,10">
-                <CheckBox x:Name="chkBoxResize" Content="{DynamicResource DetailResize}" Checked="ResizeCheckedChanged" Unchecked="ResizeCheckedChanged"/>
+
+        <GroupBox Margin="0,10,0,0">
+            <GroupBox.Header>
+                <CheckBox x:Name="chkBoxResize"
+                          Content="{DynamicResource DetailResize}"
+                          IsChecked="{Binding Resize, Mode=TwoWay}"/>
+            </GroupBox.Header>
+
+            <StackPanel Margin="10,10" IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}">
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="chkBoxWidth" Content="{DynamicResource DetailPreferredWidth}" VerticalContentAlignment="Center" Checked="ResizeWHCheckedChanged" Unchecked="ResizeWHCheckedChanged"/>
-                    <TextBox x:Name="textBoxWidth" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <CheckBox x:Name="chkBoxWidth"
+                              Content="{DynamicResource DetailPreferredWidth}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeWidth, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <numeric:IntBox x:Name="intboxWidth" MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center" ValidationTrigger="PropertyChanged"
+                             IsEnabled="{Binding IsChecked, ElementName=chkBoxWidth}"
+                             Value="{Binding ResizeWidthValue, Mode=TwoWay}"
+                             MinValue="0" MaxValue="16777216"/>
+                    <Label Content="pixels" VerticalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="chkBoxHeight" Content="{DynamicResource DetailPreferredHeight}" VerticalContentAlignment="Center" Checked="ResizeWHCheckedChanged" Unchecked="ResizeWHCheckedChanged"/>
-                    <TextBox x:Name="textBoxHeight" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <CheckBox x:Name="chkBoxHeight"
+                              Content="{DynamicResource DetailPreferredHeight}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeHeight, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <numeric:IntBox x:Name="intboxHeight" MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center" ValidationTrigger="PropertyChanged"
+                             IsEnabled="{Binding IsChecked, ElementName=chkBoxHeight}"
+                             Value="{Binding ResizeHeightValue, Mode=TwoWay}"
+                             MinValue="0" MaxValue="16777216"/>
+                    <Label Content="pixels" VerticalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="chkBoxShort" Content="{DynamicResource DetailPreferredShort}" VerticalContentAlignment="Center" Checked="ResizeSIDECheckedChanged" Unchecked="ResizeSIDECheckedChanged"/>
-                    <TextBox x:Name="textBoxShort" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <CheckBox x:Name="chkBoxShort"
+                              Content="{DynamicResource DetailPreferredShort}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeShort, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <numeric:IntBox x:Name="intboxShort" MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center" ValidationTrigger="PropertyChanged"
+                             IsEnabled="{Binding IsChecked, ElementName=chkBoxShort}"
+                             Value="{Binding ResizeShortValue, Mode=TwoWay}"
+                             MinValue="0" MaxValue="16777216"/>
+                    <Label Content="pixels" VerticalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="chkBoxLong" Content="{DynamicResource DetailPreferredLong}" VerticalContentAlignment="Center" Checked="ResizeSIDECheckedChanged" Unchecked="ResizeSIDECheckedChanged"/>
-                    <TextBox x:Name="textBoxLong" MaxLength="12" Margin="10,0,0,0" VerticalContentAlignment="Center" Width="100" PreviewKeyDown="TextNum_PreviewKeyDown" TextChanged="ResizeTextChanged"/>
+                    <CheckBox x:Name="chkBoxLong"
+                              Content="{DynamicResource DetailPreferredLong}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeLong, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <numeric:IntBox x:Name="intboxLong" MaxLength="12" Margin="10,0,0,0" Width="100"
+                             VerticalContentAlignment="Center" ValidationTrigger="PropertyChanged"
+                             IsEnabled="{Binding IsChecked, ElementName=chkBoxLong}"
+                             Value="{Binding ResizeLongValue, Mode=TwoWay}"
+                             MinValue="0" MaxValue="16777216"/>
+                    <Label Content="pixels" VerticalContentAlignment="Center"/>
                 </StackPanel>
-                <CheckBox x:Name="chkBoxPow2" Content="{DynamicResource DetailResizePow2}" ToolTip="{DynamicResource DetailResizePow2Tip}" Checked="ResizeCheckedChanged" Unchecked="ResizeCheckedChanged"/>
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox Content="{DynamicResource DetailResizePow2}"
+                              ToolTip="{DynamicResource DetailResizePow2Tip}"
+                              IsEnabled="{Binding IsChecked, ElementName=chkBoxResize}"
+                              IsChecked="{Binding ResizeReduceByPow2, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"/>
+                    <Label Content="pixels" Visibility="Hidden" VerticalContentAlignment="Center"/>
+                </StackPanel>
             </StackPanel>
         </GroupBox>
-        <GroupBox x:Name="gpBoxDebug" Header="Debug">
+
+        <GroupBox Header="{DynamicResource DetailOthers}">
             <WrapPanel Margin="5,5">
-                <Button Content="Language" Margin="0,0,10,0" Click="ButtonLanguage_Click"/>
-                <Button Content="Reset Settings" Click="ButtonResetSettings_Click"/>
+                <Button Margin="0,0,10,0" Click="ButtonLanguage_Click">
+                    <Image Source="/Lang-36.png" Width="48" Height="36"/>
+                </Button>
+                <Button Content="{DynamicResource DetailOthersReset}" Margin="0,0,10,0" Click="ButtonResetSettings_Click"/>
+                <Button x:Name="gpBoxDebug" Content="Test Button" Click="ButtonTest_Click"/>
             </WrapPanel>
         </GroupBox>
+
     </StackPanel>
 </Window>

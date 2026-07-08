@@ -1,63 +1,28 @@
-﻿using System.Globalization;
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace WpfGui {
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow : Window {
-		protected bool Started {
-			get; private set;
-		} = false;
 		/// <summary>
 		/// 用来 lock 进度条和标签 的 对象。
 		/// </summary>
-		private readonly object m_lockBar = new();
+		private readonly Lock m_lockBar = new();
 		/// <summary>
 		/// 处理拖入数据 的 对象。
 		/// </summary>
 		private readonly PicMerge.Processor m_processor;
 
 		public MainWindow() {
-			if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase)) {
-				ChangeLang(1);
-			}
-			else {
-				ChangeLang(0);
-			}
+			App.LangMngr.CheckAtStart();
+
 			InitializeComponent();
 
 			m_processor = new PicMerge.Processor(BarSetNum, BarSetFinish, PopWarning);
-
-			int index = 0;
-			foreach (string paperType in Settings1.Default.Papers.Split(',')) {
-				comboBoxPageSize.Items.Insert(index++, new ComboBoxItem() {
-					Content = paperType
-				});
-			}
-
-			textWidth.Text = Settings1.Default.PageSizeWidth.ToString();
-			textHeight.Text = Settings1.Default.PageSizeHeight.ToString();
-			textDpi.Text = Settings1.Default.PageDpi.ToString();
-
-			Settings1.Default.PagePageType = int.Clamp(Settings1.Default.PagePageType, 0, comboBoxPageSize.Items.Count - 1);
-			comboBoxPageSize.SelectedIndex = Settings1.Default.PagePageType;
-
-			radioBtnFixedWidth.IsChecked = Settings1.Default.PageFixedWidth;
-			bool val = Settings1.Default.PageFixedHeight;
-			radioBtnFixedHeight.IsChecked = !val;
-			radioBtnFixedHeight.IsChecked = val; // This is to trigger event.
-
-			chkBoxRecursion.IsChecked = Settings1.Default.IORecurse;
-			chkBoxKeepStructure.IsChecked = Settings1.Default.IOKeepStruct;
-			chkBoxCompressAll.IsChecked = Settings1.Default.IOCompress;
-			chkBoxStayNoMove.IsChecked = Settings1.Default.IONoMove;
-
-			Started = true;
 		}
 
 		/// <summary>
@@ -89,36 +54,6 @@ namespace WpfGui {
 			}
 		}
 
-
-		[LibraryImport("shell32.dll")]
-		private static partial void ILFree(IntPtr pidlList);
-
-		[LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
-		private static partial IntPtr ILCreateFromPathW(string pszPath);
-
-		[LibraryImport("shell32.dll")]
-		private static partial int SHOpenFolderAndSelectItems(IntPtr pidlList, uint cild, IntPtr children, uint dwFlags);
-
-		private void OpenFolderAndSelectFile(string filePath) {
-			// 确保文件路径是绝对路径
-			filePath = Path.GetFullPath(filePath);
-
-			// 获取文件的 PIDL (Pointer to an Item ID List)
-			IntPtr pidlList = ILCreateFromPathW(filePath);
-
-			if (pidlList != IntPtr.Zero) {
-				try {
-					// 调用 API 打开资源管理器并选中文件
-					// 第三个参数为 IntPtr.Zero 表示只选中一个文件
-					SHOpenFolderAndSelectItems(pidlList, 0, IntPtr.Zero, 0);
-				}
-				finally {
-					// 释放 PIDL 资源
-					ILFree(pidlList);
-				}
-			}
-		}
-
 		private void PopWarning(string logPath) {
 			App.Current.Dispatcher.Invoke(() => {
 				TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
@@ -141,123 +76,15 @@ namespace WpfGui {
 			});
 		}
 
-		/// <summary>
-		/// 更改语言。
-		/// Change Language.
-		/// </summary>
-		/// <param name="index">default: English, 1: Chinese(S)</param>
-		internal static void ChangeLang(int index) {
-			ResourceDictionary rd = new() {
-				Source = index switch {
-					1 => new Uri("DictionaryMainGUI.zh-CN.xaml", UriKind.Relative),
-					_ => new Uri("DictionaryMainGUI.xaml", UriKind.Relative),
-				}
-			};
-			App.Current.Resources.MergedDictionaries.Clear();
-			App.Current.Resources.MergedDictionaries.Add(rd);
-			return;
-		}
-
-		/// <summary>
-		/// 输入尺寸的框 的 键入通知。用来限制 只能输入数字。
-		/// </summary>
-		private void TextNum_PreviewKeyDown(object sender, KeyEventArgs e) {
-			bool isNum = e.Key >= Key.D0 && e.Key <= Key.D9;
-			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
-			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
-			if (isNum || isNumPad || isControl) {
-				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
-				return;
-			}
-			if (e.Key == Key.Decimal && sender is TextBox box && !box.Text.Contains('.')) {
-				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
-				return; // 允许有一个小数点。
-			}
-			e.Handled = true;
-		}
-
-		private void TextNum_PreviewKeyDown_Int(object sender, KeyEventArgs e) {
-			bool isNum = e.Key >= Key.D0 && e.Key <= Key.D9;
-			bool isNumPad = e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9;
-			bool isControl = e.Key == Key.Back || e.Key == Key.Enter || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right;
-			if (isNum || isNumPad || isControl) {
-				comboBoxPageSize.SelectedIndex = comboBoxPageSize.Items.Count - 1; // 改为自定义。
-				return;
-			}
-			e.Handled = true;
-		}
-
-		/// <summary>
-		/// 页面尺寸类型的单选框 改变 的 通知。用来确定m_pageSizeType。
-		/// </summary>
-		private void BtnPageSize_Changed(object sender, RoutedEventArgs e) {
-			comboBoxPageSize.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
-			textWidth.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
-			textHeight.IsEnabled = (radioBtnFixedWidth.IsChecked ?? false) || (radioBtnFixedHeight.IsChecked ?? false);
-
-			if (!Started)
-				return;
-
-			Settings1.Default.PageFixedWidth = radioBtnFixedWidth.IsChecked ?? false;
-			Settings1.Default.PageFixedHeight = radioBtnFixedHeight.IsChecked ?? false;
-		}
-
-		private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			if (comboBoxPageSize.SelectedItem is not ComboBoxItem boxItem) {
-				MessageBox.Show(this, $"Could not set the page type. ({comboBoxPageSize.SelectedIndex})");
-				return;
-			}
-
-			if (comboBoxPageSize.SelectedIndex < comboBoxPageSize.Items.Count - 1) {
-				System.Drawing.Size size;
-				try {
-					var obj = Settings1.Default[$"Paper{boxItem.Content}"];
-					if (obj is not System.Drawing.Size _size) {
-						MessageBox.Show(this, $"Could not load size data of page type \"{boxItem.Content}\".");
-						return;
-					}
-					size = _size;
-				}
-				catch {
-					MessageBox.Show(this, $"Could not load size data of page type \"{boxItem.Content}\".");
-					return;
-				}
-				textWidth.Text = size.Width.ToString();
-				textHeight.Text = size.Height.ToString();
-				textDpi.Text = "72";
-			}
-
-			if (!Started)
-				return;
-			Settings1.Default.PagePageType = comboBoxPageSize.SelectedIndex;
-		}
-
-		private void PageSizeTextChangedW(object sender, TextChangedEventArgs e) {
-			Settings1.Default.PageSizeWidth = float.TryParse(textWidth.Text, out float res) ? res : 0;
-		}
-
-		private void PageSizeTextChangedH(object sender, TextChangedEventArgs e) {
-			Settings1.Default.PageSizeHeight = float.TryParse(textHeight.Text, out float res) ? res : 0;
-		}
-
-		private void PageDpiTextChanged(object sender, TextChangedEventArgs e) {
-			Settings1.Default.PageDpi = uint.TryParse(textDpi.Text, out uint res) ? res : 0;
-		}
-
-		private void IoCheckedChanged(object sender, RoutedEventArgs e) {
-			if (!Started)
-				return;
-			Settings1.Default.IORecurse = chkBoxRecursion.IsChecked ?? false;
-			Settings1.Default.IOKeepStruct = chkBoxKeepStructure.IsChecked ?? false;
-			Settings1.Default.IOCompress = chkBoxCompressAll.IsChecked ?? false;
-			Settings1.Default.IONoMove = chkBoxStayNoMove.IsChecked ?? false;
-		}
-
-		private void Button_Click(object sender, RoutedEventArgs e) {
+		private void ButtonMorePreferences_Click(object sender, RoutedEventArgs e) {
 			WindowMorePreferences dialog = new() {
 				Owner = this
 			};
-			dialog.ShowDialog();
+			var reset = dialog.ShowDialog();
+			if (reset is true && DataContext is DataMain) {
+				var dm = new DataMain();
+				DataContext = dm;
+			}
 		}
 
 		/// <summary>
@@ -277,15 +104,22 @@ namespace WpfGui {
 			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
 				return;
 			}
+			if (Validation.GetHasError(doubleboxWidth) ||
+				Validation.GetHasError(doubleboxHeight) ||
+				Validation.GetHasError(doubleboxScale)) {
+				await PopErrorAsync(App.Current.TryFindResource("InvalidParams").ToString() ?? "InvalidParams");
+				return;
+			}
 			if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length <= 0) {
-				await PopErrorAsync(App.Current.TryFindResource("InvalidDrop").ToString() ?? "Error.");
+				await PopErrorAsync(App.Current.TryFindResource("InvalidDrop").ToString() ?? "InvalidDrop");
 				return;
 			}
 			if (m_processor.IsRunning()) {
-				await PopErrorAsync(App.Current.TryFindResource("WaitForCurrentTask").ToString() ?? "Error.");
+				await PopErrorAsync(App.Current.TryFindResource("WaitForCurrentTask").ToString() ?? "WaitForCurrentTask");
 				return;
 			}
 			BarSetNum(0, 1);
+			Settings1.Default.Save();
 
 			PicMerge.IOParam ioParam;
 			string destDir = "";
@@ -326,11 +160,11 @@ namespace WpfGui {
 				(Settings1.Default.PageFixedWidth ? PicMerge.PageParam.FixedType.WidthFixed : 0),
 				_width: Settings1.Default.PageSizeWidth,
 				_height: Settings1.Default.PageSizeHeight,
-				_dpi: Settings1.Default.PageDpi
+				_scale: Settings1.Default.PageScale
 			);
 			PicMerge.ImageParam imageParam = new(
 				_compress: Settings1.Default.IOCompress,
-				_format: Settings1.Default.CompressFormat,
+				_format: ImageFormatHelp.StringToIndex(Settings1.Default.CompressFormat),
 				_quality: Settings1.Default.CompressQuality,
 				_resize: Settings1.Default.CompressResize,
 				_width: Settings1.Default.CompressResizeWidth ? Settings1.Default.CompressResizeWidthValue : 0,
@@ -393,7 +227,7 @@ namespace WpfGui {
 			});
 		}
 
-		private async Task PopErrorAsync(string msg) {
+		internal async Task PopErrorAsync(string msg) {
 			await Task.Run(() => {
 				App.Current.Dispatcher.Invoke(() => {
 					MessageBox.Show(
@@ -404,6 +238,36 @@ namespace WpfGui {
 					);
 				});
 			});
+		}
+
+
+		[LibraryImport("shell32.dll")]
+		private static partial void ILFree(IntPtr pidlList);
+
+		[LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
+		private static partial IntPtr ILCreateFromPathW(string pszPath);
+
+		[LibraryImport("shell32.dll")]
+		private static partial int SHOpenFolderAndSelectItems(IntPtr pidlList, uint cild, IntPtr children, uint dwFlags);
+
+		private static void OpenFolderAndSelectFile(string filePath) {
+			// 确保文件路径是绝对路径
+			filePath = Path.GetFullPath(filePath);
+
+			// 获取文件的 PIDL (Pointer to an Item ID List)
+			IntPtr pidlList = ILCreateFromPathW(filePath);
+
+			if (pidlList != IntPtr.Zero) {
+				try {
+					// 调用 API 打开资源管理器并选中文件
+					// 第三个参数为 IntPtr.Zero 表示只选中一个文件
+					var _ = SHOpenFolderAndSelectItems(pidlList, 0, IntPtr.Zero, 0);
+				}
+				finally {
+					// 释放 PIDL 资源
+					ILFree(pidlList);
+				}
+			}
 		}
 	}
 }

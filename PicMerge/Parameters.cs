@@ -36,7 +36,7 @@ namespace PicMerge {
 		public bool keepPdfInFolder = _pdfInFolder;
 	}
 	public readonly struct PageParam(
-		PageParam.FixedType _fixedType, float _width, float _height, uint _dpi
+		PageParam.FixedType _fixedType, double _width, double _height, double _scale
 	) {
 		[Flags]
 		public enum FixedType {
@@ -53,17 +53,16 @@ namespace PicMerge {
 		/// This is used when width is fixed.
 		/// If this is less than 10, "width fixed" is disabled.
 		/// </summary>
-		public readonly float width = _width;
+		public readonly double width = _width;
 		/// <summary>
 		/// This is used when height is fixed.
 		/// If this is less than 10, "height fixed" is disabled.
 		/// </summary>
-		public readonly float height = _height;
+		public readonly double height = _height;
 		/// <summary>
 		/// It is used to scale page.
-		/// The greater the page smaller.
 		/// </summary>
-		public readonly uint dpi = _dpi;
+		public readonly double scale = _scale;
 	}
 	public struct ImageParam(
 		bool _compress, int _format, int _quality,

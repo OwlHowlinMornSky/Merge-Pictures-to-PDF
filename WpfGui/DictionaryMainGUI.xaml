@@ -5,7 +5,7 @@
     <sys:String x:Key="PageSizeBox">Page Size</sys:String>
     <sys:String x:Key="PageSizeWidthFixed">Fixed width</sys:String>
     <sys:String x:Key="PageSizeHeightFixed">Fixed height</sys:String>
-    <sys:String x:Key="PageSizePaperCustom">Custom</sys:String>
+    <sys:String x:Key="PageSizePaperCustom">Custom Page Size</sys:String>
 
     <sys:String x:Key="IOBox">Input/Output</sys:String>
     <sys:String x:Key="IORecursion">Recurse input folder</sys:String>
@@ -19,6 +19,7 @@
     <sys:String x:Key="HaveFinishedPercent">{0:F2}% finished</sys:String>
     <sys:String x:Key="Error">Error</sys:String>
     <sys:String x:Key="Warning">Warning</sys:String>
+    <sys:String x:Key="InvalidParams">Invalid parameter(s) exist.</sys:String>
     <sys:String x:Key="InvalidDrop">Data dropped is invalid.</sys:String>
     <sys:String x:Key="WaitForCurrentTask">Please wait for task finished.</sys:String>
 
@@ -33,23 +34,24 @@ Answer 'Yes' to view the log.</sys:String>
     <sys:String x:Key="DetailTitle">More Preferences</sys:String>
     <sys:String x:Key="DetailMoveProcessed">Move Processed Images to Another Place</sys:String>
     <sys:String x:Key="DetailPdfInFolder">Let output PDF be in folders instead of the parent folders.</sys:String>
-    <sys:String x:Key="DetailCompressType">Compress Target Type</sys:String>
-    <sys:String x:Key="DetailCompressKeepType">Keep Original Type</sys:String>
+    <sys:String x:Key="DetailCompressType">Image Format when Putting into PDF</sys:String>
+    <sys:String x:Key="DetailCompressKeepType">Prefer Keepping Original Format</sys:String>
     <sys:String x:Key="DetailCompressQuality">Compress Quality</sys:String>
-    <sys:String x:Key="DetailResizeWhenCompress">Resize when compressing</sys:String>
-    <sys:String x:Key="DetailResize">Resize</sys:String>
+    <sys:String x:Key="DetailResize">Resize Images</sys:String>
     <sys:String x:Key="DetailPreferredWidth">Preferred Width</sys:String>
     <sys:String x:Key="DetailPreferredHeight">Preferred Height</sys:String>
     <sys:String x:Key="DetailPreferredShort">Short Side Length</sys:String>
     <sys:String x:Key="DetailPreferredLong">Long Side Length</sys:String>
     <sys:String x:Key="DetailResizePow2">Reduce by Power of 2</sys:String>
 
+    <sys:String x:Key="DetailOthers">Others</sys:String>
+    <sys:String x:Key="DetailOthersReset">Reset All Settings</sys:String>
+
     <sys:String x:Key="DetailResizePow2Tip" xml:space="preserve"
 >When reducing image, let the scale be power of 2.
 Reducing is goning on until each measure is not great than your preferred value.</sys:String>
-    <sys:String x:Key="PageDpiTip" xml:space="preserve"
+    <sys:String x:Key="PageScaleTip" xml:space="preserve"
 >This is used to scale the page, not the image.
-The default value is 72.
-The greater this value, the smaller the pdf pages.</sys:String>
+The default value is 100%.</sys:String>
 
 </ResourceDictionary>
