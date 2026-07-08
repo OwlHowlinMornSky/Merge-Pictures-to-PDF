@@ -1,9 +1,5 @@
-﻿using PdfSharp;
-using PdfSharp.Drawing;
+﻿using PdfSharp.Drawing;
 using PdfSharp.Pdf;
-using System.IO;
-using System.Reflection.Metadata;
-using System.Xml.Linq;
 
 namespace PicMerge;
 

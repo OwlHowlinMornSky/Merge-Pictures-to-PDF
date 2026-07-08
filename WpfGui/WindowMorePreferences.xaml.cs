@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace WpfGui {
 	/// <summary>
@@ -36,7 +35,7 @@ namespace WpfGui {
 				return;
 			}
 			Settings1.Default.Save();
-			if(m_reseted) {
+			if (m_reseted) {
 				DialogResult = true;
 			}
 		}

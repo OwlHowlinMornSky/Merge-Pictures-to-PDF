@@ -6,7 +6,7 @@ namespace PicMerge {
 		protected string StrFailedToRead = "Failed to process.";
 		protected string StrFailedToAdd = "Failed to add into PDF.";
 
-		protected readonly object m_lock = new(); // Used to avoid IO at the same time.
+		protected readonly Lock m_lock = new(); // Used to avoid IO at the same time.
 
 		internal enum Loader {
 			NULL,

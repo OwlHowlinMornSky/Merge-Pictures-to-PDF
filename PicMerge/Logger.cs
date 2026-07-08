@@ -4,7 +4,7 @@ namespace PicMerge {
 
 		private static string m_logFileName = "";
 		private static bool m_used = false;
-		private static object m_lock = new();
+		private static readonly Lock m_lock = new();
 
 		public static string FilePath {
 			get {

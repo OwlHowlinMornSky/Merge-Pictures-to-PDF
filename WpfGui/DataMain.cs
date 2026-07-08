@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace WpfGui {
 	internal class DataMain : INotifyPropertyChanged {

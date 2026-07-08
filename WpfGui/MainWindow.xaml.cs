@@ -1,7 +1,4 @@
-﻿using PdfSharp;
-using PdfSharp.Charting;
-using System.Globalization;
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,7 +11,7 @@ namespace WpfGui {
 		/// <summary>
 		/// 用来 lock 进度条和标签 的 对象。
 		/// </summary>
-		private readonly object m_lockBar = new();
+		private readonly Lock m_lockBar = new();
 		/// <summary>
 		/// 处理拖入数据 的 对象。
 		/// </summary>
@@ -261,7 +258,7 @@ namespace WpfGui {
 				try {
 					// 调用 API 打开资源管理器并选中文件
 					// 第三个参数为 IntPtr.Zero 表示只选中一个文件
-					SHOpenFolderAndSelectItems(pidlList, 0, IntPtr.Zero, 0);
+					var _ = SHOpenFolderAndSelectItems(pidlList, 0, IntPtr.Zero, 0);
 				}
 				finally {
 					// 释放 PIDL 资源
