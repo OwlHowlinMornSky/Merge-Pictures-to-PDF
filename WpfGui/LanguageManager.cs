@@ -36,9 +36,9 @@ namespace WpfGui {
 				field = value;
 				OnPropertyChanged(nameof(CurrentLangId));
 			}
-		}
+		} = LangCnt;
 
-		public LanguageManager() {
+		public void CheckAtStart() { // 必须动态调用，不能设置为构造函数。否则XAML编辑器会报错，因为修改了资源。
 			if (Settings1.Default.Language < 0) {
 				if (CultureInfo.CurrentCulture.Name.Equals("zh-cn", StringComparison.OrdinalIgnoreCase))
 					CurrentLangId = 1;

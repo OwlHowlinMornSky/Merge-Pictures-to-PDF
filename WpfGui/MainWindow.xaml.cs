@@ -18,6 +18,8 @@ namespace WpfGui {
 		private readonly PicMerge.Processor m_processor;
 
 		public MainWindow() {
+			App.LangMngr.CheckAtStart();
+
 			InitializeComponent();
 
 			m_processor = new PicMerge.Processor(BarSetNum, BarSetFinish, PopWarning);
