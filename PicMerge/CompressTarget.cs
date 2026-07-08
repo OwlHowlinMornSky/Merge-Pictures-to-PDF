@@ -2,18 +2,22 @@
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Processing.Processors.Dithering;
+using SixLabors.ImageSharp.Processing.Processors.Quantization;
 
 namespace PicMerge {
 	internal static class CompressTarget {
-		public static Stream GetCompressedImageData(in byte[] input, ImageParam param, bool opimize) {
+		public static Stream GetCompressedImageData(in byte[] input, ImageParam param) {
+			bool optimize = !param.compress; // 不压缩则使用优化
 			var iodine_steam = PicCompress.BufferCompressor.Compress(
-				input, param.format, param.quality, opimize,
+				input, param.format, param.quality, optimize,
 				param.resize, param.width, param.height
 			);
 			return iodine_steam;
 		}
 
 		public static Stream GetImageSharpData(in Image input_image, ImageParam param) {
+			bool optimize = !param.compress; // 不压缩则使用优化
 			MemoryStream imgSt = new();
 
 			if (param.resize) {
@@ -21,30 +25,7 @@ namespace PicMerge {
 			}
 
 			switch (param.format) {
-			case 2: { // PNG
-				int quality = 10 - param.quality / 10;
-				PngEncoder encoder = new() {
-					SkipMetadata = true,
-					ColorType = PngColorType.Rgb,
-					CompressionLevel = quality switch {
-						1 => PngCompressionLevel.Level1,
-						2 => PngCompressionLevel.Level2,
-						3 => PngCompressionLevel.Level3,
-						4 => PngCompressionLevel.Level4,
-						5 => PngCompressionLevel.Level5,
-						6 => PngCompressionLevel.Level6,
-						7 => PngCompressionLevel.Level7,
-						8 => PngCompressionLevel.Level8,
-						9 => PngCompressionLevel.Level9,
-						10 => PngCompressionLevel.Level9,
-						_ => PngCompressionLevel.Level0,
-					}
-				};
-				input_image.SaveAsPng(imgSt, encoder);
-				break;
-			}
-			//case 1:// JPEG
-			default: { // others
+			case 1: { // JPEG
 				JpegEncoder encoder = new() {
 					SkipMetadata = true,
 					ColorType = JpegEncodingColor.Rgb,
@@ -54,9 +35,105 @@ namespace PicMerge {
 				input_image.SaveAsJpeg(imgSt, encoder);
 				break;
 			}
+			default:
+			case 2: { // PNG
+				if (optimize) {
+					PngEncoder encoder = new() {
+						SkipMetadata = true,
+						ColorType = PngColorType.RgbWithAlpha,
+						CompressionLevel = PngCompressionLevel.DefaultCompression,
+						FilterMethod = PngFilterMethod.Adaptive,
+						TransparentColorMode = PngTransparentColorMode.Preserve
+					};
+					input_image.SaveAsPng(imgSt, encoder);
+				}
+				else {
+					Quantizer(in input_image, imgSt, param.quality);
+				}
+				break;
+			}
 			}
 
 			return imgSt;
+		}
+
+		static void Quantizer(in Image image, MemoryStream output, int quality) {// 1. 根据 quality 值决定处理策略
+			Image res;
+			PngEncoder encoder;
+
+			if (quality >= 90) {
+				// 极高质量: 不量化，保留透明
+				res = image;
+				encoder = new PngEncoder {
+					SkipMetadata = true,
+					ColorType = PngColorType.RgbWithAlpha,
+					TransparentColorMode = PngTransparentColorMode.Preserve,
+					BitDepth = PngBitDepth.Bit8,
+					CompressionLevel = PngCompressionLevel.BestCompression,
+				};
+			}
+			else if (quality >= 70) {
+				// 高质量: 不量化，保留透明
+				res = image;
+				encoder = new PngEncoder {
+					SkipMetadata = true,
+					ColorType = PngColorType.RgbWithAlpha,
+					TransparentColorMode = PngTransparentColorMode.Preserve,
+					BitDepth = PngBitDepth.Bit8,
+					CompressionLevel = PngCompressionLevel.BestCompression,
+					FilterMethod = PngFilterMethod.Adaptive,
+				};
+			}
+			else if (quality >= 50) {
+				// 较高质量: 轻微量化，保留透明
+				res = image.Clone(ctx => ctx.Quantize(new WuQuantizer(new QuantizerOptions {
+					Dither = OrderedDither.Bayer16x16,
+					ColorMatchingMode = ColorMatchingMode.Hybrid,
+					MaxColors = 256 // 将颜色减少到最多256色
+				})));
+				encoder = new PngEncoder {
+					SkipMetadata = true,
+					ColorType = PngColorType.Palette,
+					TransparentColorMode = PngTransparentColorMode.Preserve,
+					BitDepth = PngBitDepth.Bit8, // 调色板索引用8位
+					CompressionLevel = PngCompressionLevel.BestCompression,
+					FilterMethod = PngFilterMethod.Adaptive,
+				};
+			}
+			else if (quality >= 30) {
+				// 中等质量: 进一步减少颜色,移除透明
+				res = image.Clone(ctx => ctx.Quantize(new WuQuantizer(new QuantizerOptions {
+					Dither = OrderedDither.Bayer8x8,
+					ColorMatchingMode = ColorMatchingMode.Hybrid,
+					MaxColors = 256
+				})));
+				encoder = new PngEncoder {
+					SkipMetadata = true,
+					ColorType = PngColorType.Palette,
+					TransparentColorMode = PngTransparentColorMode.Clear,
+					BitDepth = PngBitDepth.Bit8, // 调色板索引用8位
+					CompressionLevel = PngCompressionLevel.BestCompression,
+					FilterMethod = PngFilterMethod.Adaptive,
+				};
+			}
+			else {
+				// 低质量: 强力压缩，降低位深
+				res = image.Clone(ctx => ctx.Quantize(new WuQuantizer(new QuantizerOptions {
+					Dither = OrderedDither.Bayer4x4,
+					ColorMatchingMode = ColorMatchingMode.Coarse,
+					MaxColors = 16
+				})));
+				encoder = new PngEncoder {
+					SkipMetadata = true,
+					ColorType = PngColorType.Palette,
+					TransparentColorMode = PngTransparentColorMode.Clear,
+					BitDepth = PngBitDepth.Bit4, // 调色板索引用4位，最多16色
+					CompressionLevel = PngCompressionLevel.BestCompression,
+					FilterMethod = PngFilterMethod.Adaptive,
+				};
+			}
+
+			res.SaveAsPng(output, encoder);
 		}
 	}
 }

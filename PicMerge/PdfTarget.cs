@@ -52,8 +52,8 @@ internal class PdfTarget(string _outputPath, string? _title) : IDisposable {
 	/// <param name="stream_to_image">图片数据流</param>
 	/// <param name="param">页面参数</param>
 	/// <param name="index">图片插入在第几页，从1开始</param>
-	/// <returns>是否成功</returns>
-	internal bool AddImage(in Stream stream_to_image, in PageParam param, int img_w_override = -1, int img_h_override = -1) {
+	/// <returns>null if success; otherwise, error message</returns>
+	internal string? AddImage(in Stream stream_to_image, in PageParam param, int img_w_override = -1, int img_h_override = -1) {
 		bool fixedWidth = (param.fixedType & PageParam.FixedType.WidthFixed) != 0 && param.width >= 10;
 		bool fixedHeight = (param.fixedType & PageParam.FixedType.HeightFixed) != 0 && param.height >= 10;
 		try {
@@ -95,14 +95,14 @@ internal class PdfTarget(string _outputPath, string? _title) : IDisposable {
 			using var gfx = XGraphics.FromPdfPage(page);
 			gfx.DrawImage(image, 0, 0, page.Width.Point, page.Height.Point);
 		}
-		catch (Exception) {
-			return false;
+		catch (Exception e) {
+			return e.Message;
 		}
 		finally {
 			stream_to_image.Close();
 			stream_to_image.Dispose();
 		}
-		return true;
+		return null;
 	}
 
 	public void Dispose() {

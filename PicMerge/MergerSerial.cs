@@ -41,8 +41,8 @@ namespace PicMerge {
 						continue;
 					}
 
-					if (!pdfTarget.AddImage(imageData, in m_pp)) {
-						result.Add(new FileResult(0x80010004, file, StrFailedToAdd));
+					if (pdfTarget.AddImage(imageData, in m_pp) is string err_msg) {
+						result.Add(new FileResult(0x80010004, file, StrFailedToPut + err_msg));
 					}
 					else {
 						result.Add(new FileResult(0x1, file));
