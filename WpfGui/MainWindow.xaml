@@ -101,7 +101,7 @@
                                 </Style>
                             </numeric:DoubleBox.Style>
                         </numeric:DoubleBox>
-                        <Label Content="points² " VerticalContentAlignment="Center"/>
+                        <Label Content="pts² " VerticalContentAlignment="Center"/>
                         <numeric:DoubleBox x:Name="doubleboxScale" IsEnabled="True" ToolTip="{DynamicResource PageScaleTip}" Margin="0,0,0,0" MaxLength="24" HorizontalAlignment="Left" Width="40" VerticalContentAlignment="Center"
                                            Value="{Binding PageSizeScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ValidationTrigger="PropertyChanged"
                                            MinValue="0" MaxValue="4294967296"/>
