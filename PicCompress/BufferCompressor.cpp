@@ -45,6 +45,9 @@ PicCompress::IodineOutputStream^ PicCompress::BufferCompressor::Compress(
 	parameters.jpeg_quality = quality;
 	parameters.jpeg_progressive = true;
 	parameters.jpeg_optimize = optimize;
+	parameters.jpeg_chroma_subsampling = 420;
+	if (optimize)
+		parameters.jpeg_chroma_subsampling = 444;
 
 	parameters.png_quality = quality;
 	parameters.png_optimize = optimize;
