@@ -3,8 +3,8 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <sys:String x:Key="PageSizeBox">Page Size</sys:String>
-    <sys:String x:Key="PageSizeWidthFixed">Fixed width</sys:String>
-    <sys:String x:Key="PageSizeHeightFixed">Fixed height</sys:String>
+    <sys:String x:Key="PageSizeWidthFixed">Fixing Width</sys:String>
+    <sys:String x:Key="PageSizeHeightFixed">Fixing Height</sys:String>
     <sys:String x:Key="PageSizePaperCustom">Custom Page Size</sys:String>
 
     <sys:String x:Key="IOBox">Input/Output</sys:String>
