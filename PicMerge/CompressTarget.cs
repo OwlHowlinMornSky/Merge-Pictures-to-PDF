@@ -28,7 +28,7 @@ namespace PicMerge {
 			case 1: { // JPEG
 				JpegEncoder encoder = new() {
 					SkipMetadata = true,
-					ColorType = optimize ? JpegEncodingColor.YCbCrRatio444 : JpegEncodingColor.YCbCrRatio420,
+					ColorType = (optimize || param.quality >= 70) ? JpegEncodingColor.YCbCrRatio444 : JpegEncodingColor.YCbCrRatio420,
 					Quality = param.quality,
 				};
 				input_image.SaveAsJpeg(imgSt, encoder);
